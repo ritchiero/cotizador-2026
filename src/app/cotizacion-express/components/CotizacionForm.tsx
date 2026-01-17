@@ -425,11 +425,13 @@ const extractInfoFromContent = (content: string) => {
 const cleanFormattingSymbols = (content: string): string => {
   // Primero limpiamos markdown y caracteres especiales
   const cleanContent = content
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/\[|\]/g, "")
-    .replace(/_{2,}/g, "")
-    .replace(/\*\*/g, "");
+    .replace(/^##\s+/gm, "")           // Quitar ## de headers (inicio de línea)
+    .replace(/^###\s+/gm, "")          // Quitar ### de sub-headers
+    .replace(/\*\*(.*?)\*\*/g, "$1")   // Quitar ** de bold
+    .replace(/\*(.*?)\*/g, "$1")       // Quitar * de italic
+    .replace(/\[|\]/g, "")             // Quitar corchetes
+    .replace(/_{2,}/g, "")             // Quitar guiones bajos múltiples
+    .replace(/\*\*/g, "");             // Quitar ** sobrantes
 
   // Luego procesamos la estructura
   const sections = cleanContent.split("---").map((section) => section.trim());
@@ -457,9 +459,11 @@ const cleanFormattingSymbols = (content: string): string => {
 const formatearTexto = (content: string) => {
   // Primero limpiamos markdown y caracteres especiales
   const cleanContent = content
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/\[|\]/g, "")
+    .replace(/^##\s+/gm, "")           // Quitar ## de headers
+    .replace(/^###\s+/gm, "")          // Quitar ### de sub-headers
+    .replace(/\*\*(.*?)\*\*/g, "$1")   // Quitar ** de bold
+    .replace(/\*(.*?)\*/g, "$1")       // Quitar * de italic
+    .replace(/\[|\]/g, "")             // Quitar corchetes
     .replace(/_{2,}/g, "")
     .replace(/\*\*/g, "");
 
