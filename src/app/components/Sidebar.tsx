@@ -2,6 +2,7 @@
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 export default function Sidebar() {
   const { user } = useAuth();
@@ -10,8 +11,8 @@ export default function Sidebar() {
   if (!user) return null;
 
   const menuItems = [
-    { 
-      href: '/', 
+    {
+      href: '/',
       icon: (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" >
           <g clipPath="url(#clip0_409_52885)">
@@ -24,7 +25,7 @@ export default function Sidebar() {
           </defs>
         </svg>
       ),
-      label: 'Home' 
+      label: 'Inicio'
     },
     { 
       href: '/cotizacion-express', 
@@ -59,32 +60,47 @@ export default function Sidebar() {
   ];
 
   return (
-    <div className="hidden md:block h-[calc(100vh-5rem)] py-4 pl-4">
-      <div className="bg-white rounded-3xl shadow-sm h-full flex flex-col py-6 w-16">
-        <nav className="flex-1">
-          <ul className="space-y-4 px-3">
-            {menuItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <li key={item.href} className="w-full">
-                  <Link
-                    href={item.href}
-                    className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
-                      isActive ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
-                    }`}
-                    title={item.label}
-                  >
-                    <span className={`${isActive ? 'text-[#4570EB]' : 'text-[#67676F]'}`}>
-                      {item.icon}
-                      <span className="sr-only">{item.label}</span>
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+    <Tooltip.Provider delayDuration={200}>
+      <div className="hidden md:block h-[calc(100vh-5rem)] py-4 pl-4">
+        <div className="bg-white rounded-3xl shadow-sm h-full flex flex-col py-6 w-16">
+          <nav className="flex-1">
+            <ul className="space-y-4 px-3">
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <li key={item.href} className="w-full">
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <Link
+                          href={item.href}
+                          className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
+                            isActive ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={`${isActive ? 'text-[#4570EB]' : 'text-[#67676F]'}`}>
+                            {item.icon}
+                            <span className="sr-only">{item.label}</span>
+                          </span>
+                        </Link>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal>
+                        <Tooltip.Content
+                          side="right"
+                          sideOffset={8}
+                          className="px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-lg z-50"
+                        >
+                          {item.label}
+                          <Tooltip.Arrow className="fill-gray-900" />
+                        </Tooltip.Content>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
       </div>
-    </div>
+    </Tooltip.Provider>
   );
 } 
