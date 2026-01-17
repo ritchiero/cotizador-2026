@@ -1747,9 +1747,23 @@ const SlateEditor: React.FC<SlateEditorProps> = ({ value, onChange }) => {
   const characterCount = currentText.length;
 
   const insertAtEnd = (text: string) => {
-    const end = Editor.end(editor, [])
-    Transforms.select(editor, end)
-    Transforms.insertText(editor, text)
+    // Guardar posición de scroll actual del documento
+    const scrollY = window.scrollY;
+    const scrollX = window.scrollX;
+
+    // Insertar texto al final sin cambiar el foco visual
+    const end = Editor.end(editor, []);
+    Transforms.insertNodes(editor, [
+      {
+        type: 'paragraph',
+        children: [{ text: '\n\n' + text }],
+      } as any
+    ], { at: end });
+
+    // Restaurar posición de scroll inmediatamente
+    requestAnimationFrame(() => {
+      window.scrollTo(scrollX, scrollY);
+    });
   }
 
   // Funciones para los botones
