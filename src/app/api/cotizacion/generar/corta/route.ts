@@ -58,25 +58,25 @@ Fecha: ${fecha}
 **Título**
 "PROPUESTA DE SERVICIOS LEGALES - ${descripcion.toUpperCase()}"
 
-**1. PRESENTACIÓN** (2-3 líneas)
+**PRESENTACIÓN** (2-3 líneas)
 Saludo cordial dirigido a ${clienteNombre}, presentando brevemente a ${despachoInfo.nombre} y el propósito de la propuesta.
 
-**2. ALCANCE DEL SERVICIO** (4-5 puntos con viñetas)
+**ALCANCE DEL SERVICIO** (4-5 puntos con viñetas)
 Describe con claridad y precisión los entregables específicos del servicio ${descripcion}. Usa verbos de acción (elaborar, revisar, analizar, asesorar). Evita ambigüedades.
 
-**3. METODOLOGÍA DE TRABAJO** (3-4 pasos numerados)
-Explica el proceso paso a paso desde el inicio hasta la conclusión del servicio. Debe transmitir organización y profesionalismo.
+**METODOLOGÍA DE TRABAJO** (3-4 pasos)
+Explica el proceso paso a paso desde el inicio hasta la conclusión del servicio. Puede usar numeración interna (1., 2., 3.) para los pasos, pero NO numerar el título.
 
-**4. VALOR AGREGADO** (2-3 puntos ESPECÍFICOS)
+**VALOR AGREGADO** (2-3 puntos ESPECÍFICOS)
 Destaca beneficios concretos y medibles de trabajar con ${despachoInfo.nombre}. Evita generalidades. Ejemplos: "Más de 10 años de experiencia", "95% de tasa de éxito", "Respuesta garantizada en 24 horas".
 
-**5. INVERSIÓN Y CONDICIONES COMERCIALES**
+**CONTRAPRESTACIÓN Y CONDICIONES COMERCIALES**
 - Contraprestación: ${precio}
 - Tiempo estimado del trámite ante autoridad: ${tiempo}
 - Forma de pago: ${formaPago}
 - Vigencia de esta propuesta: 15 días naturales a partir de ${fecha}
 
-**6. DATOS DE CONTACTO**
+**DATOS DE CONTACTO**
 Para cualquier duda o aclaración:
 
 ${userInfo.displayName || despachoInfo.nombre}
@@ -107,7 +107,9 @@ REGLAS ESTRICTAS:
 ✓ Tono profesional, ejecutivo y confiable
 ✓ Lenguaje jurídico preciso pero accesible
 ✓ Máximo 450 palabras
-✓ Usa formato markdown para títulos (##) SOLO en secciones 1-6
+✓ Usa formato markdown (##) para títulos pero SIN numeración antes del título
+✓ INCORRECTO: "## 1. PRESENTACIÓN"
+✓ CORRECTO: "## PRESENTACIÓN"
 ✓ NUNCA uses "Inversión", siempre "Contraprestación"
 ✓ Enfócate en el valor y resultados para el cliente
 ✓ Sé específico, evita generalidades
@@ -115,8 +117,9 @@ REGLAS ESTRICTAS:
 ✓ NO repitas el nombre del despacho en la firma (solo una vez)
 ✓ Clarifica que el tiempo es "del trámite" no de entrega de propuesta
 ✓ Incluye TODOS los datos de contacto proporcionados
-✓ CRÍTICO: El cierre NO lleva número ni título "## 7. CIERRE", es despedida natural
+✓ CRÍTICO: El cierre NO lleva número ni título markdown, es despedida natural
 ✓ Incluye espacio para firma del cliente y del responsable
+✓ Los títulos de sección van en mayúsculas SIN número: PRESENTACIÓN, ALCANCE DEL SERVICIO, etc.
 
 Genera ahora la propuesta completa siguiendo esta estructura.`;
     
