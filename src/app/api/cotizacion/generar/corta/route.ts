@@ -84,7 +84,11 @@ ${userInfo.email ? `Email: ${userInfo.email}` : ''}
 ${userInfo.telefono ? `Tel: ${userInfo.telefono}` : ''}
 ${despachoInfo.web ? `Sitio web: ${despachoInfo.web}` : ''}
 
-**7. CIERRE Y FIRMA**
+---
+
+IMPORTANTE: El cierre NO lleva número ni título. Es una despedida formal natural:
+
+Quedamos a sus órdenes para cualquier aclaración.
 
 Atentamente,
 
@@ -93,11 +97,17 @@ ${userInfo.displayName || 'Firma del responsable'}
 ${despachoInfo.nombre}
 Fecha: ______________
 
+
+_________________________
+Firma de conformidad del cliente
+Nombre: ______________
+Fecha: ______________
+
 REGLAS ESTRICTAS:
 ✓ Tono profesional, ejecutivo y confiable
 ✓ Lenguaje jurídico preciso pero accesible
 ✓ Máximo 450 palabras
-✓ Usa formato markdown para títulos (##) y listas
+✓ Usa formato markdown para títulos (##) SOLO en secciones 1-6
 ✓ NUNCA uses "Inversión", siempre "Contraprestación"
 ✓ Enfócate en el valor y resultados para el cliente
 ✓ Sé específico, evita generalidades
@@ -105,6 +115,8 @@ REGLAS ESTRICTAS:
 ✓ NO repitas el nombre del despacho en la firma (solo una vez)
 ✓ Clarifica que el tiempo es "del trámite" no de entrega de propuesta
 ✓ Incluye TODOS los datos de contacto proporcionados
+✓ CRÍTICO: El cierre NO lleva número ni título "## 7. CIERRE", es despedida natural
+✓ Incluye espacio para firma del cliente y del responsable
 
 Genera ahora la propuesta completa siguiendo esta estructura.`;
     
