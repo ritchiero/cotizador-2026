@@ -487,7 +487,9 @@ const formatearTexto = (content: string) => {
 
           // Destinatario: formato para datos de contacto
           case title.includes("DESTINATARIO"):
-            return `${title}\n${sectionContent.split(".").join(".\n")}`;
+            // NO usar split(".") porque rompe "S.A. de C.V."
+            // Mantener el contenido tal cual
+            return `${title}\n${sectionContent}`;
 
           // Introducción: párrafo normal
           case title.includes("INTRODUCCIÓN"):
