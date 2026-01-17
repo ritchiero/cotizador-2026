@@ -1,0 +1,105 @@
+import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+export async function POST(req: NextRequest) {
+  try {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing OPENAI_API_KEY');
+    }
+
+    const openai = new OpenAI({ apiKey });
+    const { methodInfo, insertionType, currentText, replaceExisting } = await req.json();
+    const mode = replaceExisting ? 'replace' : insertionType;
+
+    // Analizar el contenido actual para dar contexto mejor
+    const hasPaymentInfo = currentText.toLowerCase().includes('pago') || 
+                          currentText.toLowerCase().includes('costo') ||
+                          currentText.toLowerCase().includes('precio') ||
+                          currentText.toLowerCase().includes('contraprestación');
+    
+    const hasProcessInfo = currentText.toLowerCase().includes('proceso') ||
+                          currentText.toLowerCase().includes('evaluación');
+    
+    const systemPrompt = `Eres un asistente especializado en generar información de pago profesional para cotizaciones empresariales de servicios legales.
+
+Método de pago seleccionado:
+- Tipo: ${methodInfo.type}
+- Datos: ${methodInfo.displayName}
+- Detalles adicionales: ${JSON.stringify(methodInfo.details)}
+
+Contexto del documento:
+${hasPaymentInfo ? 'El documento ya contiene información de pagos/costos' : 'El documento no tiene información de pagos aún'}
+${hasProcessInfo ? 'El documento incluye información de procesos' : ''}
+${replaceExisting ? 'El usuario desea reemplazar la información previa generada por IA.' : ''}
+
+Instrucciones para ${
+  mode === 'end'
+    ? 'inserción al final'
+    : mode === 'harmonic'
+      ? 'inserción armónica'
+      : 'reemplazo'
+}:
+
+${mode === 'end'
+  ? `- Genera un párrafo final profesional con los datos de pago
+- Debe ir después de la firma/despedida como información adicional
+- Incluye instrucciones claras sobre cómo realizar el pago
+- Usa un tono cordial pero ejecutivo
+- Incluye una frase de agradecimiento`
+  : mode === 'harmonic'
+    ? `- Genera texto que complemente la sección de contraprestación/forma de pago
+- Debe integrarse naturalmente con el contenido existente
+- Proporciona detalles específicos del método de pago seleccionado
+- Mantén la coherencia con el tono del documento
+- Incluye términos y condiciones de pago si es apropiado`
+    : `- Reemplaza la información de pago existente por un nuevo texto coherente
+- Mantén el estilo profesional y directo
+- Incluye los detalles actualizados del método de pago`}
+
+Formato requerido:
+- MÁXIMO 1-2 párrafos cortos (50-80 palabras total)
+- Conciso y directo
+- Solo información esencial de pago
+- En español mexicano formal
+- Sin explicaciones adicionales
+
+IMPORTANTE: Genera SOLO la información de pago necesaria, máximo 80 palabras.
+
+Genera ÚNICAMENTE el texto para insertar:`;
+
+    const userPrompt = mode === 'end'
+      ? `Genera información de pago para agregar al final del documento después de la firma. Incluye los datos específicos del método de pago y instrucciones claras para el cliente.`
+      : mode === 'harmonic'
+        ? `Genera información de pago para integrar armónicamente en la sección de contraprestación. El texto debe fluir naturalmente con el contenido existente y proporcionar detalles específicos del método de pago.`
+        : `Reemplaza la sección de información de pago actual por un texto nuevo que incluya los detalles indicados del método seleccionado.`;
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-5-mini-2025-08-07',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt
+        },
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ]
+    });
+
+    const generatedText = completion.choices[0].message.content || '';
+
+    return NextResponse.json({ 
+      generatedText: generatedText.trim(),
+      success: true 
+    });
+
+  } catch (error: any) {
+    console.error('Error generating payment text:', error);
+    return NextResponse.json(
+      { error: 'Error al generar contenido con IA' },
+      { status: 500 }
+    );
+  }
+} 
