@@ -35,10 +35,51 @@ const estados = [
   'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
 ];
 
+// Funciones de validación
+const validateRFC = (rfc: string): string | null => {
+  const rfcClean = rfc.toUpperCase().trim();
+
+  if (!rfcClean) return null; // Permitir vacío mientras escribe
+
+  if (rfcClean.length !== 12 && rfcClean.length !== 13) {
+    return 'El RFC debe tener 12 caracteres (persona moral) o 13 (persona física)';
+  }
+
+  const rfcRegex = /^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/;
+  if (!rfcRegex.test(rfcClean)) {
+    return 'El formato del RFC no es válido. Ejemplo: ABC123456XYZ';
+  }
+
+  return null;
+};
+
+const validateCP = (cp: string): string | null => {
+  if (!cp) return null;
+  if (!/^\d{5}$/.test(cp)) {
+    return 'El código postal debe tener exactamente 5 dígitos';
+  }
+  return null;
+};
+
+const validateTelefono = (telefono: string): string | null => {
+  if (!telefono) return null;
+  const digits = telefono.replace(/\D/g, '');
+  if (digits.length !== 10) {
+    return 'El teléfono debe tener 10 dígitos';
+  }
+  return null;
+};
+
 export default function BillingTab({ userId, billingData, onBillingUpdate }: BillingTabProps) {
   const [formData, setFormData] = useState<BillingData>(billingData);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [errors, setErrors] = useState({
+    rfc: '',
+    email: '',
+    telefono: '',
+    codigoPostal: ''
+  });
 
   useEffect(() => {
     setFormData(billingData);
@@ -51,7 +92,33 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
+    // Validar según el campo
+    if (name === 'rfc') {
+      const error = validateRFC(value);
+      setErrors(prev => ({ ...prev, rfc: error || '' }));
+    }
+
+    if (name === 'direccion.codigoPostal') {
+      const error = validateCP(value);
+      setErrors(prev => ({ ...prev, codigoPostal: error || '' }));
+    }
+
+    if (name === 'telefono') {
+      const error = validateTelefono(value);
+      setErrors(prev => ({ ...prev, telefono: error || '' }));
+    }
+
+    if (name === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (value && !emailRegex.test(value)) {
+        setErrors(prev => ({ ...prev, email: 'El formato del email no es válido' }));
+      } else {
+        setErrors(prev => ({ ...prev, email: '' }));
+      }
+    }
+
+    // Actualizar formData
     if (name.includes('direccion.')) {
       const field = name.split('.')[1];
       setFormData(prev => ({
@@ -71,30 +138,30 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar todo antes de guardar
+    const rfcError = validateRFC(formData.rfc);
+    const cpError = validateCP(formData.direccion.codigoPostal);
+    const telError = validateTelefono(formData.telefono);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailError = !emailRegex.test(formData.email) ? 'El formato del email no es válido' : '';
+
+    // Si hay errores, mostrarlos y no continuar
+    if (rfcError || cpError || telError || emailError) {
+      setErrors({
+        rfc: rfcError || '',
+        codigoPostal: cpError || '',
+        telefono: telError || '',
+        email: emailError
+      });
+      toast.error('Por favor corrige los errores del formulario');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Validar RFC
-      const rfcRegex = /^[A-Z&Ñ]{3,4}[0-9]{2}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])[A-Z0-9]{2}[0-9A]$/;
-      if (!rfcRegex.test(formData.rfc.toUpperCase())) {
-        throw new Error('El formato del RFC no es válido');
-      }
-
-      // Validar email
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        throw new Error('El formato del email no es válido');
-      }
-
-      // Validar código postal
-      if (!/^\d{5}$/.test(formData.direccion.codigoPostal)) {
-        throw new Error('El código postal debe tener 5 dígitos');
-      }
-
-      // Validar teléfono (10 dígitos)
-      if (!/^\d{10}$/.test(formData.telefono)) {
-        throw new Error('El teléfono debe tener 10 dígitos');
-      }
 
       // Crear/actualizar documento en la colección billing
       const billingRef = doc(db, 'billing', userId);
@@ -284,62 +351,82 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Razón Social */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Razón Social
+                    Razón Social <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="razonSocial"
                     value={formData.razonSocial}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
+                    placeholder="Empresa S.A. de C.V."
                   />
                 </div>
 
                 {/* RFC */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    RFC
+                    RFC <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="rfc"
                     value={formData.rfc}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 uppercase"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 uppercase ${
+                      errors.rfc ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
+                    maxLength={13}
+                    placeholder="ABC123456XYZ"
                   />
+                  {errors.rfc && (
+                    <p className="mt-1 text-sm text-red-600">{errors.rfc}</p>
+                  )}
                 </div>
 
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email para Facturación
+                    Email para Facturación <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
+                    placeholder="facturacion@ejemplo.com"
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
                 </div>
 
                 {/* Teléfono */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Teléfono
+                    Teléfono <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     name="telefono"
                     value={formData.telefono}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.telefono ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                     maxLength={10}
+                    placeholder="5512345678"
                   />
+                  {errors.telefono && (
+                    <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -351,7 +438,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Calle */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Calle
+                    Calle <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -366,7 +453,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Número Exterior */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número Exterior
+                    Número Exterior <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -395,7 +482,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Colonia */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Colonia
+                    Colonia <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -410,23 +497,29 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Código Postal */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Código Postal
+                    Código Postal <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="direccion.codigoPostal"
                     value={formData.direccion.codigoPostal}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.codigoPostal ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     required
                     maxLength={5}
+                    placeholder="01000"
                   />
+                  {errors.codigoPostal && (
+                    <p className="mt-1 text-sm text-red-600">{errors.codigoPostal}</p>
+                  )}
                 </div>
 
                 {/* Municipio/Alcaldía */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Municipio/Alcaldía
+                    Municipio/Alcaldía <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -441,7 +534,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 {/* Estado */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estado
+                    Estado <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="direccion.estado"
@@ -472,8 +565,8 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                disabled={isLoading || !!errors.rfc || !!errors.email || !!errors.telefono || !!errors.codigoPostal}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <>
