@@ -15,13 +15,19 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Obtener la fecha actual en español
-const now = new Date();
-const fecha = new Intl.DateTimeFormat('es-MX', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric'
-}).format(now);
+// Función para generar folio y fecha (se llama en cada request)
+const generarFolioYFecha = () => {
+  const now = new Date();
+  const fecha = new Intl.DateTimeFormat('es-MX', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(now);
+
+  const folio = `COT-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
+  return { fecha, folio };
+};
 
 const getPromptTemplate = (data: any) => {
   const detalladaSpec = data.tipoCotizacion === 'detallada' ? `
@@ -169,12 +175,12 @@ Por favor, genera una cotización profesional siguiendo estas especificaciones.`
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { 
-      clienteNombre, 
-      remitente, 
-      descripcion, 
-      tiempo, 
-      precio, 
+    const {
+      clienteNombre,
+      remitente,
+      descripcion,
+      tiempo,
+      precio,
       formaPago,
       tipoCotizacion,
       despachoInfo,
@@ -182,6 +188,9 @@ export async function POST(req: Request) {
       estructura ,
       userInfo
     } = body;
+
+    // Generar folio y fecha para esta cotización
+    const { fecha, folio } = generarFolioYFecha();
 
     // Construir un prompt más detallado usando la información adicional
     const prompt = `
@@ -213,16 +222,20 @@ export async function POST(req: Request) {
       Forma de Pago: ${formaPago}
 
       4. FORMATO ESPECIFICO:
+      Folio: ${folio}
       Fecha: ${fecha}
 
       INSTRUCCIONES DE FORMATO:
 
       1. ESTRUCTURA DEL DOCUMENTO:
+      - Incluir folio ${folio} en el encabezado
       - Usar formato profesional con espaciado claro entre secciones
       - Evitar caracteres especiales como |, -, * o #
       - Usar viñetas simples para listas (•)
       - Usar numeración para pasos secuenciales
       - Alinear precios y tablas con espacios, no con caracteres
+      - CRÍTICO: NO separar abreviaturas legales (S.A. de C.V., S.C., S. de R.L.) en líneas diferentes
+      - Mantener razones sociales en una sola línea
 
       2. SECCIONES REQUERIDAS:
       ${estructura.formato.secciones.map((seccion: Seccion) => `
@@ -305,8 +318,8 @@ export async function POST(req: Request) {
     `;
 
     const completion = await openai.chat.completions.create({
+      model: "gpt-5-mini-2025-08-07",
       messages: [{ role: "user", content: prompt }],
-      model: "o3-mini",
     });
 
     return NextResponse.json({
