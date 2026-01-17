@@ -11,62 +11,64 @@ export const FLAT_FEE_RANGES: Record<string, PriceRange> = {
   // ============================================
   // PROPIEDAD INTELECTUAL
   // ============================================
-  'registro_marca': { min: 12000, promedio: 16000, max: 25000 },
-  'renovacion_marca': { min: 8000, promedio: 12000, max: 18000 },
-  'busqueda_anterioridades': { min: 3000, promedio: 5000, max: 8000 },
-  'oposicion_marca': { min: 15000, promedio: 22000, max: 35000 },
+  // Registro de marca: $3,126 (IMPI con IVA) + $2,000-4,000 honorarios = $5,000-7,000 total
+  'registro_marca': { min: 5000, promedio: 6000, max: 8000 },
+  'renovacion_marca': { min: 4000, promedio: 5500, max: 7000 },
+  'busqueda_anterioridades': { min: 1500, promedio: 2500, max: 4000 },
+  'oposicion_marca': { min: 8000, promedio: 12000, max: 18000 },
 
   // ============================================
   // CORPORATIVO Y MERCANTIL
   // ============================================
-  'constitucion_sociedad': { min: 20000, promedio: 27500, max: 40000 },
-  'constitucion_sa': { min: 20000, promedio: 27500, max: 40000 },
-  'constitucion_srl': { min: 18000, promedio: 25000, max: 35000 },
-  'modificacion_estatutos': { min: 8000, promedio: 12000, max: 20000 },
-  'disolucion_sociedad': { min: 15000, promedio: 22000, max: 35000 },
-  'fusion_sociedades': { min: 25000, promedio: 40000, max: 70000 },
-  'escision_sociedades': { min: 25000, promedio: 40000, max: 70000 },
-  'aumento_capital': { min: 10000, promedio: 15000, max: 25000 },
-  'reduccion_capital': { min: 10000, promedio: 15000, max: 25000 },
+  // Constitución: Notaría (~$15k) + honorarios ($5k-10k) = $20k-25k total
+  'constitucion_sociedad': { min: 15000, promedio: 20000, max: 30000 },
+  'constitucion_sa': { min: 15000, promedio: 20000, max: 30000 },
+  'constitucion_srl': { min: 12000, promedio: 18000, max: 25000 },
+  'modificacion_estatutos': { min: 5000, promedio: 8000, max: 12000 },
+  'disolucion_sociedad': { min: 10000, promedio: 15000, max: 25000 },
+  'fusion_sociedades': { min: 20000, promedio: 35000, max: 60000 },
+  'escision_sociedades': { min: 20000, promedio: 35000, max: 60000 },
+  'aumento_capital': { min: 6000, promedio: 10000, max: 15000 },
+  'reduccion_capital': { min: 6000, promedio: 10000, max: 15000 },
 
   // ============================================
   // CONTRATOS
   // ============================================
-  'contrato_compraventa': { min: 5000, promedio: 8500, max: 15000 },
-  'contrato_arrendamiento': { min: 4000, promedio: 7000, max: 12000 },
-  'contrato_prestacion_servicios': { min: 5000, promedio: 9000, max: 16000 },
-  'contrato_confidencialidad': { min: 3000, promedio: 5000, max: 8000 },
-  'contrato_trabajo': { min: 2500, promedio: 4500, max: 8000 },
-  'contrato_franquicia': { min: 15000, promedio: 25000, max: 45000 },
-  'contrato_distribucion': { min: 12000, promedio: 20000, max: 35000 },
-  'revision_contrato_simple': { min: 3000, promedio: 5500, max: 10000 },
-  'revision_contrato_complejo': { min: 8000, promedio: 15000, max: 28000 },
+  'contrato_compraventa': { min: 3000, promedio: 5000, max: 8000 },
+  'contrato_arrendamiento': { min: 2500, promedio: 4000, max: 6000 },
+  'contrato_prestacion_servicios': { min: 3000, promedio: 5000, max: 8000 },
+  'contrato_confidencialidad': { min: 2000, promedio: 3500, max: 5000 },
+  'contrato_trabajo': { min: 1500, promedio: 3000, max: 5000 },
+  'contrato_franquicia': { min: 12000, promedio: 20000, max: 35000 },
+  'contrato_distribucion': { min: 8000, promedio: 15000, max: 25000 },
+  'revision_contrato_simple': { min: 1500, promedio: 3000, max: 5000 },
+  'revision_contrato_complejo': { min: 5000, promedio: 10000, max: 18000 },
 
   // ============================================
   // NOTARIAL
   // ============================================
-  'poder_notarial': { min: 2000, promedio: 3500, max: 6000 },
-  'testamento': { min: 3000, promedio: 5000, max: 8000 },
-  'escritura_compraventa': { min: 8000, promedio: 12000, max: 20000 },
+  'poder_notarial': { min: 1500, promedio: 2500, max: 4000 },
+  'testamento': { min: 2000, promedio: 3500, max: 6000 },
+  'escritura_compraventa': { min: 5000, promedio: 8000, max: 12000 },
 
   // ============================================
   // LABORAL
   // ============================================
-  'finiquito': { min: 2500, promedio: 4000, max: 7000 },
-  'carta_terminacion': { min: 2000, promedio: 3500, max: 6000 },
-  'reglamento_interior': { min: 8000, promedio: 13000, max: 22000 },
+  'finiquito': { min: 1500, promedio: 2500, max: 4000 },
+  'carta_terminacion': { min: 1000, promedio: 2000, max: 3500 },
+  'reglamento_interior': { min: 5000, promedio: 8000, max: 15000 },
 
   // ============================================
-  // FISCAL
+  // FISCAL Y COMPLIANCE
   // ============================================
-  'aviso_privacidad': { min: 3500, promedio: 6000, max: 10000 },
-  'terminos_condiciones': { min: 4000, promedio: 7500, max: 13000 },
-  'politicas_privacidad': { min: 3500, promedio: 6000, max: 10000 },
+  'aviso_privacidad': { min: 2500, promedio: 4000, max: 6000 },
+  'terminos_condiciones': { min: 3000, promedio: 5000, max: 8000 },
+  'politicas_privacidad': { min: 2500, promedio: 4000, max: 6000 },
 
   // ============================================
   // DEFAULT (Servicios no categorizados)
   // ============================================
-  'default': { min: 5000, promedio: 12000, max: 25000 }
+  'default': { min: 3000, promedio: 6000, max: 12000 }
 };
 
 // Palabras clave para detectar servicios con FLAT FEE

@@ -4,8 +4,16 @@ import { db } from '@/lib/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { FLAT_FEE_RANGES, findBestFlatFeeRange, detectPricingModelByKeywords } from '@/lib/constants/marketPricing';
 
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+
+if (!OPENAI_API_KEY || !PERPLEXITY_API_KEY) {
+  throw new Error('API keys not configured');
+}
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: OPENAI_API_KEY,
 });
 
 interface PricingSuggestionRequest {
@@ -56,12 +64,19 @@ export async function POST(request: NextRequest) {
     // PASO 3: Obtener tarifa horaria del usuario
     const tarifaHoraria = await getUserHourlyRate(body.userId);
 
+    // PASO 3.5: Si es flat fee, consultar precios reales con Perplexity
+    let preciosMercado = null;
+    if (modeloDetectado === 'FLAT_FEE') {
+      preciosMercado = await getMarketPricingFromPerplexity(body.nombre, body.descripcion);
+    }
+
     // PASO 4: Calcular rango de precio según el modelo
     const pricingSuggestion = calculatePricingRange(
       modeloDetectado,
       analisisComplejidad,
       tarifaHoraria,
-      body
+      body,
+      preciosMercado
     );
 
     return NextResponse.json(pricingSuggestion);
@@ -256,29 +271,112 @@ async function getUserHourlyRate(userId: string): Promise<number> {
 }
 
 // ============================================
+// FUNCIÓN 3.5: Consultar precios reales con Perplexity
+// ============================================
+async function getMarketPricingFromPerplexity(nombre: string, descripcion: string) {
+  const prompt = `Necesito conocer el COSTO REAL y ACTUAL (2026) en el mercado legal mexicano para este servicio:
+
+SERVICIO: ${nombre}
+DESCRIPCIÓN: ${descripcion}
+
+IMPORTANTE - Busca información ESPECÍFICA de:
+1. Cuotas/derechos OFICIALES ante autoridades (IMPI, SAT, Registros Públicos, etc.) con IVA incluido
+2. Honorarios TÍPICOS de abogados/despachos en México (no los más caros, sino el rango común)
+3. Costo TOTAL que pagaría un cliente (oficial + profesional)
+
+CONTEXTO:
+- Para "registro de marca": La cuota IMPI es ~$3,126 MXN con IVA por clase, y honorarios profesionales típicos son $2,000-4,000 MXN adicionales
+- Para "constitución de sociedad": Gastos notariales ~$12,000-18,000 + honorarios de asesoría $5,000-10,000
+- Busca datos de 2025-2026, no históricos
+
+RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO (sin markdown):
+{
+  "rangoPrecio": {
+    "minimo": número_sin_comas,
+    "promedio": número_sin_comas,
+    "maximo": número_sin_comas
+  },
+  "desglose": {
+    "cuotasOficiales": "Descripción exacta de cuotas/derechos con monto",
+    "honorarios": "Rango típico de honorarios profesionales"
+  },
+  "fuentes": ["Fuente oficial 1", "Fuente verificable 2"]
+}`;
+
+
+  try {
+    const response = await fetch(PERPLEXITY_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'sonar-pro',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2000
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Perplexity API error:', await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return null;
+    }
+
+    // Limpiar markdown y parsear JSON
+    const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+    return JSON.parse(cleanContent);
+
+  } catch (error) {
+    console.error('Error consultando Perplexity:', error);
+    return null; // Fallback: usar precios hardcodeados
+  }
+}
+
+// ============================================
 // FUNCIÓN 4: Calcular rango de precio
 // ============================================
 function calculatePricingRange(
   modeloCobro: 'FLAT_FEE' | 'HOURLY' | 'MIXTO',
   complejidad: any,
   tarifaHoraria: number,
-  service: PricingSuggestionRequest
+  service: PricingSuggestionRequest,
+  preciosMercado: any = null
 ): PricingSuggestionResponse {
 
   let rangoSugerido = { minimo: 0, promedio: 0, maximo: 0 };
   let justificacionExtra = '';
 
   if (modeloCobro === 'FLAT_FEE') {
-    // Usar rangos de mercado predefinidos
-    const rangoMercado = findBestFlatFeeRange(service.nombre, service.descripcion);
+    // Priorizar datos de Perplexity si están disponibles
+    if (preciosMercado?.rangoPrecio) {
+      rangoSugerido = {
+        minimo: preciosMercado.rangoPrecio.minimo,
+        promedio: preciosMercado.rangoPrecio.promedio,
+        maximo: preciosMercado.rangoPrecio.maximo
+      };
 
-    rangoSugerido = {
-      minimo: rangoMercado.min,
-      promedio: rangoMercado.promedio,
-      maximo: rangoMercado.max
-    };
+      const desglose = preciosMercado.desglose || {};
+      justificacionExtra = `Precio de mercado actual en México (2026). ${desglose.cuotasOficiales ? 'Incluye: ' + desglose.cuotasOficiales + '. ' : ''}${desglose.honorarios ? 'Honorarios típicos: ' + desglose.honorarios + '. ' : ''}${complejidad.justificacion}`;
+    } else {
+      // Fallback: usar rangos predefinidos
+      const rangoMercado = findBestFlatFeeRange(service.nombre, service.descripcion);
 
-    justificacionExtra = `Este servicio tiene un precio de mercado estándar en México. ${complejidad.justificacion}`;
+      rangoSugerido = {
+        minimo: rangoMercado.min,
+        promedio: rangoMercado.promedio,
+        maximo: rangoMercado.max
+      };
+
+      justificacionExtra = `Precio de mercado estimado (datos de referencia). ${complejidad.justificacion} Para precios más precisos, consulta fuentes oficiales actualizadas.`;
+    }
 
   } else if (modeloCobro === 'HOURLY') {
     // Calcular con tarifa horaria del usuario
