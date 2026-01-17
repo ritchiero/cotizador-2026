@@ -1445,7 +1445,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span className="text-xs font-bold text-green-700">
-                              {precioSuggestions.modeloCobro === 'FLAT_FEE' ? 'Flat Fee de Mercado' :
+                              {precioSuggestions.modeloCobro === 'FLAT_FEE' ? 'Tarifa Fija de Mercado' :
                                precioSuggestions.modeloCobro === 'HOURLY' ? `Basado en tu tarifa ($${precioSuggestions.tarifaHorariaUsada.toLocaleString('es-MX')}/hr)` :
                                'Modelo Mixto'}
                             </span>
