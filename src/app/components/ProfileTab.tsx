@@ -3,19 +3,43 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/firebase';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { formatPrice } from '@/lib/hooks/utils';
 
 interface ProfileTabProps {
   userId: string;
 }
 
-export default function ProfileTab({ userId }: ProfileTabProps) {
-  const [hasProfile, setHasProfile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+interface ProfileData {
+  displayName: string;
+  email: string;
+  nombreDespacho: string;
+  cargo: string;
+  cedulaProfesional: string;
+  telefono: string;
+  location: string;
+  tarifaHoraria: number;
+  bio: string;
+}
 
-  // Verificar si el usuario ya tiene perfil configurado
+export default function ProfileTab({ userId }: ProfileTabProps) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<ProfileData>({
+    displayName: '',
+    email: '',
+    nombreDespacho: '',
+    cargo: '',
+    cedulaProfesional: '',
+    telefono: '',
+    location: '',
+    tarifaHoraria: 0,
+    bio: '',
+  });
+
+  const [tarifaError, setTarifaError] = useState('');
+
+  // Cargar datos del usuario
   useEffect(() => {
-    const checkProfile = async () => {
+    const loadProfile = async () => {
       if (!userId) return;
 
       try {
@@ -24,18 +48,90 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
 
         if (userDoc.exists()) {
           const data = userDoc.data();
-          const profileExists = data.displayName || data.nombreDespacho || data.tarifaHoraria;
-          setHasProfile(!!profileExists);
+          setFormData({
+            displayName: data.displayName || '',
+            email: data.email || '',
+            nombreDespacho: data.nombreDespacho || '',
+            cargo: data.cargo || '',
+            cedulaProfesional: data.cedulaProfesional || '',
+            telefono: data.telefono || '',
+            location: data.location || '',
+            tarifaHoraria: data.tarifaHoraria || 0,
+            bio: data.bio || '',
+          });
         }
       } catch (error) {
-        console.error('Error checking profile:', error);
+        console.error('Error loading profile:', error);
+        toast.error('Error al cargar el perfil');
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkProfile();
+    loadProfile();
   }, [userId]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+
+    if (name === 'tarifaHoraria') {
+      const numValue = parseFloat(value) || 0;
+
+      if (numValue > 0 && numValue < 500) {
+        setTarifaError('La tarifa mínima es de $500 MXN/hr');
+      } else if (numValue > 50000) {
+        setTarifaError('La tarifa máxima es de $50,000 MXN/hr');
+      } else {
+        setTarifaError('');
+      }
+
+      setFormData(prev => ({ ...prev, [name]: numValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (tarifaError) {
+      toast.error('Corrige los errores antes de guardar');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        displayName: formData.displayName,
+        nombreDespacho: formData.nombreDespacho,
+        cargo: formData.cargo,
+        cedulaProfesional: formData.cedulaProfesional,
+        telefono: formData.telefono,
+        location: formData.location,
+        tarifaHoraria: formData.tarifaHoraria,
+        tarifaHorariaMoneda: 'MXN',
+        bio: formData.bio,
+        updatedAt: serverTimestamp(),
+      });
+
+      toast.success('Perfil actualizado exitosamente');
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Error al guardar el perfil');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getTarifaSuggestion = () => {
+    const tarifa = formData.tarifaHoraria;
+    if (tarifa >= 800 && tarifa <= 1500) return { label: 'Junior', color: 'bg-blue-100 text-blue-700' };
+    if (tarifa > 1500 && tarifa <= 3000) return { label: 'Senior', color: 'bg-purple-100 text-purple-700' };
+    if (tarifa > 3000) return { label: 'Socio', color: 'bg-orange-100 text-orange-700' };
+    return null;
+  };
 
   if (isLoading) {
     return (
@@ -50,6 +146,8 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     );
   }
 
+  const suggestion = getTarifaSuggestion();
+
   return (
     <div className="w-full px-4 md:px-8 max-w-4xl mx-auto">
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -61,38 +159,275 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
           </p>
         </div>
 
-        {/* Estado Vacío */}
-        {!hasProfile ? (
-          <div className="p-12">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+        {/* Formulario */}
+        <form onSubmit={handleSave} className="p-8">
+          {/* Sección: Información Personal */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Información Personal</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre Completo *
+                </label>
+                <input
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Juan Pérez García"
+                />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                No hay información de perfil configurada
-              </h3>
-              <p className="text-sm text-gray-500 mb-8 max-w-md mx-auto">
-                Completa tu perfil profesional para personalizar las cotizaciones y obtener sugerencias de precio basadas en tu tarifa horaria
-              </p>
-              <button
-                onClick={() => setHasProfile(true)}
-                className="inline-flex items-center px-6 py-3 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/30"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Completar Perfil
-              </button>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                />
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="p-12 text-center">
-            <p className="text-gray-500">Funcionalidad de edición de perfil próximamente...</p>
-            <p className="text-sm text-gray-400 mt-2">Por ahora, ve al tab &quot;Servicios&quot; para crear servicios</p>
+
+          {/* Sección: Información Profesional */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Información Profesional</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nombre del Despacho
+                </label>
+                <input
+                  type="text"
+                  name="nombreDespacho"
+                  value={formData.nombreDespacho}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Pérez & Asociados"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cargo/Posición
+                </label>
+                <input
+                  type="text"
+                  name="cargo"
+                  value={formData.cargo}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Abogado Senior"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cédula Profesional
+                </label>
+                <input
+                  type="text"
+                  name="cedulaProfesional"
+                  value={formData.cedulaProfesional}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="1234567"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="5512345678"
+                  maxLength={10}
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ubicación (Ciudad, Estado)
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ciudad de México, CDMX"
+                />
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Sección: Tarifa Horaria (CRÍTICO) */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
+              Tarifa Horaria
+              <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded">Importante para IA</span>
+            </h3>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-800">
+                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Tu tarifa horaria se usará para calcular precios sugeridos en servicios por hora (asesorías, litigios, consultoría)
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tarifa por Hora (MXN) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-2.5 text-gray-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    name="tarifaHoraria"
+                    value={formData.tarifaHoraria || ''}
+                    onChange={handleInputChange}
+                    min={500}
+                    max={50000}
+                    step={100}
+                    required
+                    className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      tarifaError ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="1500"
+                  />
+                  {suggestion && (
+                    <span className={`absolute right-4 top-2.5 text-xs font-medium px-2 py-0.5 rounded ${suggestion.color}`}>
+                      {suggestion.label}
+                    </span>
+                  )}
+                </div>
+                {tarifaError && (
+                  <p className="mt-1 text-sm text-red-600">{tarifaError}</p>
+                )}
+                {!tarifaError && formData.tarifaHoraria > 0 && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    ${formData.tarifaHoraria.toLocaleString('es-MX')} MXN por hora
+                  </p>
+                )}
+              </div>
+
+              {/* Sugerencias visuales de tarifa */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, tarifaHoraria: 1200 }));
+                    setTarifaError('');
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-blue-600">Junior</p>
+                      <p className="text-sm font-semibold text-gray-900">$800 - $1,500</p>
+                    </div>
+                    <span className="text-2xl">👨‍💼</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, tarifaHoraria: 2000 }));
+                    setTarifaError('');
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-purple-600">Senior</p>
+                      <p className="text-sm font-semibold text-gray-900">$1,500 - $3,000</p>
+                    </div>
+                    <span className="text-2xl">👔</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, tarifaHoraria: 4000 }));
+                    setTarifaError('');
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors text-left"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-orange-600">Socio</p>
+                      <p className="text-sm font-semibold text-gray-900">$3,000+</p>
+                    </div>
+                    <span className="text-2xl">⭐</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Bio (Opcional) */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">
+              Descripción Profesional
+              <span className="ml-2 text-xs font-normal text-gray-500">(Opcional)</span>
+            </h3>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bio
+              </label>
+              <textarea
+                name="bio"
+                value={formData.bio}
+                onChange={handleInputChange}
+                rows={4}
+                maxLength={500}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Abogado especializado en derecho corporativo con 10 años de experiencia..."
+              />
+              <p className="mt-1 text-xs text-gray-500 text-right">
+                {formData.bio.length}/500 caracteres
+              </p>
+            </div>
+          </div>
+
+          {/* Botón Guardar */}
+          <div className="flex justify-end pt-6 border-t border-gray-100">
+            <button
+              type="submit"
+              disabled={isSaving || !!tarifaError}
+              className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
+                isSaving || tarifaError
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30'
+              }`}
+            >
+              {isSaving ? (
+                <span className="flex items-center">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Guardando...
+                </span>
+              ) : (
+                'Guardar Cambios'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
