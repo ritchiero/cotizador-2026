@@ -33,7 +33,8 @@ const translations = {
   },
 };
 
-const locale = typeof navigator !== 'undefined' && navigator.language.startsWith('en') ? 'en' : 'es';
+// Forzar español para mercado mexicano
+const locale = 'es' as const;
 const t = (key: keyof typeof translations.es) => translations[locale][key];
 
 import type { PaymentMethod } from '@/lib/types/payment';
