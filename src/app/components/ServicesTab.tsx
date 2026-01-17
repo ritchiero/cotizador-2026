@@ -14,6 +14,7 @@ import CreateServiceModal from '@/components/modals/CreateServiceModal';
 import RequirementsAIModal from "@/components/modals/RequirementsAIModal";
 import { useServiceFilters } from '@/lib/hooks/useServiceFilters';
 import type { Service } from '@/lib/types/service';
+import type { PricingSuggestionResponse } from '@/lib/types/api';
 
 interface ServicesTabProps {
   userId: string;
@@ -64,7 +65,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
   const [showTiempoSuggestions, setShowTiempoSuggestions] = useState(false);
 
   // Estados para sugerencias de precio con IA
-  const [precioSuggestions, setPrecioSuggestions] = useState<any | null>(null);
+  const [precioSuggestions, setPrecioSuggestions] = useState<PricingSuggestionResponse | null>(null);
   const [loadingPrecioSuggestions, setLoadingPrecioSuggestions] = useState(false);
   const [showPrecioSuggestions, setShowPrecioSuggestions] = useState(false);
 
@@ -537,7 +538,8 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       setSelectedService({
         ...servicioData,
         id: editedService.id,
-        userEmail: servicioData.userEmail || '' // Aseguramos que userEmail nunca sea null
+        userEmail: servicioData.userEmail || '', // Aseguramos que userEmail nunca sea null
+        updatedAt: new Date() // Usar Date en lugar de serverTimestamp() para el estado local
       });
 
       // Cerrar modal de edición
@@ -1462,9 +1464,10 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           <button
                             type="button"
                             onClick={() => {
+                              const precio = Math.round(precioSuggestions.rangoSugerido.minimo);
                               setNewService(prev => ({
                                 ...prev,
-                                precio: formatPrice(precioSuggestions.rangoSugerido.minimo.toString())
+                                precio: `$${precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                               }));
                               setShowPrecioSuggestions(false);
                               setPrecioError(false);
@@ -1480,9 +1483,10 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           <button
                             type="button"
                             onClick={() => {
+                              const precio = Math.round(precioSuggestions.rangoSugerido.promedio);
                               setNewService(prev => ({
                                 ...prev,
-                                precio: formatPrice(precioSuggestions.rangoSugerido.promedio.toString())
+                                precio: `$${precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                               }));
                               setShowPrecioSuggestions(false);
                               setPrecioError(false);
@@ -1503,9 +1507,10 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           <button
                             type="button"
                             onClick={() => {
+                              const precio = Math.round(precioSuggestions.rangoSugerido.maximo);
                               setNewService(prev => ({
                                 ...prev,
-                                precio: formatPrice(precioSuggestions.rangoSugerido.maximo.toString())
+                                precio: `$${precio.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                               }));
                               setShowPrecioSuggestions(false);
                               setPrecioError(false);

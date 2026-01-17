@@ -15,28 +15,25 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    match /paymentInfo/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    // Información de pago - Solo el dueño puede leer/escribir
+    match /paymentInfo/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    match /billing/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+    // Datos de facturación - Solo el dueño puede leer/escribir
+    match /billing/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    match /brandingInfo/{docId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+
+    // Información de branding - Solo el dueño puede leer/escribir
+    match /brandingInfo/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
+    // Servicios - Solo el dueño puede leer/escribir sus servicios
     match /servicios/{docId} {
-      allow read: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }

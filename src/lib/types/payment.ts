@@ -1,9 +1,11 @@
+import type { FirebaseTimestamp } from './api';
+
 export interface PaymentMethod {
   id: string;
   type: string;
-  details: any;
+  details: Record<string, string | number | boolean>; // Object with string keys and primitive values
   isDefault: boolean;
   isActive?: boolean;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: FirebaseTimestamp;
+  updatedAt: FirebaseTimestamp;
 }

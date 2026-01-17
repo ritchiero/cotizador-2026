@@ -43,6 +43,30 @@ interface PricingSuggestionResponse {
   confianza: number;
 }
 
+interface ComplejidadAnalisis {
+  complejidad: 'bajo' | 'medio' | 'alto';
+  horasEstimadas: {
+    minimo: number;
+    maximo: number;
+  };
+  factoresAnalizados: string[];
+  justificacion: string;
+  confianza: number;
+}
+
+interface PreciosMercado {
+  rangoPrecio: {
+    minimo: number;
+    promedio: number;
+    maximo: number;
+  };
+  desglose?: {
+    cuotasOficiales?: string;
+    honorarios?: string;
+  };
+  fuentes?: string[];
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: PricingSuggestionRequest = await request.json();
@@ -165,7 +189,7 @@ Responde ÚNICAMENTE con un JSON válido:
 // ============================================
 // FUNCIÓN 2: Analizar complejidad del servicio
 // ============================================
-async function analyzeComplexity(service: PricingSuggestionRequest) {
+async function analyzeComplexity(service: PricingSuggestionRequest): Promise<ComplejidadAnalisis> {
   const prompt = `Analiza la complejidad de este servicio legal mexicano:
 
 SERVICIO:
@@ -273,7 +297,7 @@ async function getUserHourlyRate(userId: string): Promise<number> {
 // ============================================
 // FUNCIÓN 3.5: Consultar precios reales con Perplexity
 // ============================================
-async function getMarketPricingFromPerplexity(nombre: string, descripcion: string) {
+async function getMarketPricingFromPerplexity(nombre: string, descripcion: string): Promise<PreciosMercado | null> {
   const prompt = `Necesito conocer el COSTO REAL y ACTUAL (2026) en el mercado legal mexicano para este servicio:
 
 SERVICIO: ${nombre}
@@ -345,10 +369,10 @@ RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO (sin markdown):
 // ============================================
 function calculatePricingRange(
   modeloCobro: 'FLAT_FEE' | 'HOURLY' | 'MIXTO',
-  complejidad: any,
+  complejidad: ComplejidadAnalisis,
   tarifaHoraria: number,
   service: PricingSuggestionRequest,
-  preciosMercado: any = null
+  preciosMercado: PreciosMercado | null = null
 ): PricingSuggestionResponse {
 
   let rangoSugerido = { minimo: 0, promedio: 0, maximo: 0 };
@@ -399,7 +423,8 @@ function calculatePricingRange(
     // MIXTO: Combinar ambos enfoques
     const rangoMercado = findBestFlatFeeRange(service.nombre, service.descripcion);
     const horas = complejidad.horasEstimadas;
-    const precioHorario = Math.round((horas.promedio || (horas.minimo + horas.maximo) / 2) * tarifaHoraria / 1000) * 1000;
+    const horasPromedio = (horas.minimo + horas.maximo) / 2;
+    const precioHorario = Math.round(horasPromedio * tarifaHoraria / 1000) * 1000;
 
     rangoSugerido = {
       minimo: Math.min(rangoMercado.min, precioHorario * 0.8),

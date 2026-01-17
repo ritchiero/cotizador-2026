@@ -142,7 +142,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
         details.documentUrl = documentUrl;
       }
 
-      const newMethod: PaymentMethod = {
+      const newMethodForFirestore = {
         id: crypto.randomUUID(),
         type: selectedMethod,
         details,
@@ -152,10 +152,17 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
         updatedAt: serverTimestamp(),
       };
 
+      // For local state, use Date instead of serverTimestamp()
+      const newMethod: PaymentMethod = {
+        ...newMethodForFirestore,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
       const paymentRef = doc(db, 'paymentInfo', userId);
       await setDoc(paymentRef, {
         methods: {
-          [newMethod.id]: newMethod
+          [newMethodForFirestore.id]: newMethodForFirestore
         },
         userId,
         updatedAt: serverTimestamp()
@@ -194,14 +201,15 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
   const handleEdit = (method: PaymentMethod) => {
     setMethodToEdit(method);
     setSelectedMethod(method.type);
+    // Convert details values to strings (they might be number/boolean)
     setFormData({
-      bank: method.details.bank || '',
-      clabe: method.details.clabe || '',
-      beneficiary: method.details.beneficiary || '',
-      cardNumber: method.details.cardNumber || '',
-      cardHolder: method.details.cardHolder || '',
-      paypalEmail: method.details.paypalEmail || '',
-      stripeAccount: method.details.stripeAccount || ''
+      bank: String(method.details.bank || ''),
+      clabe: String(method.details.clabe || ''),
+      beneficiary: String(method.details.beneficiary || ''),
+      cardNumber: String(method.details.cardNumber || ''),
+      cardHolder: String(method.details.cardHolder || ''),
+      paypalEmail: String(method.details.paypalEmail || ''),
+      stripeAccount: String(method.details.stripeAccount || '')
     });
     setDocumentFile(null);
     setIsEditing(true);
@@ -241,16 +249,23 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
         details.documentUrl = documentUrl;
       }
 
-      const updatedMethod = {
+      const updatedMethodForFirestore = {
         ...methodToEdit,
         details,
         updatedAt: serverTimestamp(),
       };
 
+      // For local state, use Date instead of serverTimestamp()
+      const updatedMethod: PaymentMethod = {
+        ...methodToEdit,
+        details,
+        updatedAt: new Date(),
+      };
+
       const paymentRef = doc(db, 'paymentInfo', userId);
       await setDoc(paymentRef, {
         methods: {
-          [updatedMethod.id]: updatedMethod
+          [updatedMethodForFirestore.id]: updatedMethodForFirestore
         },
         userId,
         updatedAt: serverTimestamp()
@@ -441,7 +456,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                     <div>
                       <p className="font-medium text-gray-900 flex items-center">{
                         method.type === 'bank_transfer' ? `${method.details.beneficiary}` :
-                        method.type === 'card' ? `•••• ${method.details.cardNumber?.slice(-4)}` :
+                        method.type === 'card' ? `•••• ${String(method.details.cardNumber || '').slice(-4)}` :
                         method.type === 'paypal' ? method.details.paypalEmail :
                         method.type === 'stripe' ? 'Cuenta Stripe' : method.details.bank
                       }
@@ -456,7 +471,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                       }</p>
                       {method.type === 'bank_transfer' && (
                         <p className="text-xs text-gray-400 mt-1">
-                          CLABE: ••••{method.details.clabe?.slice(-4)}
+                          CLABE: ••••{String(method.details.clabe || '').slice(-4)}
                         </p>
                       )}
                     </div>

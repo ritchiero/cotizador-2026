@@ -11,8 +11,6 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
-import dynamic from "next/dynamic";
-import "react-quill/dist/quill.snow.css";
 import SlateEditor from "./SlateEditor";
 import InputGroup, { AIButton } from "./InputGroup";
 import RequirementsAIModal from "@/components/modals/RequirementsAIModal";
@@ -421,35 +419,7 @@ const extractInfoFromContent = (content: string) => {
   }
 };
 
-// Importar Quill dinámicamente para evitar errores de SSR
-const ReactQuill = dynamic(() => import("react-quill"), {
-  ssr: false,
-  loading: () => <p>Cargando editor...</p>,
-});
-
-// Configuración del editor
-const modules = {
-  toolbar: [
-    [{ header: [1, 2, 3, false] }],
-    ["bold", "italic", "underline"],
-    [{ list: "ordered" }, { list: "bullet" }],
-    [{ align: [] }],
-    [{ color: [] }, { background: [] }],
-    ["clean"],
-  ],
-};
-
-const formats = [
-  "header",
-  "bold",
-  "italic",
-  "underline",
-  "list",
-  "bullet",
-  "align",
-  "color",
-  "background",
-];
+// ReactQuill was removed - now using SlateEditor
 
 // Agregar esta función de limpieza
 const cleanFormattingSymbols = (content: string): string => {

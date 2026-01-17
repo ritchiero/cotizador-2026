@@ -90,7 +90,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         ) : (
           <div className="p-12 text-center">
             <p className="text-gray-500">Funcionalidad de edición de perfil próximamente...</p>
-            <p className="text-sm text-gray-400 mt-2">Por ahora, ve al tab "Servicios" para crear servicios</p>
+            <p className="text-sm text-gray-400 mt-2">Por ahora, ve al tab &quot;Servicios&quot; para crear servicios</p>
           </div>
         )}
       </div>

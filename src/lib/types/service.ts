@@ -1,3 +1,5 @@
+import type { FirebaseTimestamp } from './api';
+
 export interface Service {
   id: string;
   nombre: string;
@@ -8,7 +10,7 @@ export interface Service {
   incluye: string[];
   userId: string;
   userEmail: string;
-  createdAt: any;
-  updatedAt: any;
+  createdAt: FirebaseTimestamp;
+  updatedAt: FirebaseTimestamp;
   status: string;
 }

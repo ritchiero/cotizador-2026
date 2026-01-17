@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
+import { Timestamp } from 'firebase/firestore';
 import type { Service } from '../types/service';
 
 export type ServiceSortBy = 'nombre' | 'precio' | 'tiempo' | 'fecha';
@@ -29,7 +30,9 @@ export function useServiceFilters(servicios: Service[]) {
     });
 
     filtered.sort((a, b) => {
-      let valueA: any, valueB: any;
+      let valueA: string | number;
+      let valueB: string | number;
+
       switch (sortBy) {
         case 'nombre':
           valueA = a.nombre.toLowerCase();
@@ -44,8 +47,17 @@ export function useServiceFilters(servicios: Service[]) {
           valueB = b.tiempo.toLowerCase();
           break;
         case 'fecha':
-          valueA = a.createdAt?.seconds || 0;
-          valueB = b.createdAt?.seconds || 0;
+          // Handle both Timestamp and Date types
+          valueA = a.createdAt instanceof Timestamp
+            ? a.createdAt.seconds
+            : a.createdAt instanceof Date
+            ? a.createdAt.getTime() / 1000
+            : 0;
+          valueB = b.createdAt instanceof Timestamp
+            ? b.createdAt.seconds
+            : b.createdAt instanceof Date
+            ? b.createdAt.getTime() / 1000
+            : 0;
           break;
         default:
           valueA = a.nombre.toLowerCase();
