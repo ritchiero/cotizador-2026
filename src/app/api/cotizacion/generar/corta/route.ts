@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       userInfo
     } = body;
 
-    // Obtener la fecha actual en español
+    // Obtener la fecha actual en español y generar folio único
     const now = new Date();
     const fecha = new Intl.DateTimeFormat('es-MX', {
       year: 'numeric',
@@ -28,18 +28,32 @@ export async function POST(req: Request) {
       day: 'numeric'
     }).format(now);
 
+    // Generar número de folio: COT-YYYY-MMDD-HHMM
+    const folio = `COT-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
     const prompt = `Eres un abogado senior especializado en redacción de propuestas comerciales para servicios legales. Tu objetivo es crear una cotización profesional, clara y persuasiva.
 
 CONTEXTO:
 Cliente: ${clienteNombre}
 Despacho: ${despachoInfo.nombre}
 Servicio solicitado: ${descripcion}
-Tiempo estimado: ${tiempo}
+Tiempo estimado del trámite: ${tiempo}
 Contraprestación: ${precio}
 Forma de pago: ${formaPago}
 Fecha: ${fecha}
+Folio: ${folio}
+
+INFORMACIÓN DE CONTACTO (incluir al final):
+${userInfo.displayName ? `Responsable: ${userInfo.displayName}` : ''}
+${userInfo.email ? `Email: ${userInfo.email}` : ''}
+${userInfo.telefono ? `Tel: ${userInfo.telefono}` : ''}
+${despachoInfo.web ? `Web: ${despachoInfo.web}` : ''}
 
 INSTRUCCIONES DE REDACCIÓN:
+
+**Encabezado**
+Folio: ${folio}
+Fecha: ${fecha}
 
 **Título**
 "PROPUESTA DE SERVICIOS LEGALES - ${descripcion.toUpperCase()}"
@@ -53,29 +67,44 @@ Describe con claridad y precisión los entregables específicos del servicio ${d
 **3. METODOLOGÍA DE TRABAJO** (3-4 pasos numerados)
 Explica el proceso paso a paso desde el inicio hasta la conclusión del servicio. Debe transmitir organización y profesionalismo.
 
-**4. VALOR AGREGADO** (2-3 puntos)
-Destaca los beneficios específicos de trabajar con ${despachoInfo.nombre}: experiencia, acompañamiento personalizado, tiempos de respuesta, etc.
+**4. VALOR AGREGADO** (2-3 puntos ESPECÍFICOS)
+Destaca beneficios concretos y medibles de trabajar con ${despachoInfo.nombre}. Evita generalidades. Ejemplos: "Más de 10 años de experiencia", "95% de tasa de éxito", "Respuesta garantizada en 24 horas".
 
 **5. INVERSIÓN Y CONDICIONES COMERCIALES**
 - Contraprestación: ${precio}
-- Tiempo de entrega: ${tiempo}
+- Tiempo estimado del trámite ante autoridad: ${tiempo}
 - Forma de pago: ${formaPago}
-- Vigencia de la propuesta: 15 días naturales
+- Vigencia de esta propuesta: 15 días naturales a partir de ${fecha}
 
-**6. CIERRE**
+**6. DATOS DE CONTACTO**
+Para cualquier duda o aclaración:
+
+${userInfo.displayName || despachoInfo.nombre}
+${userInfo.email ? `Email: ${userInfo.email}` : ''}
+${userInfo.telefono ? `Tel: ${userInfo.telefono}` : ''}
+${despachoInfo.web ? `Sitio web: ${despachoInfo.web}` : ''}
+
+**7. CIERRE Y FIRMA**
+
 Atentamente,
-${userInfo.displayName}
+
+_________________________
+${userInfo.displayName || 'Firma del responsable'}
 ${despachoInfo.nombre}
+Fecha: ______________
 
 REGLAS ESTRICTAS:
 ✓ Tono profesional, ejecutivo y confiable
 ✓ Lenguaje jurídico preciso pero accesible
-✓ Máximo 400 palabras
+✓ Máximo 450 palabras
 ✓ Usa formato markdown para títulos (##) y listas
 ✓ NUNCA uses "Inversión", siempre "Contraprestación"
 ✓ Enfócate en el valor y resultados para el cliente
 ✓ Sé específico, evita generalidades
-✓ Usa la fecha exacta proporcionada: ${fecha}
+✓ Incluye el folio en el encabezado
+✓ NO repitas el nombre del despacho en la firma (solo una vez)
+✓ Clarifica que el tiempo es "del trámite" no de entrega de propuesta
+✓ Incluye TODOS los datos de contacto proporcionados
 
 Genera ahora la propuesta completa siguiendo esta estructura.`;
     
