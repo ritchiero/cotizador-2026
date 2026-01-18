@@ -232,7 +232,7 @@ export default function BrandingTab({
             <div className="px-8 py-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="text-lg font-semibold text-gray-800">
                     Identidad de Marca
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
@@ -279,7 +279,7 @@ export default function BrandingTab({
 
                 {/* Información */}
                 <div className="flex-grow">
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-800">
                     {brandingData.nombreDespacho}
                   </h3>
                   {brandingData.slogan && (

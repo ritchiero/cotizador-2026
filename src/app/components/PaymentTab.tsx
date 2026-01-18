@@ -412,7 +412,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
         <div className="px-8 py-6 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Métodos de Pago</h2>
+              <h2 className="text-lg font-semibold text-gray-800">Métodos de Pago</h2>
               <p className="mt-1 text-sm text-gray-500">
                 Administra tus métodos de pago para recibir pagos de tus clientes
               </p>
@@ -545,7 +545,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
           <div className="bg-white rounded-2xl shadow-lg max-w-md w-full mx-4">
             <div className="px-8 py-6 border-b border-gray-100">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-gray-800">
                   {!selectedMethod ? 'Selecciona un Método de Pago' :
                    isEditing ? t('edit') : t('addPayment')}
                 </h3>
