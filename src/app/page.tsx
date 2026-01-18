@@ -332,9 +332,9 @@ export default function Home() {
       </div>
       <div className="flex flex-col items-center">
         <h1 className="hidden md:block text-2xl font-bold text-text-main mb-2 text-center mt-8">Configurador de Cotizador con IA</h1>
-        <p className="hidden md:block text-base text-text-secondary mb-6 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
+        <p className="hidden md:block text-base text-text-secondary mb-3 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
         {/* Navegación */}
-        <div className="w-full flex justify-center mb-4">
+        <div className="w-full flex justify-center mb-2">
           <nav className="flex gap-2 bg-background-card rounded-xl p-2 shadow-sm overflow-x-auto snap-x whitespace-nowrap">
             {[
               { label: 'Perfil', Icon: UserIcon },
