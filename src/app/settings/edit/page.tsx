@@ -6,7 +6,8 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { validateImageFile, compressImage } from '@/lib/utils/imageUtils';
+import { validateImageFile } from '@/lib/utils/imageUtils';
+import ImageCropModal from '@/components/ImageCropModal';
 
 interface ProfileData {
   displayName: string;
@@ -27,6 +28,8 @@ export default function EditProfile() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [tempImageSrc, setTempImageSrc] = useState<string>('');
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -53,20 +56,35 @@ export default function EditProfile() {
     const file = e.target.files?.[0];
     if (!file || !user?.uid) return;
 
-    setUploadingPhoto(true);
     try {
       // Validar el archivo (max 5MB, solo imágenes)
       validateImageFile(file);
 
-      // Comprimir imagen a 400px (mucho más rápido de subir)
-      const compressedBlob = await compressImage(file, 400, 0.8);
-      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+      // Crear URL temporal para preview
+      const imageUrl = URL.createObjectURL(file);
+      setTempImageSrc(imageUrl);
+      setShowCropModal(true);
+    } catch (err) {
+      console.error('Error loading image:', err);
+      toast.error(err instanceof Error ? err.message : 'Error al cargar la imagen');
+    }
+  };
 
-      // Subir a Firebase Storage (ahora es 10x más rápido con imagen comprimida)
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user?.uid) return;
+
+    setShowCropModal(false);
+    setUploadingPhoto(true);
+
+    try {
+      // Convertir Blob a File
+      const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
+
+      // Subir a Firebase Storage
       const photoPath = `profile-photos/${user.uid}/${Date.now()}-profile.jpg`;
-      const downloadURL = await uploadFile(compressedFile, photoPath);
+      const downloadURL = await uploadFile(croppedFile, photoPath);
 
-      // Actualizar SOLO photoURL en Firestore (updateDoc es más rápido que updateUserProfile)
+      // Actualizar SOLO photoURL en Firestore
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, {
         photoURL: downloadURL,
@@ -92,9 +110,22 @@ export default function EditProfile() {
       toast.success('Foto guardada correctamente');
     } catch (err) {
       console.error('Error uploading photo:', err);
-      toast.error(err instanceof Error ? err.message : 'Error al subir la foto. Intenta con una imagen más pequeña.');
+      toast.error(err instanceof Error ? err.message : 'Error al subir la foto');
     } finally {
       setUploadingPhoto(false);
+      // Limpiar URL temporal
+      if (tempImageSrc) {
+        URL.revokeObjectURL(tempImageSrc);
+        setTempImageSrc('');
+      }
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    if (tempImageSrc) {
+      URL.revokeObjectURL(tempImageSrc);
+      setTempImageSrc('');
     }
   };
 
@@ -273,6 +304,15 @@ export default function EditProfile() {
           </form>
         </div>
       </div>
+
+      {/* Modal de crop de imagen */}
+      {showCropModal && tempImageSrc && (
+        <ImageCropModal
+          imageSrc={tempImageSrc}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 } 
