@@ -1,12 +1,28 @@
 'use client';
 import { useAuth } from '@/lib/hooks/useAuth';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { useState, useEffect, useRef } from 'react';
 
 export default function Sidebar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Cerrar menú al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!user) return null;
 
@@ -87,36 +103,70 @@ export default function Sidebar() {
             </ul>
           </nav>
 
-          {/* Avatar del usuario en la parte inferior */}
-          <div className="px-3 mt-auto">
-            <Tooltip.Root>
-              <Tooltip.Trigger asChild>
-                <Link
-                  href="/settings/profile"
-                  className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
-                    pathname.startsWith('/settings') ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200">
-                    <img
-                      src={user?.photoURL || '/default-avatar-icon.png'}
-                      alt={user?.displayName || 'Usuario'}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </Link>
-              </Tooltip.Trigger>
-              <Tooltip.Portal>
-                <Tooltip.Content
-                  side="right"
-                  sideOffset={8}
-                  className="px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-lg z-50"
-                >
-                  Configuración
-                  <Tooltip.Arrow className="fill-gray-900" />
-                </Tooltip.Content>
-              </Tooltip.Portal>
-            </Tooltip.Root>
+          {/* Avatar del usuario en la parte inferior con menú */}
+          <div className="px-3 mt-auto relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
+                pathname.startsWith('/settings') ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
+              }`}
+            >
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200">
+                <img
+                  src={user?.photoURL || '/default-avatar-icon.png'}
+                  alt={user?.displayName || 'Usuario'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </button>
+
+            {/* Menú dropdown */}
+            {showMenu && (
+              <div className="absolute left-full bottom-0 ml-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 py-1">
+                {/* Info del usuario */}
+                <div className="px-4 py-3 border-b">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user.displayName}
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {user.email}
+                  </p>
+                </div>
+
+                {/* Opciones */}
+                <div className="py-1">
+                  <button
+                    onClick={() => {
+                      router.push('/settings/profile');
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Configuración
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => {
+                      signOut();
+                      setShowMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                  >
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
+                      Cerrar Sesión
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
