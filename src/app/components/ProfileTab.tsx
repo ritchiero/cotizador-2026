@@ -1,8 +1,12 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/firebase';
+import { useState, useEffect, useRef } from 'react';
+import { db, auth } from '@/lib/firebase/firebase';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
+import { uploadFile, updateAuthProfile } from '@/lib/firebase/firebaseUtils';
+import { validateImageFile } from '@/lib/utils/imageUtils';
+import ImageCropModal from '@/components/ImageCropModal';
+import Image from 'next/image';
 
 interface ProfileTabProps {
   userId: string;
@@ -18,6 +22,7 @@ interface ProfileData {
   location: string;
   tarifaHoraria: number;
   bio: string;
+  photoURL?: string;
 }
 
 export default function ProfileTab({ userId }: ProfileTabProps) {
@@ -33,9 +38,14 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     location: '',
     tarifaHoraria: 0,
     bio: '',
+    photoURL: '',
   });
 
   const [tarifaError, setTarifaError] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [tempImageSrc, setTempImageSrc] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar datos del usuario
   useEffect(() => {
@@ -58,6 +68,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             location: data.location || '',
             tarifaHoraria: data.tarifaHoraria || 0,
             bio: data.bio || '',
+            photoURL: data.photoURL || '',
           });
         }
       } catch (error) {
@@ -88,6 +99,60 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
       setFormData(prev => ({ ...prev, [name]: numValue }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      validateImageFile(file);
+      const imageUrl = URL.createObjectURL(file);
+      setTempImageSrc(imageUrl);
+      setShowCropModal(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al cargar la imagen');
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setShowCropModal(false);
+    setUploadingPhoto(true);
+
+    try {
+      const croppedFile = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
+      const photoPath = `profile-photos/${userId}/${Date.now()}-profile.jpg`;
+      const downloadURL = await uploadFile(croppedFile, photoPath);
+
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        photoURL: downloadURL,
+        updatedAt: serverTimestamp()
+      });
+
+      if (auth.currentUser) {
+        await updateAuthProfile(auth.currentUser, { photoURL: downloadURL });
+      }
+
+      setFormData(prev => ({ ...prev, photoURL: downloadURL }));
+      toast.success('Foto actualizada correctamente');
+    } catch (err) {
+      toast.error('Error al subir la foto');
+    } finally {
+      setUploadingPhoto(false);
+      if (tempImageSrc) {
+        URL.revokeObjectURL(tempImageSrc);
+        setTempImageSrc('');
+      }
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropModal(false);
+    if (tempImageSrc) {
+      URL.revokeObjectURL(tempImageSrc);
+      setTempImageSrc('');
     }
   };
 
@@ -161,6 +226,42 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
 
         {/* Formulario */}
         <form onSubmit={handleSave} className="p-8">
+          {/* Sección: Foto de Perfil */}
+          <div className="mb-8">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">Foto de Perfil</h3>
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative w-24 h-24">
+                <Image
+                  src={formData.photoURL || '/default-avatar-icon.png'}
+                  alt="Perfil"
+                  width={96}
+                  height={96}
+                  className="rounded-full object-cover border-2 border-gray-200"
+                />
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handlePhotoChange}
+                accept="image/*"
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+              >
+                {uploadingPhoto ? 'Subiendo...' : 'Cambiar foto'}
+              </button>
+            </div>
+          </div>
+
           {/* Sección: Información Personal */}
           <div className="mb-8">
             <h3 className="text-base font-semibold text-gray-900 mb-4">Información Personal</h3>
@@ -429,6 +530,15 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
           </div>
         </form>
       </div>
+
+      {/* Modal de crop de imagen */}
+      {showCropModal && tempImageSrc && (
+        <ImageCropModal
+          imageSrc={tempImageSrc}
+          onComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }
