@@ -66,12 +66,12 @@ export default function Sidebar() {
       <div className="hidden md:block fixed left-0 top-0 h-screen w-16 bg-white border-r border-gray-200 z-40">
         <div className="h-full flex flex-col py-6">
           {/* Logo en la parte superior */}
-          <div className="px-3 mb-8 flex justify-center">
+          <div className="px-3 mb-6 flex justify-center">
             <Link href="/" className="block">
               <img
                 src="/Lawgic-icon.svg"
                 alt="Lawgic"
-                className="w-10 h-10"
+                className="w-6 h-6"
               />
             </Link>
           </div>
