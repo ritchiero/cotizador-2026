@@ -23,7 +23,18 @@ interface ProfileData {
   tarifaHoraria: number;
   bio: string;
   photoURL?: string;
+  rfc?: string;
+  especialidad?: string;
+  anoExperiencia?: string;
 }
+
+const estados = [
+  'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
+  'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
+  'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
+  'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
+  'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+];
 
 export default function ProfileTab({ userId }: ProfileTabProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -39,9 +50,11 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     tarifaHoraria: 0,
     bio: '',
     photoURL: '',
+    rfc: '',
+    especialidad: '',
+    anoExperiencia: '',
   });
 
-  const [tarifaError, setTarifaError] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [tempImageSrc, setTempImageSrc] = useState<string>('');
@@ -69,6 +82,9 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             tarifaHoraria: data.tarifaHoraria || 0,
             bio: data.bio || '',
             photoURL: data.photoURL || '',
+            rfc: data.rfc || '',
+            especialidad: data.especialidad || '',
+            anoExperiencia: data.anoExperiencia || '',
           });
         }
       } catch (error) {
@@ -82,20 +98,11 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     loadProfile();
   }, [userId]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
     if (name === 'tarifaHoraria') {
       const numValue = parseFloat(value) || 0;
-
-      if (numValue > 0 && numValue < 500) {
-        setTarifaError('La tarifa mínima es de $500 MXN/hr');
-      } else if (numValue > 50000) {
-        setTarifaError('La tarifa máxima es de $50,000 MXN/hr');
-      } else {
-        setTarifaError('');
-      }
-
       setFormData(prev => ({ ...prev, [name]: numValue }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -156,14 +163,27 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     }
   };
 
+  const handleRemovePhoto = async () => {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, {
+        photoURL: '/default-avatar-icon.png',
+        updatedAt: serverTimestamp()
+      });
+
+      if (auth.currentUser) {
+        await updateAuthProfile(auth.currentUser, { photoURL: '/default-avatar-icon.png' });
+      }
+
+      setFormData(prev => ({ ...prev, photoURL: '/default-avatar-icon.png' }));
+      toast.success('Foto eliminada');
+    } catch (err) {
+      toast.error('Error al eliminar la foto');
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (tarifaError) {
-      toast.error('Corrige los errores antes de guardar');
-      return;
-    }
-
     setIsSaving(true);
 
     try {
@@ -178,8 +198,15 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         tarifaHoraria: formData.tarifaHoraria,
         tarifaHorariaMoneda: 'MXN',
         bio: formData.bio,
+        rfc: formData.rfc,
+        especialidad: formData.especialidad,
+        anoExperiencia: formData.anoExperiencia,
         updatedAt: serverTimestamp(),
       });
+
+      if (auth.currentUser && formData.displayName !== auth.currentUser.displayName) {
+        await updateAuthProfile(auth.currentUser, { displayName: formData.displayName });
+      }
 
       toast.success('Perfil actualizado exitosamente');
     } catch (error) {
@@ -190,18 +217,10 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     }
   };
 
-  const getTarifaSuggestion = () => {
-    const tarifa = formData.tarifaHoraria;
-    if (tarifa >= 800 && tarifa <= 1500) return { label: 'Junior', color: 'bg-blue-100 text-blue-700' };
-    if (tarifa > 1500 && tarifa <= 3000) return { label: 'Senior', color: 'bg-purple-100 text-purple-700' };
-    if (tarifa > 3000) return { label: 'Socio', color: 'bg-orange-100 text-orange-700' };
-    return null;
-  };
-
   if (isLoading) {
     return (
-      <div className="w-full px-4 md:px-8 max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12">
+      <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
             <p className="mt-4 text-sm text-gray-500">Cargando perfil...</p>
@@ -211,284 +230,250 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     );
   }
 
-  const suggestion = getTarifaSuggestion();
-
   return (
-    <div className="w-full px-4 md:px-8 max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+    <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Header */}
-        <div className="px-8 pt-6 pb-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Configuración del Perfil</h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Gestiona tu información personal y tarifa horaria
-          </p>
+        <div className="px-8 py-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">Editar Perfil</h2>
         </div>
 
-        {/* Formulario */}
         <form onSubmit={handleSave} className="p-8">
-          {/* Sección: Foto de Perfil */}
-          <div className="mb-8">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Foto de Perfil</h3>
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative w-24 h-24">
-                <Image
-                  src={formData.photoURL || '/default-avatar-icon.png'}
-                  alt="Perfil"
-                  width={96}
-                  height={96}
-                  className="rounded-full object-cover border-2 border-gray-200"
-                />
+          {/* Sección de Foto */}
+          <div className="mb-10">
+            <div className="flex items-start gap-6">
+              <div className="relative">
+                <div className="w-28 h-28 rounded-full overflow-hidden bg-gray-100 border-4 border-gray-200">
+                  <Image
+                    src={formData.photoURL || '/default-avatar-icon.png'}
+                    alt="Perfil"
+                    width={112}
+                    height={112}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
                 {uploadingPhoto && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
               </div>
+
+              <div className="flex gap-3 pt-8">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handlePhotoChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                  Subir Nueva Foto
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Eliminar Foto
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Grid de 2 columnas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+            {/* Nombre Completo */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre Completo
+              </label>
               <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handlePhotoChange}
-                accept="image/*"
-                className="hidden"
+                type="text"
+                name="displayName"
+                value={formData.displayName}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Juan Pérez García"
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingPhoto}
-                className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                {uploadingPhoto ? 'Subiendo...' : 'Cambiar foto'}
-              </button>
             </div>
-          </div>
 
-          {/* Sección: Información Personal */}
-          <div className="mb-8">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Información Personal</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  name="displayName"
-                  value={formData.displayName}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Juan Pérez García"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  disabled
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-                />
-              </div>
+            {/* Email (readonly) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                value={formData.email}
+                disabled
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+              />
             </div>
-          </div>
 
-          {/* Sección: Información Profesional */}
-          <div className="mb-8">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">Información Profesional</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nombre del Despacho
-                </label>
-                <input
-                  type="text"
-                  name="nombreDespacho"
-                  value={formData.nombreDespacho}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Pérez & Asociados"
-                />
-              </div>
+            {/* Nombre del Despacho */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre del Despacho/Firma
+              </label>
+              <input
+                type="text"
+                name="nombreDespacho"
+                value={formData.nombreDespacho}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Pérez & Asociados S.C."
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cargo/Posición
-                </label>
-                <input
-                  type="text"
-                  name="cargo"
-                  value={formData.cargo}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Abogado Senior"
-                />
-              </div>
+            {/* RFC */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                RFC
+              </label>
+              <input
+                type="text"
+                name="rfc"
+                value={formData.rfc}
+                onChange={handleInputChange}
+                maxLength={13}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                placeholder="PEGJ850101ABC"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Cédula Profesional
-                </label>
-                <input
-                  type="text"
-                  name="cedulaProfesional"
-                  value={formData.cedulaProfesional}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="1234567"
-                />
-              </div>
+            {/* Cargo/Posición */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cargo/Posición
+              </label>
+              <input
+                type="text"
+                name="cargo"
+                value={formData.cargo}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Abogado Senior, Socio, Asociado"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Teléfono
-                </label>
+            {/* Especialidad */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Área de Especialidad
+              </label>
+              <input
+                type="text"
+                name="especialidad"
+                value={formData.especialidad}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Derecho Corporativo, Propiedad Intelectual"
+              />
+            </div>
+
+            {/* Cédula Profesional */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cédula Profesional
+              </label>
+              <input
+                type="text"
+                name="cedulaProfesional"
+                value={formData.cedulaProfesional}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="1234567"
+              />
+            </div>
+
+            {/* Años de Experiencia */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Años de Experiencia
+              </label>
+              <input
+                type="number"
+                name="anoExperiencia"
+                value={formData.anoExperiencia}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="10"
+                min="0"
+                max="60"
+              />
+            </div>
+
+            {/* Teléfono con selector de país */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Teléfono
+              </label>
+              <div className="flex gap-2">
+                <select className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white">
+                  <option>🇲🇽 +52</option>
+                </select>
                 <input
                   type="tel"
                   name="telefono"
                   value={formData.telefono}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="5512345678"
                   maxLength={10}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ubicación (Ciudad, Estado)
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Ciudad de México, CDMX"
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="5512345678"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Sección: Tarifa Horaria (CRÍTICO) */}
-          <div className="mb-8">
-            <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center">
-              Tarifa Horaria
-              <span className="ml-2 text-xs font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded">Importante para IA</span>
-            </h3>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-800">
-                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Tu tarifa horaria se usará para calcular precios sugeridos en servicios por hora (asesorías, litigios, consultoría)
+            {/* Tarifa Horaria */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tarifa Horaria (MXN)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-3 text-gray-500 text-sm">$</span>
+                <input
+                  type="number"
+                  name="tarifaHoraria"
+                  value={formData.tarifaHoraria || ''}
+                  onChange={handleInputChange}
+                  min="500"
+                  max="50000"
+                  step="100"
+                  className="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="1500"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Tu tarifa se usa para calcular precios sugeridos
               </p>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tarifa por Hora (MXN) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-2.5 text-gray-500 text-sm">$</span>
-                  <input
-                    type="number"
-                    name="tarifaHoraria"
-                    value={formData.tarifaHoraria || ''}
-                    onChange={handleInputChange}
-                    min={500}
-                    max={50000}
-                    step={100}
-                    required
-                    className={`w-full pl-8 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      tarifaError ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="1500"
-                  />
-                  {suggestion && (
-                    <span className={`absolute right-4 top-2.5 text-xs font-medium px-2 py-0.5 rounded ${suggestion.color}`}>
-                      {suggestion.label}
-                    </span>
-                  )}
-                </div>
-                {tarifaError && (
-                  <p className="mt-1 text-sm text-red-600">{tarifaError}</p>
-                )}
-                {!tarifaError && formData.tarifaHoraria > 0 && (
-                  <p className="mt-1 text-sm text-gray-500">
-                    ${formData.tarifaHoraria.toLocaleString('es-MX')} MXN por hora
-                  </p>
-                )}
-              </div>
-
-              {/* Sugerencias visuales de tarifa */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, tarifaHoraria: 1200 }));
-                    setTarifaError('');
-                  }}
-                  className="flex-1 px-4 py-3 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors text-left"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-blue-600">Junior</p>
-                      <p className="text-sm font-semibold text-gray-900">$800 - $1,500</p>
-                    </div>
-                    <span className="text-2xl">👨‍💼</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, tarifaHoraria: 2000 }));
-                    setTarifaError('');
-                  }}
-                  className="flex-1 px-4 py-3 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-left"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-purple-600">Senior</p>
-                      <p className="text-sm font-semibold text-gray-900">$1,500 - $3,000</p>
-                    </div>
-                    <span className="text-2xl">👔</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, tarifaHoraria: 4000 }));
-                    setTarifaError('');
-                  }}
-                  className="flex-1 px-4 py-3 border-2 border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors text-left"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-orange-600">Socio</p>
-                      <p className="text-sm font-semibold text-gray-900">$3,000+</p>
-                    </div>
-                    <span className="text-2xl">⭐</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Sección: Bio (Opcional) */}
-          <div className="mb-8">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">
-              Descripción Profesional
-              <span className="ml-2 text-xs font-normal text-gray-500">(Opcional)</span>
-            </h3>
+            {/* Estado/Ubicación */}
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado
+              </label>
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Selecciona un estado</option>
+                {estados.map(estado => (
+                  <option key={estado} value={estado}>{estado}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Bio - Full width */}
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Bio
               </label>
@@ -498,8 +483,8 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 onChange={handleInputChange}
                 rows={4}
                 maxLength={500}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Abogado especializado en derecho corporativo con 10 años de experiencia..."
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                placeholder="Describe tu experiencia profesional, áreas de práctica, logros destacados..."
               />
               <p className="mt-1 text-xs text-gray-500 text-right">
                 {formData.bio.length}/500 caracteres
@@ -508,14 +493,14 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
           </div>
 
           {/* Botón Guardar */}
-          <div className="flex justify-end pt-6 border-t border-gray-100">
+          <div className="mt-8 pt-6 border-t border-gray-200">
             <button
               type="submit"
-              disabled={isSaving || !!tarifaError}
-              className={`px-6 py-2.5 rounded-lg font-medium transition-all ${
-                isSaving || tarifaError
+              disabled={isSaving}
+              className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                isSaving
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/30'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >
               {isSaving ? (
@@ -531,7 +516,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         </form>
       </div>
 
-      {/* Modal de crop de imagen */}
+      {/* Modal de crop */}
       {showCropModal && tempImageSrc && (
         <ImageCropModal
           imageSrc={tempImageSrc}
