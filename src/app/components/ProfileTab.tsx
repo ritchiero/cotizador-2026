@@ -234,11 +234,16 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
 
   return (
     <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
+      {/* Header - Sin card contenedora según design system */}
+      <div className="px-8 pt-6 pb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Editar Perfil</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Actualiza tu información personal y profesional
+        </p>
+      </div>
+
+      {/* Formulario */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Editar Perfil</h2>
-        </div>
 
         <form onSubmit={handleSave} className="p-8">
           {/* Sección de Foto */}
