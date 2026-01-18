@@ -63,7 +63,7 @@ export default function Sidebar() {
 
   return (
     <Tooltip.Provider delayDuration={200}>
-      <div className="hidden md:block h-[calc(100vh-5rem)] py-4 pl-4">
+      <div className="hidden md:block h-screen py-4 pl-4">
         <div className="bg-white rounded-3xl shadow-sm h-full flex flex-col py-6 w-16">
           {/* Navegación principal */}
           <nav className="flex-1">

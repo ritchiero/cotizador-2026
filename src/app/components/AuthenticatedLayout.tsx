@@ -2,7 +2,6 @@
 
 import { useAuth } from '@/lib/hooks/useAuth';
 import LandingPage from '@/lib/contexts/landingPage';
-import Header from './Header';
 import Sidebar from './Sidebar';
 import { useEffect, useState } from 'react';
 
@@ -25,14 +24,11 @@ export default function AuthenticatedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <div className="flex">
-        <Sidebar />
-        <main className="flex-1">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Sidebar />
+      <main className="flex-1">
+        {children}
+      </main>
     </div>
   );
 } 
