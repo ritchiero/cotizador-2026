@@ -44,7 +44,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     email: '',
     nombreDespacho: '',
     cargo: '',
-    cedulaProfesional: '',
+    cedulaProfesional: '',  // Mantener para no romper la DB
     telefono: '',
     location: '',
     tarifaHoraria: 0,
@@ -54,6 +54,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     especialidad: '',
     anoExperiencia: '',
   });
+  const [sitioWeb, setSitioWeb] = useState('');
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -86,6 +87,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             especialidad: data.especialidad || '',
             anoExperiencia: data.anoExperiencia || '',
           });
+          setSitioWeb(data.sitioWeb || '');
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -192,7 +194,6 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         displayName: formData.displayName,
         nombreDespacho: formData.nombreDespacho,
         cargo: formData.cargo,
-        cedulaProfesional: formData.cedulaProfesional,
         telefono: formData.telefono,
         location: formData.location,
         tarifaHoraria: formData.tarifaHoraria,
@@ -201,6 +202,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         rfc: formData.rfc,
         especialidad: formData.especialidad,
         anoExperiencia: formData.anoExperiencia,
+        sitioWeb: sitioWeb,
         updatedAt: serverTimestamp(),
       });
 
@@ -377,18 +379,17 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
               />
             </div>
 
-            {/* Cédula Profesional */}
+            {/* Sitio Web del Despacho */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cédula Profesional
+                Sitio Web del Despacho
               </label>
               <input
-                type="text"
-                name="cedulaProfesional"
-                value={formData.cedulaProfesional}
-                onChange={handleInputChange}
+                type="url"
+                value={sitioWeb}
+                onChange={(e) => setSitioWeb(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="1234567"
+                placeholder="https://www.tudespacho.com"
               />
             </div>
 
