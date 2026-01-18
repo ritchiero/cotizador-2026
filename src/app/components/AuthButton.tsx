@@ -41,7 +41,7 @@ export default function AuthButton() {
       {user ? (
         <div className="relative flex items-center" ref={menuRef}>
           <button
-            className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-colors flex items-center justify-center shrink-0"
+            className="w-10 h-10 rounded-full overflow-hidden border-2 border-gray-200 hover:border-blue-500 transition-colors shrink-0 bg-gray-100"
             onClick={() => setShowMenu(!showMenu)}
             aria-expanded={showMenu}
             aria-haspopup="true"
@@ -51,7 +51,7 @@ export default function AuthButton() {
               alt={user.displayName || 'Usuario'}
               width={40}
               height={40}
-              className="object-cover w-full h-full"
+              className="object-contain w-full h-full p-1"
             />
           </button>
 
