@@ -24,9 +24,9 @@ export default function AuthenticatedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1">
+      <main className="ml-16">
         {children}
       </main>
     </div>
