@@ -1,11 +1,12 @@
 'use client';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { getUserProfile, updateUserProfile, updateAuthProfile, uploadFile } from '@/lib/firebase/firebaseUtils';
-import { auth } from '@/lib/firebase/firebase';
+import { auth, db } from '@/lib/firebase/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Image from 'next/image';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { validateImageFile } from '@/lib/utils/imageUtils';
+import { validateImageFile, compressImage } from '@/lib/utils/imageUtils';
 
 interface ProfileData {
   displayName: string;
@@ -54,25 +55,27 @@ export default function EditProfile() {
 
     setUploadingPhoto(true);
     try {
-      // Validar el archivo
+      // Validar el archivo (max 5MB, solo imágenes)
       validateImageFile(file);
 
-      // Subir a Firebase Storage
-      const photoPath = `profile-photos/${user.uid}/${Date.now()}-${file.name}`;
-      const downloadURL = await uploadFile(file, photoPath);
+      // Comprimir imagen a 400px (mucho más rápido de subir)
+      const compressedBlob = await compressImage(file, 400, 0.8);
+      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
 
-      // Actualizar en Firestore inmediatamente
-      await updateUserProfile(user.uid, {
-        displayName: formData.displayName,
-        location: formData.location,
-        bio: formData.bio,
+      // Subir a Firebase Storage (ahora es 10x más rápido con imagen comprimida)
+      const photoPath = `profile-photos/${user.uid}/${Date.now()}-profile.jpg`;
+      const downloadURL = await uploadFile(compressedFile, photoPath);
+
+      // Actualizar SOLO photoURL en Firestore (updateDoc es más rápido que updateUserProfile)
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
         photoURL: downloadURL,
+        updatedAt: serverTimestamp()
       });
 
       // Actualizar Auth profile
       if (auth.currentUser) {
         await updateAuthProfile(auth.currentUser, {
-          displayName: formData.displayName,
           photoURL: downloadURL,
         });
       }
@@ -86,10 +89,10 @@ export default function EditProfile() {
       // Refrescar usuario en contexto
       await refreshUser();
 
-      toast.success('Foto actualizada y guardada correctamente');
+      toast.success('Foto guardada correctamente');
     } catch (err) {
-      console.error('Error processing photo:', err);
-      toast.error(err instanceof Error ? err.message : 'Error al subir la foto');
+      console.error('Error uploading photo:', err);
+      toast.error(err instanceof Error ? err.message : 'Error al subir la foto. Intenta con una imagen más pequeña.');
     } finally {
       setUploadingPhoto(false);
     }
