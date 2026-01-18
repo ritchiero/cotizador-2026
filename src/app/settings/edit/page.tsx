@@ -1,11 +1,11 @@
 'use client';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { getUserProfile, updateUserProfile, updateAuthProfile } from '@/lib/firebase/firebaseUtils';
+import { getUserProfile, updateUserProfile, updateAuthProfile, uploadFile } from '@/lib/firebase/firebaseUtils';
 import { auth } from '@/lib/firebase/firebase';
 import Image from 'next/image';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
-import { fileToBase64, validateImageFile } from '@/lib/utils/imageUtils';
+import { validateImageFile } from '@/lib/utils/imageUtils';
 
 interface ProfileData {
   displayName: string;
@@ -57,16 +57,36 @@ export default function EditProfile() {
       // Validar el archivo
       validateImageFile(file);
 
-      // Convertir a Base64
-      const base64String = await fileToBase64(file);
+      // Subir a Firebase Storage
+      const photoPath = `profile-photos/${user.uid}/${Date.now()}-${file.name}`;
+      const downloadURL = await uploadFile(file, photoPath);
 
-      // Actualizar el estado local
+      // Actualizar en Firestore inmediatamente
+      await updateUserProfile(user.uid, {
+        displayName: formData.displayName,
+        location: formData.location,
+        bio: formData.bio,
+        photoURL: downloadURL,
+      });
+
+      // Actualizar Auth profile
+      if (auth.currentUser) {
+        await updateAuthProfile(auth.currentUser, {
+          displayName: formData.displayName,
+          photoURL: downloadURL,
+        });
+      }
+
+      // Actualizar estado local
       setFormData(prev => ({
         ...prev,
-        photoURL: base64String
+        photoURL: downloadURL
       }));
 
-      toast.success('Foto actualizada correctamente');
+      // Refrescar usuario en contexto
+      await refreshUser();
+
+      toast.success('Foto actualizada y guardada correctamente');
     } catch (err) {
       console.error('Error processing photo:', err);
       toast.error(err instanceof Error ? err.message : 'Error al subir la foto');
