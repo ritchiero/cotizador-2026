@@ -976,7 +976,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               </div>
             </div>
       )}
-      </div>
     </div>
     {/* Botón flotante para nuevo servicio */}
     <button
