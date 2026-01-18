@@ -209,10 +209,19 @@ const ServicioInput = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-[120px] border border-dashed border-gray-300 rounded">
+                <div className="flex flex-col items-center justify-center h-[120px] border border-dashed border-gray-300 rounded gap-3">
                   <span className="text-sm text-gray-500">
                     No hay servicios guardados
                   </span>
+                  <button
+                    onClick={() => window.location.href = '/settings/profile'}
+                    className="inline-flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Crea tu primer servicio
+                  </button>
                 </div>
               )}
             </div>
