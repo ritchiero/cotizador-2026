@@ -605,17 +605,15 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
   return (
     <div className="w-full px-4 md:px-8 max-w-7xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        {/* Header del Tab */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-8 pt-4 pb-2 border-b border-gray-100">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Catálogo de Servicios Legales</h2>
-              <p className="mt-1 text-base text-gray-500">
-                Gestiona los servicios que ofreces a tus clientes
-              </p>
-            </div>
+      {/* Header del Tab - Sin card contenedora */}
+      <div className="px-8 pt-6 pb-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Catálogo de Servicios Legales</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Gestiona los servicios que ofreces a tus clientes
+            </p>
+          </div>
             <div className="flex justify-end">
               {/* Botón móvil */}
               <button
@@ -834,8 +832,8 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           {servicio.nombre}
                         </h3>
                         {/* Descripción */}
-                        <details className="text-sm text-text-secondary font-jakarta">
-                          <summary className="cursor-pointer line-clamp-3">
+                        <details className="text-xs text-gray-500 font-jakarta">
+                          <summary className="cursor-pointer line-clamp-2">
                             {servicio.descripcion}
                           </summary>
                           <p className="mt-1">{servicio.descripcion}</p>
@@ -880,18 +878,18 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                               <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors truncate font-jakarta">
                                 {servicio.nombre}
                               </h3>
-                              <p className="text-sm text-text-secondary font-jakarta line-clamp-2 mt-1">
+                              <p className="text-xs text-gray-500 font-jakarta line-clamp-2 mt-1">
                                 {servicio.descripcion}
                               </p>
                             </div>
-                            <div className="flex items-center gap-4 text-sm text-text-secondary shrink-0">
+                            <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
                               <div className="flex items-center gap-1">
                                 <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>{servicio.tiempo}</span>
                               </div>
-                              <span className="text-base font-bold text-primary">
+                              <span className="text-base font-bold text-blue-600">
                                 {formatPrice(servicio.precio)}
                               </span>
                             </div>
