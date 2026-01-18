@@ -987,9 +987,8 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       <PlusIcon className="h-5 w-5" />
       <span className="sr-only sm:not-sr-only">Servicio</span>
     </button>
-    </div>
 
-      {/* Modales */}
+    {/* Modales */}
       {/* Modal de Detalles del Servicio */}
       {isModalOpen && selectedService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
