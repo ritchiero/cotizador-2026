@@ -191,7 +191,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Datos Fiscales</h2>
+                <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
                 <p className="mt-1 text-sm text-gray-500">
                   Configura tu información fiscal para la facturación
                 </p>
@@ -236,7 +236,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Datos Fiscales</h2>
+                <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
                 <p className="mt-1 text-sm text-gray-500">
                   Información fiscal para la facturación
                 </p>
@@ -333,7 +333,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className="text-lg font-semibold text-gray-800">
                   {hasBillingData() ? 'Editar Datos Fiscales' : 'Agregar Datos Fiscales'}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
