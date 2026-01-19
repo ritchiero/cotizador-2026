@@ -41,31 +41,38 @@ export async function POST(request: Request) {
 
 ${refinedQuery}
 
-BÚSQUEDAS ESPECÍFICAS QUE DEBES HACER:
+INSTRUCCIONES:
 
-1. **Tarifas Gubernamentales Oficiales** (PRIORIDAD ALTA):
-   - IMPI: Busca "Ley Federal de Derechos IMPI 2025" o "tarifas IMPI 2025"
-   - SAT: Busca en sat.gob.mx tarifas y costos oficiales
-   - Registros Públicos: Busca leyes de ingresos estatales
-   - INCLUYE el monto EXACTO y la URL de la Ley/Reglamento donde lo encontraste
+1. **Identifica QUÉ tipo de servicio es**:
+   - Propiedad Intelectual (marcas, patentes) → Busca IMPI
+   - Trámites fiscales (RFC, impuestos) → Busca SAT
+   - Notariales (poderes, escrituras) → Busca tarifas de notarios
+   - Corporativo (sociedades, contratos) → Busca Registros Públicos
+   - Litigios/asesoría general → NO hay tarifas gubernamentales, solo honorarios
 
-2. **Honorarios Profesionales**:
-   - Busca sitios de despachos con precios: "registro de marca precio México despacho"
-   - Busca marketplaces: Legalzone.mx, 99abogados.com
-   - Busca directorios: Barra Mexicana de Abogados
-   - CITA cuánto cobra cada despacho específicamente
+2. **Busca SOLO tarifas oficiales RELEVANTES al servicio**:
+   - Si es marca/patente → Busca "Ley Federal de Derechos IMPI 2025 [servicio específico]"
+   - Si es notarial → Busca "arancel notarial [estado] 2025"
+   - Si NO hay trámite oficial → Omite sección de costos gubernamentales
 
-3. **Formato de Respuesta**:
-   - Para cada precio, di DÓNDE lo encontraste (nombre del despacho/institución + URL)
-   - Separa claramente: Derechos Oficiales vs Honorarios de Abogados
-   - Si NO encuentras tarifas oficiales exactas, dilo explícitamente
+3. **Busca honorarios profesionales**:
+   - Sitios de despachos jurídicos con precios publicados
+   - Marketplaces: 99abogados.com, Legalzone.mx
+   - Foros donde abogados publican sus tarifas
+   - CITA el nombre del despacho y cuánto cobra
 
-EJEMPLO DE BUENA RESPUESTA:
-"Según la Ley Federal de Derechos 2025, IMPI cobra $2,695 MXN + IVA por registro de marca por clase (fuente: www.impi.gob.mx/ley-federal-derechos).
-En cuanto a honorarios profesionales, Despacho X cobra $5,000-$8,000 MXN (fuente: www.despacho-x.com/precios), mientras que en 99abogados.com el rango es $3,000-$6,000 MXN."
+4. **Formato de Respuesta**:
+   - SOLO menciona instituciones gubernamentales SI el servicio requiere trámite ante ellas
+   - Para cada precio: nombre del despacho/institución + monto + URL
+   - Si no hay costos gubernamentales aplicables, NO los inventes
 
-MALA RESPUESTA (NO HAGAS ESTO):
-"Los costos pueden variar..." (muy vago, sin datos específicos)`;
+EJEMPLO PARA "REGISTRO DE MARCA":
+✅ "Tarifa oficial IMPI: $2,695 + IVA por clase (Ley Federal de Derechos 2025). Honorarios: Despacho García cobra $6,000, en 99abogados.com el rango es $4,000-$8,000."
+
+EJEMPLO PARA "ASESORÍA LABORAL":
+✅ "No aplican costos gubernamentales. Honorarios profesionales: $1,500-$3,000/hora según experiencia. Despacho López cobra $2,000/hr."
+
+❌ NO hagas esto: Mencionar IMPI para todo aunque no sea relevante`;
 
     const perplexityResponse = await fetch(PERPLEXITY_API_URL, {
       method: 'POST',
