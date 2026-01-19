@@ -37,23 +37,35 @@ export async function POST(request: Request) {
     const refinedQuery = refinedQueryResponse.choices[0].message.content || query;
 
     // PASO 2: Perplexity busca información REAL (devuelve texto con citas)
-    const perplexityPrompt = `Busca información REAL sobre precios de este servicio legal en México:
+    const perplexityPrompt = `Busca información REAL y VERIFICABLE sobre precios de este servicio legal en México:
 
 ${refinedQuery}
 
-INSTRUCCIONES:
-1. Busca sitios de despachos jurídicos mexicanos con precios publicados
-2. Busca tarifas oficiales de gobierno (IMPI, SAT, etc)
-3. Busca en marketplaces legales mexicanos
-4. Cita las fuentes específicas donde encontraste los precios
-5. Separa claramente: Derechos Gubernamentales vs Honorarios Profesionales
+BÚSQUEDAS ESPECÍFICAS QUE DEBES HACER:
 
-Incluye:
-- Rangos de precios que encontraste (mínimo, promedio, máximo)
-- Costos gubernamentales oficiales con fuentes
-- Tipos de cobro que usan los despachos
-- Factores que afectan el precio
-- URLs de las fuentes donde encontraste los datos`;
+1. **Tarifas Gubernamentales Oficiales** (PRIORIDAD ALTA):
+   - IMPI: Busca "Ley Federal de Derechos IMPI 2025" o "tarifas IMPI 2025"
+   - SAT: Busca en sat.gob.mx tarifas y costos oficiales
+   - Registros Públicos: Busca leyes de ingresos estatales
+   - INCLUYE el monto EXACTO y la URL de la Ley/Reglamento donde lo encontraste
+
+2. **Honorarios Profesionales**:
+   - Busca sitios de despachos con precios: "registro de marca precio México despacho"
+   - Busca marketplaces: Legalzone.mx, 99abogados.com
+   - Busca directorios: Barra Mexicana de Abogados
+   - CITA cuánto cobra cada despacho específicamente
+
+3. **Formato de Respuesta**:
+   - Para cada precio, di DÓNDE lo encontraste (nombre del despacho/institución + URL)
+   - Separa claramente: Derechos Oficiales vs Honorarios de Abogados
+   - Si NO encuentras tarifas oficiales exactas, dilo explícitamente
+
+EJEMPLO DE BUENA RESPUESTA:
+"Según la Ley Federal de Derechos 2025, IMPI cobra $2,695 MXN + IVA por registro de marca por clase (fuente: www.impi.gob.mx/ley-federal-derechos).
+En cuanto a honorarios profesionales, Despacho X cobra $5,000-$8,000 MXN (fuente: www.despacho-x.com/precios), mientras que en 99abogados.com el rango es $3,000-$6,000 MXN."
+
+MALA RESPUESTA (NO HAGAS ESTO):
+"Los costos pueden variar..." (muy vago, sin datos específicos)`;
 
     const perplexityResponse = await fetch(PERPLEXITY_API_URL, {
       method: 'POST',
