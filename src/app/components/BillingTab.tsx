@@ -191,7 +191,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Datos Fiscales</h2>
                 <p className="mt-1 text-sm text-gray-500">
                   Configura tu información fiscal para la facturación
                 </p>
@@ -232,15 +232,15 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
   if (!isEditing && hasBillingData()) {
     return (
       <div className="max-w-4xl mx-auto">
-        {/* Header según design system */}
-        <div className="px-8 pt-6 pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Información fiscal para la facturación
-              </p>
-            </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="px-8 py-6 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Datos Fiscales</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Información fiscal para la facturación
+                </p>
+              </div>
               <button
                 onClick={() => setIsEditing(true)}
                 className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -333,7 +333,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
           <div className="px-8 py-6 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2 className="text-lg font-semibold text-gray-900">
                   {hasBillingData() ? 'Editar Datos Fiscales' : 'Agregar Datos Fiscales'}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500">
