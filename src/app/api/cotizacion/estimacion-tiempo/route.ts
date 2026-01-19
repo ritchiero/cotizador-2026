@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     const prompt = `Eres un abogado especialista en servicios legales en el mercado mexicano. Basado en la descripcion del servicio, sugiere de 3 a 5 estimaciones de tiempo concisas y realistas para completarlo. Cada sugerencia debe tener maximo 4 palabras y estar separada por salto de linea, sin numeracion.\nServicio: ${descripcionServicio}`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini-2025-08-07",
+      model: "gpt-5-nano-2025-08-07",
       messages: [{ role: "user", content: prompt }]
     });
 

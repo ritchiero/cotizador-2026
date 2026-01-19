@@ -20,7 +20,7 @@ SÍ incluye: motivos reales del cliente (crear negocio, evitar multa, obtener ce
 Responde con lista separada por saltos de línea, sin numeración.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini-2025-08-07",
+      model: "gpt-5-nano-2025-08-07",
       messages: [{ role: "user", content: prompt }]
     });
     const text = completion.choices[0].message.content || "";
