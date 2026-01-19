@@ -35,65 +35,81 @@ Respuesta: "Necesito saber en el mercado mexicano, cuáles son los rangos de pre
 
 Reformula la siguiente pregunta siguiendo estos criterios:`;
 
-const perplexitySystemPrompt = `Eres un analista experto en el mercado legal mexicano.
-IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional):
+const perplexitySystemPrompt = `Eres un analista experto en el mercado legal mexicano con acceso a datos actualizados de 2025-2026.
 
-REGLAS ESTRICTAS:
-1. NO uses comillas dobles dentro de los strings (usa comillas simples si necesario)
-2. Mantén el análisis detallado CONCISO (máximo 500 caracteres)
-3. Limita factores a máximo 5 items
-4. Limita fuentes oficiales a máximo 3 items
-5. Asegúrate que TODOS los strings estén correctamente cerrados
+INSTRUCCIONES CRÍTICAS:
+1. BUSCA DATOS REALES Y VERIFICABLES de fuentes oficiales (IMPI, DOF, sitios gubernamentales)
+2. Si NO encuentras información verificable, escribe "No especificado" en rangos
+3. SEPARA claramente: Derechos Gubernamentales vs Honorarios Profesionales
+4. CITA las fuentes exactas con URLs reales
+5. USA datos de 2025-2026, NO históricos
+
+EJEMPLOS DE DATOS REALES:
+- Registro de marca IMPI: ~$3,126 MXN por clase (tarifa oficial 2025)
+- Honorarios profesionales registro marca: $2,000-$8,000 MXN
+- Constitución de S.A.: Notario $15,000-$25,000 MXN + asesoría $8,000-$15,000 MXN
+
+IMPORTANTE: Si no encuentras datos verificables del servicio específico, NO INVENTES números.
+Prefiere decir "No especificado" a dar información falsa.
+
+Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido:
 
 {
   "rangosHonorarios": {
-    "minimo": "string con el monto mínimo",
-    "promedio": "string con el monto promedio",
-    "maximo": "string con el monto máximo"
+    "minimo": "Monto en MXN o 'No especificado'",
+    "promedio": "Monto en MXN o 'No especificado'",
+    "maximo": "Monto en MXN o 'No especificado'"
   },
   "costosGubernamentales": [
     {
-      "concepto": "string (nombre del costo)",
-      "monto": "string (monto)",
+      "concepto": "Nombre exacto del derecho/trámite oficial",
+      "monto": "Monto REAL con IVA si aplica",
       "fuente": {
-        "nombre": "string (nombre de la fuente oficial)",
-        "url": "string (URL de la fuente)",
-        "fechaActualizacion": "string (fecha)"
+        "nombre": "Nombre de la institución oficial (IMPI, SAT, etc)",
+        "url": "URL real de la fuente",
+        "fechaActualizacion": "Mes y año de la tarifa"
       }
     }
   ],
-  "factores": [
-    "string (factor que influye - máximo 5)"
-  ],
+  "factores": ["Factor 1", "Factor 2", "Factor 3", "Factor 4", "Factor 5"],
   "fuentesOficiales": [
     {
-      "nombre": "string (nombre)",
-      "url": "string (URL)",
-      "descripcion": "string (descripción corta - máximo 3 fuentes)"
+      "nombre": "Nombre de fuente oficial",
+      "url": "URL verificable",
+      "descripcion": "Breve descripción"
     }
   ],
-  "analisisDetallado": "string (HTML breve, máximo 500 caracteres, sin comillas dobles)"
+  "analisisDetallado": "Texto breve (max 500 chars, sin comillas dobles)"
 }`;
 
-const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México.
-IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional):
+const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México con acceso a información actualizada.
 
-REGLAS ESTRICTAS:
-1. NO uses comillas dobles dentro de los strings (usa comillas simples)
-2. Limita a máximo 4 tipos de cobro
-3. Descripciones cortas (máximo 80 caracteres)
-4. Frecuencia debe ser: "común", "ocasional" o "raro"
+INSTRUCCIONES:
+1. Identifica los modelos de cobro MÁS COMUNES en el mercado real mexicano para este servicio
+2. Basate en prácticas REALES de despachos jurídicos en México
+3. Si no hay información suficiente, limita tu respuesta a lo que SÍ sabes
+4. NO inventes tipos de cobro que no existen en la práctica
+
+EJEMPLOS REALES:
+- Registro de marca: "Tarifa fija" (común), "Por clase adicional" (común)
+- Litigio: "Por hora" (común), "Cuota de éxito" (ocasional)
+- Constitución sociedad: "Paquete todo incluido" (común), "Por trámite" (ocasional)
+
+Responde ÚNICAMENTE con JSON válido:
 
 {
   "tiposCobro": [
     {
-      "nombre": "nombre del tipo de cobro",
-      "descripcion": "descripción breve (max 80 chars)",
-      "rangoPrecios": "rango de precios típico",
+      "nombre": "Nombre del modelo de cobro",
+      "descripcion": "Qué incluye (max 80 chars, sin comillas dobles)",
+      "rangoPrecios": "Rango real en MXN",
       "frecuencia": "común"
     }
   ]
-}`;
+}
+
+Frecuencia: "común", "ocasional" o "raro"
+Máximo 4 tipos de cobro`;
 
 // Add this helper function before the POST handler
 function cleanJsonResponse(text: string): string {
