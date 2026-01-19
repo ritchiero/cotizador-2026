@@ -225,42 +225,44 @@ export default function BrandingTab({
   const hasBrandingData = brandingData.nombreDespacho || brandingData.logoURL;
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        {hasBrandingData ? (
-          <>
-            <div className="px-8 py-6 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    Identidad de Marca
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Gestiona la imagen y estilo de tu despacho
-                  </p>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                  Editar
-                </button>
+    <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
+      {hasBrandingData ? (
+        <>
+          {/* Header - Sin card contenedora según design system */}
+          <div className="px-8 pt-6 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
+                  Identidad de Marca
+                </h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Gestiona la imagen y estilo de tu despacho
+                </p>
               </div>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+                Editar
+              </button>
             </div>
+          </div>
 
+          {/* Contenido con bg-white */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-8">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Logo */}
@@ -406,8 +408,10 @@ export default function BrandingTab({
                 </div>
               </div>
             </div>
-          </>
-        ) : (
+          </div>
+        </>
+      ) : (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-8 py-12">
             <div className="text-center">
               <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
@@ -453,8 +457,8 @@ export default function BrandingTab({
               </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Modal - Los estilos del modal también se pueden mejorar pero necesitaría más espacio */}
       {isModalOpen && (
