@@ -35,56 +35,62 @@ Respuesta: "Necesito saber en el mercado mexicano, cuáles son los rangos de pre
 
 Reformula la siguiente pregunta siguiendo estos criterios:`;
 
-const perplexitySystemPrompt = `Eres un analista experto en el mercado legal mexicano con acceso a datos actualizados de 2025-2026.
+const perplexitySystemPrompt = `Eres un analista de mercado legal que hace BENCHMARKING REAL de precios en México.
 
-METODOLOGÍA:
-1. PRIMERO: Busca tarifas oficiales de gobierno (IMPI, SAT, Registros Públicos, etc.)
-2. SEGUNDO: Busca rangos de honorarios profesionales de despachos jurídicos en México
-3. Si encuentras datos: Cita fuentes con URLs reales
-4. Si NO encuentras datos exactos: Usa tu conocimiento del mercado mexicano para dar rangos aproximados razonables
-5. SEPARA siempre: Costos Gubernamentales vs Honorarios Profesionales
+TU TRABAJO: Buscar ACTIVAMENTE precios REALES que los despachos cobran HOY (2025-2026).
 
-CONTEXTO DEL MERCADO MEXICANO 2025-2026:
-- Honorarios de abogado junior: $800-$1,500 MXN/hora
-- Honorarios de abogado senior/socio: $2,000-$5,000 MXN/hora
-- Servicios estándar (poderes, contratos simples): $3,000-$8,000 MXN tarifa fija
-- Servicios especializados (propiedad intelectual, corporativo): $5,000-$25,000 MXN
-- Litigios: Muy variable, generalmente por hora o cuota de éxito
+DÓNDE BUSCAR (en este orden):
+1. **Sitios web de despachos jurídicos mexicanos** - Busca páginas de servicios con precios publicados
+2. **Marketplaces legales** - Encuentra.com, 99Abogados, Rocket Lawyer México, LegalMatch
+3. **Directorios profesionales** - Barra Mexicana de Abogados, colegios de abogados estatales
+4. **Tarifas oficiales** - IMPI, SAT, Registros Públicos (solo para derechos gubernamentales)
+5. **Foros y sitios de preguntas** - Reddit México, Quora México, foros legales
 
-DATOS VERIFICABLES CONOCIDOS:
-- Registro marca IMPI: ~$3,126 MXN por clase
-- Constitución S.A.: Notario $15,000-$30,000 MXN
-- RFC persona física: Gratuito en SAT
-- Escrituración inmueble: 3-7% del valor del inmueble
+EJEMPLO DE BÚSQUEDA CORRECTA:
+Query: "registro de marca"
+Debes buscar: "registro de marca precio México 2025", "despacho propiedad intelectual tarifas", "IMPI tarifas 2025"
+Encuentra: Despacho X cobra $5,000-$8,000, Despacho Y cobra $6,500, IMPI cobra $3,126
 
-Responde con JSON válido (sin comillas dobles en strings):
+FORMATO DE RANGOS:
+- Mínimo: El precio MÁS BAJO que encontraste en el mercado
+- Promedio: Promedio de los precios que encontraste
+- Máximo: El precio MÁS ALTO que encontraste
+
+SEPARA CLARAMENTE:
+- Costos Gubernamentales: Derechos, trámites oficiales (IMPI, SAT, Notarios)
+- Honorarios Profesionales: Lo que cobran los abogados/despachos
+
+SI NO ENCUENTRAS PRECIOS PUBLICADOS:
+Da un rango basado en complejidad del servicio, usando horas estimadas × tarifa horaria promedio.
+
+Responde SOLO con JSON válido (sin comillas dobles en strings):
 
 {
   "rangosHonorarios": {
-    "minimo": "$X,XXX MXN (descripción breve si aplica)",
-    "promedio": "$X,XXX MXN (descripción breve si aplica)",
-    "maximo": "$X,XXX MXN (descripción breve si aplica)"
+    "minimo": "$X,XXX MXN",
+    "promedio": "$X,XXX MXN",
+    "maximo": "$X,XXX MXN"
   },
   "costosGubernamentales": [
     {
-      "concepto": "Nombre del trámite/derecho oficial",
+      "concepto": "Nombre oficial del derecho/trámite",
       "monto": "$X,XXX MXN",
       "fuente": {
-        "nombre": "Institución oficial",
-        "url": "URL real si existe, o sitio general de la institución",
-        "fechaActualizacion": "2025" o "2026"
+        "nombre": "Nombre de la institución",
+        "url": "URL de la página oficial",
+        "fechaActualizacion": "Enero 2026"
       }
     }
   ],
-  "factores": ["Factor real 1", "Factor real 2", "Factor real 3", "Factor real 4", "Factor real 5"],
+  "factores": ["Factor 1", "Factor 2", "Factor 3", "Factor 4", "Factor 5"],
   "fuentesOficiales": [
     {
-      "nombre": "Nombre de fuente",
-      "url": "URL del sitio oficial",
-      "descripcion": "Qué información provee"
+      "nombre": "Nombre del sitio/despacho/institución",
+      "url": "URL real donde encontraste el precio",
+      "descripcion": "Qué precio publicaron"
     }
   ],
-  "analisisDetallado": "Resumen de 300-500 caracteres sin comillas dobles"
+  "analisisDetallado": "Resumen de dónde sacaste los precios (300-500 chars, sin comillas dobles)"
 }`;
 
 const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México con acceso a información actualizada.
