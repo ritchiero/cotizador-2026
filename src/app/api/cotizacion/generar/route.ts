@@ -36,10 +36,11 @@ INSTRUCCIONES PARA COTIZACIÓN DETALLADA:
 - Desarrolla cada sección con claridad y profesionalismo
 - Mantén un tono formal pero cercano
 
-1. INTRODUCCIÓN
+1. Carta inicial (sin header "INTRODUCCIÓN:")
    - Saludo formal personalizado
    - Presentación breve del despacho
    - Contextualización del servicio solicitado
+   - NO incluir título "INTRODUCCIÓN:", empezar directo con el saludo
 
 2. ALCANCE DEL SERVICIO
    - Descripción detallada del servicio legal
@@ -129,10 +130,11 @@ FORMATO ESPECÍFICO:
 2. SALUDO
    - "Estimado/a [nombre]:"
 
-3. INTRODUCCIÓN
+3. Carta de presentación (sin header "INTRODUCCIÓN:")
    - Agradecimiento por el interés
    - Breve presentación del despacho
    - Mención del servicio solicitado
+   - NO incluir título "INTRODUCCIÓN:", empezar directo con el texto
 
 4. ALCANCE DEL SERVICIO
    - Descripción detallada
@@ -155,11 +157,12 @@ FORMATO ESPECÍFICO:
    - Compromisos del despacho
    - Plazos de entrega
 
-9. CIERRE
+9. Información final (sin header "CIERRE:")
    - Vigencia de la cotización
    - Datos de contacto
    - Agradecimiento final
    - Firma profesional
+   - NO incluir título "CIERRE:", empezar directo con vigencia
 
 ${data.servicioGuardado ? `
 INFORMACIÓN ADICIONAL DEL SERVICIO GUARDADO:
