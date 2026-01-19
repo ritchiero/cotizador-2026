@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useCompletion } from 'ai/react';
 import { db } from '@/lib/firebase/firebase';
-import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc} from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDoc} from 'firebase/firestore';
 import { query, where, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import ServiceForm from './ServiceForm';
@@ -35,6 +35,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
   const [error, setError] = useState<string | null>(null);
   const [precioError, setPrecioError] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userMoneda, setUserMoneda] = useState<'MXN' | 'USD'>('MXN');
   const { user } = useAuth();
   const router = useRouter();
   // Estado para nuevo servicio
@@ -102,7 +103,26 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
     setMounted(true);
   }, []);
 
+  // Cargar moneda preferida del usuario
+  useEffect(() => {
+    const loadUserMoneda = async () => {
+      if (!userId) return;
 
+      try {
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserMoneda(userData.monedaPreferida || 'MXN');
+        }
+      } catch (error) {
+        console.error('Error loading user moneda:', error);
+      }
+    };
+
+    loadUserMoneda();
+  }, [userId]);
 
   // Función para estandarizar servicios con IA
   const [isStandardizing, setIsStandardizing] = useState(false);
@@ -242,6 +262,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       const servicioData = {
         ...newService,
         incluye: itemsIncluidos,
+        moneda: userMoneda, // Usar moneda preferida del usuario
         userId: user?.uid,
         userEmail: user?.email,
         createdAt: serverTimestamp(),
@@ -843,7 +864,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           <div className="flex flex-col gap-2">
                             {/* Precio */}
                             <span className="text-base font-bold text-primary font-jakarta">
-                              {formatPrice(servicio.precio)}
+                              {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
                             </span>
                             {/* Tiempo de entrega */}
                             <div className="flex items-center text-sm text-text-secondary font-jakarta">
@@ -890,7 +911,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                                 <span>{servicio.tiempo}</span>
                               </div>
                               <span className="text-base font-bold text-blue-600">
-                                {formatPrice(servicio.precio)}
+                                {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
                               </span>
                             </div>
                           </div>
