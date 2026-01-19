@@ -1,70 +1,96 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Mover las constantes a variables de entorno
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-if (!OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not defined in environment variables');
+if (!OPENAI_API_KEY || !PERPLEXITY_API_KEY) {
+  throw new Error('API keys not configured');
 }
 
-if (!PERPLEXITY_API_KEY) {
-  throw new Error('PERPLEXITY_API_KEY is not defined in environment variables');
-}
-
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY
-});
-
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
+export async function POST(request: Request) {
+  try {
+    const { query } = await request.json();
 
-const openAIPrompt = `Eres un experto en servicios legales en México. Tu tarea es reformular preguntas sobre costos de servicios legales para obtener respuestas más completas y precisas.
+    if (!query || typeof query !== 'string') {
+      return NextResponse.json(
+        { error: 'Query inválida' },
+        { status: 400 }
+      );
+    }
 
-La pregunta reformulada debe:
-1. Especificar que es para el mercado mexicano
-2. Solicitar rangos de precios específicos
-3. Pedir información sobre costos adicionales (derechos, impuestos, etc.)
-4. Incluir factores que pueden afectar el precio
-5. Mantener un tono profesional y técnico
+    // PASO 1: Refinar query con OpenAI
+    const refinedQueryResponse = await openai.chat.completions.create({
+      model: "gpt-5-mini-2025-08-07",
+      messages: [{
+        role: "system",
+        content: "Reformula la pregunta sobre servicios legales para ser más específica y técnica. Menciona que es para el mercado mexicano y que buscas rangos de precios reales."
+      }, {
+        role: "user",
+        content: query
+      }]
+    });
 
-Ejemplo:
-Usuario: "Cuanto cobran los abogados por registrar una marca"
-Respuesta: "Necesito saber en el mercado mexicano, cuáles son los rangos de precios en materia de honorarios que cobra un abogado especialista en la materia de propiedad intelectual por sus servicios de registro de marca. Dame mínimos y máximos de mercado, y potenciales costos como derechos o pagos no relacionados a honorarios. Incluye también factores que pueden afectar el precio final."
+    const refinedQuery = refinedQueryResponse.choices[0].message.content || query;
 
-Reformula la siguiente pregunta siguiendo estos criterios:`;
+    // PASO 2: Perplexity busca información REAL (devuelve texto con citas)
+    const perplexityPrompt = `Busca información REAL sobre precios de este servicio legal en México:
 
-const perplexitySystemPrompt = `Eres un analista de mercado legal que hace BENCHMARKING REAL de precios en México.
+${refinedQuery}
 
-TU TRABAJO: Buscar ACTIVAMENTE precios REALES que los despachos cobran HOY (2025-2026).
+INSTRUCCIONES:
+1. Busca sitios de despachos jurídicos mexicanos con precios publicados
+2. Busca tarifas oficiales de gobierno (IMPI, SAT, etc)
+3. Busca en marketplaces legales mexicanos
+4. Cita las fuentes específicas donde encontraste los precios
+5. Separa claramente: Derechos Gubernamentales vs Honorarios Profesionales
 
-DÓNDE BUSCAR (en este orden):
-1. **Sitios web de despachos jurídicos mexicanos** - Busca páginas de servicios con precios publicados
-2. **Marketplaces legales** - Encuentra.com, 99Abogados, Rocket Lawyer México, LegalMatch
-3. **Directorios profesionales** - Barra Mexicana de Abogados, colegios de abogados estatales
-4. **Tarifas oficiales** - IMPI, SAT, Registros Públicos (solo para derechos gubernamentales)
-5. **Foros y sitios de preguntas** - Reddit México, Quora México, foros legales
+Incluye:
+- Rangos de precios que encontraste (mínimo, promedio, máximo)
+- Costos gubernamentales oficiales con fuentes
+- Tipos de cobro que usan los despachos
+- Factores que afectan el precio
+- URLs de las fuentes donde encontraste los datos`;
 
-EJEMPLO DE BÚSQUEDA CORRECTA:
-Query: "registro de marca"
-Debes buscar: "registro de marca precio México 2025", "despacho propiedad intelectual tarifas", "IMPI tarifas 2025"
-Encuentra: Despacho X cobra $5,000-$8,000, Despacho Y cobra $6,500, IMPI cobra $3,126
+    const perplexityResponse = await fetch(PERPLEXITY_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'sonar-pro',
+        messages: [{ role: 'user', content: perplexityPrompt }],
+        max_tokens: 4000
+      }),
+    });
 
-FORMATO DE RANGOS:
-- Mínimo: El precio MÁS BAJO que encontraste en el mercado
-- Promedio: Promedio de los precios que encontraste
-- Máximo: El precio MÁS ALTO que encontraste
+    if (!perplexityResponse.ok) {
+      throw new Error('Error en Perplexity API');
+    }
 
-SEPARA CLARAMENTE:
-- Costos Gubernamentales: Derechos, trámites oficiales (IMPI, SAT, Notarios)
-- Honorarios Profesionales: Lo que cobran los abogados/despachos
+    const perplexityData = await perplexityResponse.json();
+    const perplexityText = perplexityData.choices?.[0]?.message?.content || '';
 
-SI NO ENCUENTRAS PRECIOS PUBLICADOS:
-Da un rango basado en complejidad del servicio, usando horas estimadas × tarifa horaria promedio.
+    // PASO 3: GPT extrae y estructura la información del texto de Perplexity
+    const structuringPrompt = `Analiza el siguiente texto sobre precios de servicios legales en México y extrae la información en formato JSON estructurado.
 
-Responde SOLO con JSON válido (sin comillas dobles en strings):
+TEXTO A ANALIZAR:
+${perplexityText}
 
+INSTRUCCIONES:
+- Extrae los rangos de precios mencionados (honorarios profesionales, NO incluyas derechos gubernamentales aquí)
+- Extrae costos gubernamentales (derechos, trámites oficiales) por separado
+- Extrae tipos de cobro mencionados
+- Extrae factores que afectan el precio
+- Extrae las fuentes citadas
+- Si el texto menciona un rango (ej: "$5,000-$8,000"), usa el mínimo y máximo
+- Si no hay información clara, usa rangos aproximados basados en complejidad del servicio
+
+Responde ÚNICAMENTE con este JSON (sin markdown):
 {
   "rangosHonorarios": {
     "minimo": "$X,XXX MXN",
@@ -73,289 +99,66 @@ Responde SOLO con JSON válido (sin comillas dobles en strings):
   },
   "costosGubernamentales": [
     {
-      "concepto": "Nombre oficial del derecho/trámite",
+      "concepto": "Nombre del derecho/trámite",
       "monto": "$X,XXX MXN",
       "fuente": {
-        "nombre": "Nombre de la institución",
-        "url": "URL de la página oficial",
-        "fechaActualizacion": "Enero 2026"
+        "nombre": "Institución",
+        "url": "URL",
+        "fechaActualizacion": "2026"
       }
     }
   ],
-  "factores": ["Factor 1", "Factor 2", "Factor 3", "Factor 4", "Factor 5"],
-  "fuentesOficiales": [
-    {
-      "nombre": "Nombre del sitio/despacho/institución",
-      "url": "URL real donde encontraste el precio",
-      "descripcion": "Qué precio publicaron"
-    }
-  ],
-  "analisisDetallado": "Resumen de dónde sacaste los precios (300-500 chars, sin comillas dobles)"
-}`;
-
-const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México con acceso a información actualizada.
-
-INSTRUCCIONES:
-1. Identifica los modelos de cobro MÁS COMUNES en el mercado real mexicano para este servicio
-2. Basate en prácticas REALES de despachos jurídicos en México
-3. Si no hay información suficiente, limita tu respuesta a lo que SÍ sabes
-4. NO inventes tipos de cobro que no existen en la práctica
-
-EJEMPLOS REALES:
-- Registro de marca: "Tarifa fija" (común), "Por clase adicional" (común)
-- Litigio: "Por hora" (común), "Cuota de éxito" (ocasional)
-- Constitución sociedad: "Paquete todo incluido" (común), "Por trámite" (ocasional)
-
-Responde ÚNICAMENTE con JSON válido:
-
-{
   "tiposCobro": [
     {
-      "nombre": "Nombre del modelo de cobro",
-      "descripcion": "Qué incluye (max 80 chars, sin comillas dobles)",
-      "rangoPrecios": "Rango real en MXN",
+      "nombre": "Tipo de cobro",
+      "descripcion": "Descripción corta",
+      "rangoPrecios": "$X-$Y MXN",
       "frecuencia": "común"
     }
-  ]
-}
+  ],
+  "factores": ["Factor 1", "Factor 2", "Factor 3"],
+  "fuentesOficiales": [
+    {
+      "nombre": "Nombre fuente",
+      "url": "URL",
+      "descripcion": "Descripción"
+    }
+  ],
+  "analisisDetallado": "Resumen breve de la información encontrada"
+}`;
 
-Frecuencia: "común", "ocasional" o "raro"
-Máximo 4 tipos de cobro`;
+    const structuredResponse = await openai.chat.completions.create({
+      model: "gpt-5-mini-2025-08-07",
+      messages: [{
+        role: "system",
+        content: "Eres un experto en extraer y estructurar información de textos sobre servicios legales. Genera JSON válido sin comillas dobles dentro de strings."
+      }, {
+        role: "user",
+        content: structuringPrompt
+      }],
+      response_format: { type: 'json_object' }
+    });
 
-// Add this helper function before the POST handler
-function cleanJsonResponse(text: string): string {
-  // Remove markdown code block syntax if present
-  let cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
-
-  // Remove any text before the first {
-  const firstBrace = cleaned.indexOf('{');
-  if (firstBrace > 0) {
-    cleaned = cleaned.substring(firstBrace);
-  }
-
-  // Remove any text after the last }
-  const lastBrace = cleaned.lastIndexOf('}');
-  if (lastBrace > -1 && lastBrace < cleaned.length - 1) {
-    cleaned = cleaned.substring(0, lastBrace + 1);
-  }
-
-  return cleaned;
-}
-
-export async function POST(request: Request) {
-  try {
-    
-    // Verificar método
-    if (request.method !== 'POST') {
-      return NextResponse.json(
-        { error: 'Método no permitido', details: `Se esperaba POST, se recibió ${request.method}` },
-        { status: 405 }
-      );
+    const structuredContent = structuredResponse.choices[0]?.message?.content;
+    if (!structuredContent) {
+      throw new Error('No se pudo estructurar la información');
     }
 
-    // Verificar body
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Error al procesar el body', details: 'El body debe ser un JSON válido' },
-        { status: 400 }
-      );
-    }
-    
-    
-    const { query } = body;
-    if (!query || typeof query !== 'string') {
-      return NextResponse.json(
-        { error: 'Query inválida', details: 'La query es requerida y debe ser un string' },
-        { status: 400 }
-      );
-    }
+    const result = JSON.parse(structuredContent);
 
-    // Llamada a OpenAI
-    let openAIResponse;
-    try {
-      openAIResponse = await openai.chat.completions.create({
-        model: "gpt-5-mini-2025-08-07",
-        messages: [
-          { role: "system", content: openAIPrompt },
-          { role: "user", content: query }
-        ]
-      });
-    } catch (error) {
-      console.error('Error en llamada a OpenAI:', error);
-      return NextResponse.json(
-        { error: 'Error al comunicarse con OpenAI', details: error instanceof Error ? error.message : 'Error desconocido' },
-        { status: 500 }
-      );
-    }
-
-    const refinedQuery = openAIResponse.choices[0].message.content;
-
-    // Hacer las dos llamadas a Perplexity en paralelo
-    let analisisGeneral, tiposCobro;
-    try {
-      const [analisisResponse, tiposCobroResponse] = await Promise.all([
-        // Primera llamada para el análisis general
-        fetch(PERPLEXITY_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'sonar-pro',
-            messages: [
-              { role: 'system', content: perplexitySystemPrompt },
-              { role: 'user', content: refinedQuery }
-            ],
-            max_tokens: 4000,
-            temperature: 0.7,
-          }),
-        }),
-
-        // Segunda llamada específica para tipos de cobro
-        fetch(PERPLEXITY_API_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'sonar-pro',
-            messages: [
-              { role: 'system', content: perplexitySystemPromptTiposCobro },
-              { role: 'user', content: `Analiza los tipos de cobro para: ${query}` }
-            ],
-            max_tokens: 2000,
-            temperature: 0.7,
-          }),
-        })
-      ]);
-
-      // Verificar si las respuestas son exitosas
-      if (!analisisResponse.ok || !tiposCobroResponse.ok) {
-        const analisisError = await analisisResponse.text();
-        const tiposCobroError = await tiposCobroResponse.text();
-        console.error('Error en respuestas de Perplexity:', { analisisError, tiposCobroError });
-        return NextResponse.json(
-          { 
-            error: 'Error en las respuestas de Perplexity API',
-            details: {
-              analisisError,
-              tiposCobroError
-            }
-          },
-          { status: 500 }
-        );
-      }
-
-      // Parsear las respuestas JSON
-      analisisGeneral = await analisisResponse.json();
-      tiposCobro = await tiposCobroResponse.json();
-
-    } catch (error) {
-      console.error('Error en las llamadas a Perplexity:', error);
-      return NextResponse.json(
-        { error: 'Error al comunicarse con Perplexity API', details: error instanceof Error ? error.message : 'Error desconocido' },
-        { status: 500 }
-      );
-    }
-
-    // Verificar si las respuestas tienen el formato esperado
-    if (!analisisGeneral?.choices?.[0]?.message?.content || !tiposCobro?.choices?.[0]?.message?.content) {
-      console.error('Respuestas incompletas:', { analisisGeneral, tiposCobro });
-      return NextResponse.json(
-        { error: 'Respuestas incompletas de Perplexity API', details: 'Falta contenido en las respuestas' },
-        { status: 500 }
-      );
-    }
-
-
-    let analisisResponse, tiposCobroResponse;
-    try {
-      // Clean the responses before parsing
-      const rawAnalisis = analisisGeneral.choices[0].message.content;
-      const rawTiposCobro = tiposCobro.choices[0].message.content;
-
-      const cleanAnalisisText = cleanJsonResponse(rawAnalisis);
-      const cleanTiposCobroText = cleanJsonResponse(rawTiposCobro);
-
-      console.log('Attempting to parse analisis JSON...');
-      try {
-        analisisResponse = JSON.parse(cleanAnalisisText);
-      } catch (err) {
-        console.error('Error parsing analisis JSON:', err);
-        console.error('Cleaned analisis text:', cleanAnalisisText.substring(0, 500));
-        throw new Error(`Error al parsear análisis: ${err instanceof Error ? err.message : 'JSON inválido'}`);
-      }
-
-      console.log('Attempting to parse tipos cobro JSON...');
-      try {
-        tiposCobroResponse = JSON.parse(cleanTiposCobroText);
-      } catch (err) {
-        console.error('Error parsing tipos cobro JSON:', err);
-        console.error('Cleaned tipos cobro text:', cleanTiposCobroText.substring(0, 500));
-        throw new Error(`Error al parsear tipos de cobro: ${err instanceof Error ? err.message : 'JSON inválido'}`);
-      }
-
-    } catch (parseError) {
-      console.error('Error parseando respuestas:', parseError);
-      return NextResponse.json(
-        {
-          error: 'La IA generó una respuesta con formato inválido',
-          details: parseError instanceof Error ? parseError.message : 'Error al parsear JSON',
-          suggestion: 'Por favor intenta reformular tu consulta o inténtalo de nuevo'
-        },
-        { status: 500 }
-      );
-    }
-
-    // Validar la estructura de la respuesta
-    if (!analisisResponse.rangosHonorarios || 
-        !Array.isArray(analisisResponse.costosGubernamentales) ||
-        !Array.isArray(analisisResponse.factores)) {
-      console.error('Estructura inválida en analisisResponse:', analisisResponse);
-      return NextResponse.json(
-        { error: 'Respuesta del análisis con estructura inválida', details: 'Faltan campos requeridos en la respuesta' },
-        { status: 500 }
-      );
-    }
-
-    if (!Array.isArray(tiposCobroResponse.tiposCobro)) {
-      console.error('Estructura inválida en tiposCobroResponse:', tiposCobroResponse);
-      return NextResponse.json(
-        { error: 'Respuesta de tipos de cobro con estructura inválida', details: 'El campo tiposCobro debe ser un array' },
-        { status: 500 }
-      );
-    }
-
-    // Formatear la respuesta final con valores por defecto
-    const formattedResponse = {
+    return NextResponse.json({
       refinedQuery,
-      tiposCobro: tiposCobroResponse.tiposCobro || [],
-      rangosHonorarios: {
-        minimo: analisisResponse.rangosHonorarios.minimo || 'No especificado',
-        promedio: analisisResponse.rangosHonorarios.promedio || 'No especificado',
-        maximo: analisisResponse.rangosHonorarios.maximo || 'No especificado'
-      },
-      costosGubernamentales: analisisResponse.costosGubernamentales || [],
-      factores: analisisResponse.factores || [],
-      fuentesOficiales: analisisResponse.fuentesOficiales || [],
-      html: analisisResponse.analisisDetallado || 'No se pudo generar el análisis detallado'
-    };
-
-    return NextResponse.json(formattedResponse);
+      ...result
+    });
 
   } catch (error) {
-    console.error('Error procesando respuestas:', error);
+    console.error('Error en market-estimate:', error);
     return NextResponse.json(
-      { 
-        error: 'Error al procesar la solicitud',
+      {
+        error: 'Error al obtener estimación',
         details: error instanceof Error ? error.message : 'Error desconocido'
       },
       { status: 500 }
     );
   }
-} 
+}
