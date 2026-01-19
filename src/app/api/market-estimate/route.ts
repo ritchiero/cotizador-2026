@@ -35,8 +35,15 @@ Respuesta: "Necesito saber en el mercado mexicano, cuáles son los rangos de pre
 
 Reformula la siguiente pregunta siguiendo estos criterios:`;
 
-const perplexitySystemPrompt = `Eres un analista experto en el mercado legal mexicano. 
+const perplexitySystemPrompt = `Eres un analista experto en el mercado legal mexicano.
 IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional):
+
+REGLAS ESTRICTAS:
+1. NO uses comillas dobles dentro de los strings (usa comillas simples si necesario)
+2. Mantén el análisis detallado CONCISO (máximo 500 caracteres)
+3. Limita factores a máximo 5 items
+4. Limita fuentes oficiales a máximo 3 items
+5. Asegúrate que TODOS los strings estén correctamente cerrados
 
 {
   "rangosHonorarios": {
@@ -51,31 +58,37 @@ IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta es
       "fuente": {
         "nombre": "string (nombre de la fuente oficial)",
         "url": "string (URL de la fuente)",
-        "fechaActualizacion": "string (fecha de última actualización)"
+        "fechaActualizacion": "string (fecha)"
       }
     }
   ],
   "factores": [
-    "string (factor que influye en el precio)"
+    "string (factor que influye - máximo 5)"
   ],
   "fuentesOficiales": [
     {
-      "nombre": "string (nombre de la fuente)",
-      "url": "string (URL de la fuente)",
-      "descripcion": "string (breve descripción)"
+      "nombre": "string (nombre)",
+      "url": "string (URL)",
+      "descripcion": "string (descripción corta - máximo 3 fuentes)"
     }
   ],
-  "analisisDetallado": "string (HTML con el análisis completo)"
+  "analisisDetallado": "string (HTML breve, máximo 500 caracteres, sin comillas dobles)"
 }`;
 
-const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México. 
+const perplexitySystemPromptTiposCobro = `Eres un experto en servicios legales en México.
 IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta estructura exacta (sin texto adicional):
+
+REGLAS ESTRICTAS:
+1. NO uses comillas dobles dentro de los strings (usa comillas simples)
+2. Limita a máximo 4 tipos de cobro
+3. Descripciones cortas (máximo 80 caracteres)
+4. Frecuencia debe ser: "común", "ocasional" o "raro"
 
 {
   "tiposCobro": [
     {
       "nombre": "nombre del tipo de cobro",
-      "descripcion": "descripción breve",
+      "descripcion": "descripción breve (max 80 chars)",
       "rangoPrecios": "rango de precios típico",
       "frecuencia": "común"
     }
@@ -85,7 +98,21 @@ IMPORTANTE: Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido con esta es
 // Add this helper function before the POST handler
 function cleanJsonResponse(text: string): string {
   // Remove markdown code block syntax if present
-  return text.replace(/```json\n?|\n?```/g, '').trim();
+  let cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+
+  // Remove any text before the first {
+  const firstBrace = cleaned.indexOf('{');
+  if (firstBrace > 0) {
+    cleaned = cleaned.substring(firstBrace);
+  }
+
+  // Remove any text after the last }
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (lastBrace > -1 && lastBrace < cleaned.length - 1) {
+    cleaned = cleaned.substring(0, lastBrace + 1);
+  }
+
+  return cleaned;
 }
 
 export async function POST(request: Request) {
@@ -222,17 +249,38 @@ export async function POST(request: Request) {
     let analisisResponse, tiposCobroResponse;
     try {
       // Clean the responses before parsing
-      const cleanAnalisisText = cleanJsonResponse(analisisGeneral.choices[0].message.content);
-      const cleanTiposCobroText = cleanJsonResponse(tiposCobro.choices[0].message.content);
-      
-      analisisResponse = JSON.parse(cleanAnalisisText);
-      tiposCobroResponse = JSON.parse(cleanTiposCobroText);
+      const rawAnalisis = analisisGeneral.choices[0].message.content;
+      const rawTiposCobro = tiposCobro.choices[0].message.content;
+
+      const cleanAnalisisText = cleanJsonResponse(rawAnalisis);
+      const cleanTiposCobroText = cleanJsonResponse(rawTiposCobro);
+
+      console.log('Attempting to parse analisis JSON...');
+      try {
+        analisisResponse = JSON.parse(cleanAnalisisText);
+      } catch (err) {
+        console.error('Error parsing analisis JSON:', err);
+        console.error('Cleaned analisis text:', cleanAnalisisText.substring(0, 500));
+        throw new Error(`Error al parsear análisis: ${err instanceof Error ? err.message : 'JSON inválido'}`);
+      }
+
+      console.log('Attempting to parse tipos cobro JSON...');
+      try {
+        tiposCobroResponse = JSON.parse(cleanTiposCobroText);
+      } catch (err) {
+        console.error('Error parsing tipos cobro JSON:', err);
+        console.error('Cleaned tipos cobro text:', cleanTiposCobroText.substring(0, 500));
+        throw new Error(`Error al parsear tipos de cobro: ${err instanceof Error ? err.message : 'JSON inválido'}`);
+      }
+
     } catch (parseError) {
       console.error('Error parseando respuestas:', parseError);
-      console.error('Raw analisis response:', analisisGeneral.choices[0].message.content);
-      console.error('Raw tipos cobro response:', tiposCobro.choices[0].message.content);
       return NextResponse.json(
-        { error: 'Error en formato de respuesta', details: parseError instanceof Error ? parseError.message : 'Error al parsear JSON' },
+        {
+          error: 'La IA generó una respuesta con formato inválido',
+          details: parseError instanceof Error ? parseError.message : 'Error al parsear JSON',
+          suggestion: 'Por favor intenta reformular tu consulta o inténtalo de nuevo'
+        },
         { status: 500 }
       );
     }
