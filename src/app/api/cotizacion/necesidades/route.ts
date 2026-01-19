@@ -9,9 +9,15 @@ export async function POST(req: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const prompt = `Eres un abogado experto en analizar el contexto de un servicio legal solicitado. Basado en la descripcion del servicio y la jurisdiccion, anticipa cuales son las necesidades o motivaciones reales del cliente para realizar este trámite. No incluyas frases genéricas como 'precios claros', 'buena atención', ni temas de relación cliente-abogado. Concéntrate en los motivos auténticos y relevantes al asunto, por ejemplo: crear un nuevo negocio, registrar un producto, evitar una infracción, obtener certeza jurídica, evitar recargos, etc. Cada necesidad debe tener entre 3 y 4 palabras como máximo, en lenguaje sencillo, acotado al derecho mexicano y relevante al asunto en cuestión. Responde con una lista separada por salto de linea, sin numeracion y con frases muy cortas.
+    const prompt = `Analiza este servicio legal y genera 6 necesidades/motivaciones del cliente (3-4 palabras cada una).
+
 Servicio: ${descripcionServicio}
-Jurisdiccion: ${jurisdiccion}`;
+Jurisdicción: ${jurisdiccion}
+
+NO incluyas: precios, atención, relación cliente-abogado
+SÍ incluye: motivos reales del cliente (crear negocio, evitar multa, obtener certeza legal, etc)
+
+Responde con lista separada por saltos de línea, sin numeración.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini-2025-08-07",
