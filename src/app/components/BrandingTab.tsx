@@ -12,13 +12,6 @@ interface BrandingData {
   slogan?: string;
   anoFundacion?: string;
   descripcion?: string;
-  sitioWeb?: string;
-  redes?: {
-    linkedin?: string;
-    twitter?: string;
-    instagram?: string;
-    facebook?: string;
-  };
   colores: {
     primario: string;
     secundario: string;
@@ -86,17 +79,6 @@ export default function BrandingTab({
         colores: {
           ...prev.colores,
           [colorKey]: value,
-        },
-      }));
-    } else if (name.startsWith("redes.")) {
-      const redKey = name.split(".")[1] as keyof NonNullable<
-        typeof formData.redes
-      >;
-      setFormData((prev) => ({
-        ...prev,
-        redes: {
-          ...prev.redes,
-          [redKey]: value,
         },
       }));
     } else {
@@ -264,63 +246,6 @@ export default function BrandingTab({
                   <p className="mt-3 text-sm text-gray-700 leading-relaxed">
                     {brandingData.descripcion}
                   </p>
-                )}
-                {brandingData.sitioWeb && (
-                  <a
-                    href={brandingData.sitioWeb}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                    {brandingData.sitioWeb.replace(/^https?:\/\//, '')}
-                  </a>
-                )}
-                {brandingData.redes && Object.values(brandingData.redes).some(val => val) && (
-                  <div className="flex gap-3 mt-3">
-                    {brandingData.redes.linkedin && (
-                      <a
-                        href={brandingData.redes.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <i className="fab fa-linkedin text-lg"></i>
-                      </a>
-                    )}
-                    {brandingData.redes.twitter && (
-                      <a
-                        href={brandingData.redes.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-blue-400 transition-colors"
-                      >
-                        <i className="fab fa-twitter text-lg"></i>
-                      </a>
-                    )}
-                    {brandingData.redes.instagram && (
-                      <a
-                        href={brandingData.redes.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-pink-600 transition-colors"
-                      >
-                        <i className="fab fa-instagram text-lg"></i>
-                      </a>
-                    )}
-                    {brandingData.redes.facebook && (
-                      <a
-                        href={brandingData.redes.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-blue-700 transition-colors"
-                      >
-                        <i className="fab fa-facebook text-lg"></i>
-                      </a>
-                    )}
-                  </div>
                 )}
               </div>
             </div>
@@ -555,54 +480,6 @@ export default function BrandingTab({
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
                       placeholder="Máx. 300 caracteres"
                     />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Sitio web
-                    </label>
-                    <input
-                      type="url"
-                      name="sitioWeb"
-                      value={formData.sitioWeb}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      placeholder="https://ejemplo.com"
-                    />
-                  </div>
-                  <div className="md:col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[
-                      { name: "linkedin", label: "LinkedIn" },
-                      { name: "twitter", label: "Twitter/X" },
-                      { name: "instagram", label: "Instagram" },
-                      { name: "facebook", label: "Facebook" },
-                    ].map((red) => (
-                      <div key={red.name}>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {red.label}
-                        </label>
-                        <input
-                          type="url"
-                          name={`redes.${red.name}`}
-                          value={
-                            formData.redes?.[
-                              red.name as keyof typeof formData.redes
-                            ] || ""
-                          }
-                          onChange={(e) => {
-                            const { value } = e.target;
-                            setFormData((prev) => ({
-                              ...prev,
-                              redes: {
-                                ...prev.redes,
-                                [red.name]: value,
-                              },
-                            }));
-                          }}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                          placeholder={`https://`}
-                        />
-                      </div>
-                    ))}
                   </div>
                 </div>
 
