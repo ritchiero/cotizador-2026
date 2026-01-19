@@ -21,6 +21,7 @@ interface ProfileData {
   telefono: string;
   location: string;
   tarifaHoraria: number;
+  monedaPreferida: 'MXN' | 'USD';
   bio: string;
   photoURL?: string;
   rfc?: string;
@@ -48,6 +49,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     telefono: '',
     location: '',
     tarifaHoraria: 0,
+    monedaPreferida: 'MXN',
     bio: '',
     photoURL: '',
     rfc: '',
@@ -81,6 +83,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             telefono: data.telefono || '',
             location: data.location || '',
             tarifaHoraria: data.tarifaHoraria || 0,
+            monedaPreferida: data.monedaPreferida || 'MXN',
             bio: data.bio || '',
             photoURL: data.photoURL || '',
             rfc: data.rfc || '',
@@ -197,7 +200,8 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         telefono: formData.telefono,
         location: formData.location,
         tarifaHoraria: formData.tarifaHoraria,
-        tarifaHorariaMoneda: 'MXN',
+        monedaPreferida: formData.monedaPreferida,
+        tarifaHorariaMoneda: formData.monedaPreferida, // Mantener sincronizado por compatibilidad
         bio: formData.bio,
         rfc: formData.rfc,
         especialidad: formData.especialidad,
@@ -436,28 +440,47 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
               </div>
             </div>
 
-            {/* Tarifa Horaria */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tarifa Horaria (MXN)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-500 text-sm">$</span>
-                <input
-                  type="number"
-                  name="tarifaHoraria"
-                  value={formData.tarifaHoraria || ''}
-                  onChange={handleInputChange}
-                  min="500"
-                  max="50000"
-                  step="100"
-                  className="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="1500"
-                />
+            {/* Tarifa Horaria y Moneda */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tarifa Horaria
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-3 text-gray-500 text-sm">$</span>
+                  <input
+                    type="number"
+                    name="tarifaHoraria"
+                    value={formData.tarifaHoraria || ''}
+                    onChange={handleInputChange}
+                    min="500"
+                    max="50000"
+                    step="100"
+                    className="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="1500"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Tu tarifa por hora de trabajo
+                </p>
               </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Tu tarifa se usa para calcular precios sugeridos
-              </p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Moneda
+                </label>
+                <select
+                  name="monedaPreferida"
+                  value={formData.monedaPreferida}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="MXN">MXN (Pesos Mexicanos)</option>
+                  <option value="USD">USD (Dólares)</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Moneda usada en servicios y cotizaciones
+                </p>
+              </div>
             </div>
 
             {/* Estado/Ubicación */}

@@ -7,6 +7,7 @@ export interface Service {
   detalles: string;
   tiempo: string;
   precio: string;
+  moneda?: 'MXN' | 'USD'; // Opcional para compatibilidad con servicios existentes
   incluye: string[];
   userId: string;
   userEmail: string;
