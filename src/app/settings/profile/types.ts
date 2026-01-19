@@ -19,24 +19,10 @@ export interface BrandingData {
   slogan?: string;
   anoFundacion?: string;
   descripcion?: string;
-  sitioWeb?: string;
-  redes?: {
-    linkedin?: string;
-    twitter?: string;
-    instagram?: string;
-    facebook?: string;
-  };
   colores: {
     primario: string;
     secundario: string;
     terciario: string;
   };
   logoURL?: string;
-  signer: {
-    name: string;
-    role: string;
-    phone?: string;
-    email: string;
-    other?: string;
-  };
 }

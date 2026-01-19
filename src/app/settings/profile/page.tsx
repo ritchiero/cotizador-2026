@@ -65,26 +65,12 @@ export default function Home() {
     slogan: '',
     anoFundacion: '',
     descripcion: '',
-    sitioWeb: '',
-    redes: {
-      linkedin: '',
-      twitter: '',
-      instagram: '',
-      facebook: ''
-    },
     colores: {
       primario: '#000000',
       secundario: '#666666',
       terciario: '#999999'
     },
-    logoURL: '',
-    signer: {
-      name: '',
-      role: '',
-      phone: '',
-      email: '',
-      other: ''
-    }
+    logoURL: ''
   });
 
   // Estado para nuevo servicio
@@ -267,21 +253,7 @@ export default function Home() {
                 terciario: brandingInfo.colores?.terciario || '#999999',
               },
               descripcion: brandingInfo.descripcion || '',
-              sitioWeb: brandingInfo.sitioWeb || '',
-              redes: {
-                linkedin: brandingInfo.redes?.linkedin || '',
-                twitter: brandingInfo.redes?.twitter || '',
-                instagram: brandingInfo.redes?.instagram || '',
-                facebook: brandingInfo.redes?.facebook || ''
-              },
-              logoURL: brandingInfo.logoURL || '',
-              signer: {
-                name: brandingInfo.signer?.name || '',
-                role: brandingInfo.signer?.role || '',
-                phone: brandingInfo.signer?.phone || '',
-                email: brandingInfo.signer?.email || '',
-                other: brandingInfo.signer?.other || ''
-              }
+              logoURL: brandingInfo.logoURL || ''
             });
           }
         });

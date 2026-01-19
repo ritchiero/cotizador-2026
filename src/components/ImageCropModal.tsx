@@ -1,7 +1,9 @@
 'use client';
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
-import { Point, Area } from 'react-easy-crop/types';
+
+type Point = { x: number; y: number };
+type Area = { x: number; y: number; width: number; height: number };
 
 interface ImageCropModalProps {
   imageSrc: string;
