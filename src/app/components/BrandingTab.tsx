@@ -25,13 +25,6 @@ interface BrandingData {
     terciario: string;
   };
   logoURL?: string;
-  signer: {
-    name: string;
-    role: string;
-    phone?: string;
-    email: string;
-    other?: string;
-  };
 }
 
 interface BrandingTabProps {
@@ -48,29 +41,11 @@ export default function BrandingTab({
   const [isLoading, setIsLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
-  const [formData, setFormData] = useState<BrandingData>({
-    ...brandingData,
-    signer: brandingData.signer || {
-      name: '',
-      role: '',
-      email: '',
-      phone: '',
-      other: ''
-    }
-  });
+  const [formData, setFormData] = useState<BrandingData>(brandingData);
 
   // Mantén sincronizado el formulario con los datos de branding que reciba el componente
   useEffect(() => {
-    setFormData({
-      ...brandingData,
-      signer: brandingData.signer || {
-        name: '',
-        role: '',
-        email: '',
-        phone: '',
-        other: ''
-      }
-    });
+    setFormData(brandingData);
   }, [brandingData]);
 
   useEffect(() => {
@@ -123,15 +98,6 @@ export default function BrandingTab({
           ...prev.redes,
           [redKey]: value,
         },
-      }));
-    } else if (name.startsWith('signer.')) {
-      const signerKey = name.split('.')[1] as keyof typeof formData.signer;
-      setFormData(prev => ({
-        ...prev,
-        signer: {
-          ...prev.signer,
-          [signerKey]: value
-        }
       }));
     } else {
       setFormData((prev) => ({
@@ -678,65 +644,7 @@ export default function BrandingTab({
                   </div>
                 </div>
 
-                {/* Firmante */}
-                <div className="mt-8">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Datos del firmante</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                      <input
-                        type="text"
-                        name="signer.name"
-                        autoFocus
-                        value={formData.signer.name}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Puesto</label>
-                      <input
-                        type="text"
-                        name="signer.role"
-                        value={formData.signer.role}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-                      <input
-                        type="email"
-                        name="signer.email"
-                        value={formData.signer.email}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                      <input
-                        type="tel"
-                        name="signer.phone"
-                        value={formData.signer.phone || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 md:col-span-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Otro</label>
-                      <input
-                        type="text"
-                        name="signer.other"
-                        value={formData.signer.other || ''}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Agregar el footer con botones */}
+                {/* Footer con botones */}
                 <div className="flex justify-end gap-3 pt-6 border-t mt-8">
                   <button
                     onClick={() => setIsModalOpen(false)}
