@@ -172,6 +172,11 @@ ${JSON.stringify(data.servicioGuardado, null, 2)}
 INSTRUCCIONES ESPECÍFICAS SEGÚN TIPO DE COTIZACIÓN:
 ${detalladaSpec}
 
+REGLA CRÍTICA - NO IGNORAR:
+❌ NO incluyas los headers "INTRODUCCIÓN:" ni "CIERRE:" en el documento
+✅ Empieza directo con el saludo (sin poner "INTRODUCCIÓN:")
+✅ Termina directo con la vigencia (sin poner "CIERRE:")
+
 Por favor, genera una cotización profesional siguiendo estas especificaciones.`;
 };
 
