@@ -581,6 +581,7 @@ export default function MarketAITab({ userId }: { userId: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
   const [step, setStep] = useState<AnalysisStep>('idle');
+  const [refinedQuery, setRefinedQuery] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -591,6 +592,8 @@ export default function MarketAITab({ userId }: { userId: string }) {
 
     setIsLoading(true);
     setStep('refining');
+    setRefinedQuery('');
+    setEstimate(null);
 
     try {
 
@@ -604,7 +607,7 @@ export default function MarketAITab({ userId }: { userId: string }) {
       });
 
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         console.error('Error en la respuesta:', {
           status: response.status,
@@ -613,32 +616,36 @@ export default function MarketAITab({ userId }: { userId: string }) {
         throw new Error(responseData.details || responseData.error || 'Error desconocido');
       }
 
-      setStep('analyzing');
+      // Mostrar query refinada inmediatamente
+      if (responseData.refinedQuery) {
+        setRefinedQuery(responseData.refinedQuery);
+        setStep('analyzing');
+      }
+
       setEstimate(responseData);
       setStep('complete');
     } catch (error) {
       console.error('Error completo:', error);
       toast.error(error instanceof Error ? error.message : 'Error al obtener la estimación');
       setStep('idle');
+      setRefinedQuery('');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-        <div className="px-8 py-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Mercado IA</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Obtén estimaciones de precios basadas en el análisis del mercado actual
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="w-full px-4 md:px-8 max-w-6xl mx-auto">
+      {/* Header - Sin card contenedora según design system */}
+      <div className="px-8 pt-6 pb-4">
+        <h2 className="text-lg font-semibold text-gray-800">Mercado IA</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Obtén estimaciones de precios basadas en el análisis del mercado actual
+        </p>
+      </div>
 
+      {/* Contenido con bg-white */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -661,6 +668,13 @@ export default function MarketAITab({ userId }: { userId: string }) {
             
             <ConsultButton isLoading={isLoading} step={step} />
           </form>
+
+          {/* Mostrar query refinada mientras se analiza */}
+          {refinedQuery && !estimate && (
+            <div className="mt-6">
+              <RefinedQueryDisplay query={refinedQuery} />
+            </div>
+          )}
 
           {estimate && <EstimateDisplay estimate={estimate} />}
         </div>

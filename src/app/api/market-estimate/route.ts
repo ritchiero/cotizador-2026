@@ -267,6 +267,7 @@ export async function POST(request: Request) {
       },
       costosGubernamentales: analisisResponse.costosGubernamentales || [],
       factores: analisisResponse.factores || [],
+      fuentesOficiales: analisisResponse.fuentesOficiales || [],
       html: analisisResponse.analisisDetallado || 'No se pudo generar el análisis detallado'
     };
 
