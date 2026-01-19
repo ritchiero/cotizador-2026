@@ -11,12 +11,11 @@ import { query, where, onSnapshot } from 'firebase/firestore';
 import BrandingTab from '@/app/components/BrandingTab';
 import PaymentTab from '@/app/components/PaymentTab';
 import BillingTab from '@/app/components/BillingTab';
-import MarketAITab from '@/app/components/MarketAITab';
 import { BillingData, BrandingData } from './settings/profile/types';
 import type { PaymentMethod } from '@/lib/types/payment';
 import ServicesTab from '@/app/components/ServicesTab';
 import ProfileTab from '@/app/components/ProfileTab';
-import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, CpuChipIcon, UserIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon } from '@heroicons/react/24/outline';
 
 interface UserProfile {
   location?: string;
@@ -314,7 +313,6 @@ export default function Home() {
               { label: 'Facturación', Icon: DocumentTextIcon },
               { label: 'Pago', Icon: CreditCardIcon },
               { label: 'Branding', Icon: SparklesIcon },
-              { label: 'Mercado IA', Icon: CpuChipIcon },
             ].map(({ label, Icon }) => (
               <button
                 key={label}
@@ -365,10 +363,6 @@ export default function Home() {
               userId={user?.uid || ''}
               brandingData={brandingData}
               onBrandingUpdate={setBrandingData}
-            />
-          ) : selectedTab === 'Mercado IA' ? (
-            <MarketAITab 
-              userId={user?.uid || ''}
             />
           ) : (
             <div className="w-full text-center py-12">
