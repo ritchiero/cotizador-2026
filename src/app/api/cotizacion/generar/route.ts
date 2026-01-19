@@ -330,8 +330,14 @@ export async function POST(req: Request) {
       messages: [{ role: "user", content: prompt }],
     });
 
+    // Post-procesar para quitar headers innecesarios que GPT ignora
+    let contenido = completion.choices[0].message.content || '';
+    contenido = contenido.replace(/INTRODUCCIÓN:\s*/g, '');
+    contenido = contenido.replace(/CIERRE:\s*/g, '');
+    contenido = contenido.replace(/Slogan:\s*/g, '');
+
     return NextResponse.json({
-      contenido: completion.choices[0].message.content
+      contenido: contenido
     });
 
   } catch (error: any) {
