@@ -262,128 +262,140 @@ export default function BrandingTab({
           </div>
 
           {/* Contenido con bg-white */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-8">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Logo */}
-                {brandingData.logoURL && (
-                  <div className="w-24 h-24 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center p-4 flex-shrink-0">
-                    <Image
-                      src={brandingData.logoURL}
-                      alt="Logo"
-                      width={96}
-                      height={96}
-                      className="w-full h-full object-contain"
-                      priority
-                    />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            {/* Información principal del despacho */}
+            <div className="flex flex-col md:flex-row gap-6 mb-8">
+              {/* Logo */}
+              {brandingData.logoURL && (
+                <div className="w-24 h-24 bg-white rounded-xl shadow-sm border border-gray-200 flex items-center justify-center p-4 flex-shrink-0">
+                  <Image
+                    src={brandingData.logoURL}
+                    alt="Logo"
+                    width={96}
+                    height={96}
+                    className="w-full h-full object-contain"
+                    priority
+                  />
+                </div>
+              )}
+
+              {/* Información del despacho */}
+              <div className="flex-grow">
+                <h3 className="text-base font-semibold text-gray-900">
+                  {brandingData.nombreDespacho}
+                </h3>
+                {brandingData.slogan && (
+                  <p className="mt-1 text-sm italic text-gray-600">
+                    &ldquo;{brandingData.slogan}&rdquo;
+                  </p>
+                )}
+                {brandingData.anoFundacion && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Fundado en {brandingData.anoFundacion}
+                  </p>
+                )}
+                {brandingData.descripcion && (
+                  <p className="mt-3 text-sm text-gray-700 leading-relaxed">
+                    {brandingData.descripcion}
+                  </p>
+                )}
+                {brandingData.sitioWeb && (
+                  <a
+                    href={brandingData.sitioWeb}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                    </svg>
+                    {brandingData.sitioWeb.replace(/^https?:\/\//, '')}
+                  </a>
+                )}
+                {brandingData.redes && Object.values(brandingData.redes).some(val => val) && (
+                  <div className="flex gap-3 mt-3">
+                    {brandingData.redes.linkedin && (
+                      <a
+                        href={brandingData.redes.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                      >
+                        <i className="fab fa-linkedin text-lg"></i>
+                      </a>
+                    )}
+                    {brandingData.redes.twitter && (
+                      <a
+                        href={brandingData.redes.twitter}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-blue-400 transition-colors"
+                      >
+                        <i className="fab fa-twitter text-lg"></i>
+                      </a>
+                    )}
+                    {brandingData.redes.instagram && (
+                      <a
+                        href={brandingData.redes.instagram}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-pink-600 transition-colors"
+                      >
+                        <i className="fab fa-instagram text-lg"></i>
+                      </a>
+                    )}
+                    {brandingData.redes.facebook && (
+                      <a
+                        href={brandingData.redes.facebook}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-blue-700 transition-colors"
+                      >
+                        <i className="fab fa-facebook text-lg"></i>
+                      </a>
+                    )}
                   </div>
                 )}
-
-                {/* Información */}
-                <div className="flex-grow">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    {brandingData.nombreDespacho}
-                  </h3>
-                  {brandingData.slogan && (
-                    <p className="mt-2 text-base italic text-gray-900">
-                      {brandingData.slogan}
-                    </p>
-                  )}
-                  {brandingData.anoFundacion && (
-                    <p className="mt-2 text-sm text-gray-900">
-                      Desde {brandingData.anoFundacion}
-                    </p>
-                  )}
-                  {brandingData.descripcion && (
-                    <p className="mt-2 text-sm text-gray-900">
-                      {brandingData.descripcion}
-                    </p>
-                  )}
-                  {brandingData.sitioWeb && (
-                    <a
-                      href={brandingData.sitioWeb}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 flex items-center text-sm underline text-gray-900 hover:no-underline"
-                    >
-                      <i className="fas fa-link mr-2 text-gray-400"></i>
-                      {brandingData.sitioWeb}
-                    </a>
-                  )}
-                {brandingData.redes && (
-                  <div className="flex gap-3 mt-3 text-gray-500">
-                      {brandingData.redes.linkedin && (
-                        <a
-                          href={brandingData.redes.linkedin}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-gray-900"
-                        >
-                          <i className="fab fa-linkedin"></i>
-                        </a>
-                      )}
-                      {brandingData.redes.twitter && (
-                        <a
-                          href={brandingData.redes.twitter}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-gray-900"
-                        >
-                          <i className="fab fa-twitter"></i>
-                        </a>
-                      )}
-                      {brandingData.redes.instagram && (
-                        <a
-                          href={brandingData.redes.instagram}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-gray-900"
-                        >
-                          <i className="fab fa-instagram"></i>
-                        </a>
-                      )}
-                      {brandingData.redes.facebook && (
-                        <a
-                          href={brandingData.redes.facebook}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-gray-900"
-                        >
-                          <i className="fab fa-facebook"></i>
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
               </div>
+            </div>
 
+            {/* Grid de 2 columnas para Firmante y Paleta de colores */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
               {/* Firmante */}
-              {brandingData.signer && (
-                <div className="mt-8">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Firmante</h4>
-                  <p className="text-sm text-gray-700 whitespace-pre-line">
-                    <strong>{brandingData.signer.name}</strong><br />
-                    {brandingData.signer.role}<br />
-                    {brandingData.signer.email}
-                    {brandingData.signer.phone && ` · ${brandingData.signer.phone}`}
-                    {brandingData.signer.other && ` · ${brandingData.signer.other}`}
-                  </p>
+              {brandingData.signer && brandingData.signer.name && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Firmante</h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-900">{brandingData.signer.name}</p>
+                    {brandingData.signer.role && (
+                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.role}</p>
+                    )}
+                    {brandingData.signer.email && (
+                      <p className="text-xs text-gray-600 mt-2">{brandingData.signer.email}</p>
+                    )}
+                    {brandingData.signer.phone && (
+                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.phone}</p>
+                    )}
+                    {brandingData.signer.other && (
+                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.other}</p>
+                    )}
+                  </div>
                 </div>
               )}
 
               {/* Paleta de Colores */}
-              <div className="mt-8 pt-6 border-t border-gray-100">
-                <h4 className="text-sm font-medium text-gray-900 mb-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-3">
                   Paleta de Colores
                 </h4>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-3">
                   {["primario", "secundario", "terciario"].map((key) => (
                     <div
                       key={key}
-                      className="bg-gray-50 rounded-lg p-3 flex items-center gap-3"
+                      className="flex items-center gap-3"
                     >
                       <div
-                        className="w-8 h-8 rounded-lg border shadow-sm flex-shrink-0"
+                        className="w-12 h-12 rounded-lg shadow-sm border border-gray-200 flex-shrink-0"
                         style={{
                           backgroundColor:
                             brandingData.colores[
@@ -395,7 +407,7 @@ export default function BrandingTab({
                         <span className="block text-sm font-medium text-gray-900 capitalize">
                           {key}
                         </span>
-                        <span className="block text-xs text-gray-500 uppercase">
+                        <span className="block text-xs text-gray-500 uppercase font-mono">
                           {
                             brandingData.colores[
                               key as keyof typeof brandingData.colores
