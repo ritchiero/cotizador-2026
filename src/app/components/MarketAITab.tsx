@@ -32,7 +32,7 @@ interface CostoGubernamental {
 
 interface EstimateResponse {
   refinedQuery: string;
-  html: string;
+  analisisDetallado?: string;
   tiposCobro: TipoCobro[];
   costosGubernamentales: CostoGubernamental[];
   rangosHonorarios: {
@@ -465,7 +465,7 @@ const EstimateDisplay = ({ estimate }: { estimate: EstimateResponse }) => {
       </div>
 
       {/* Análisis Detallado con mejor formateo */}
-      <AnalisisDetalladoSection html={estimate.html} />
+      {estimate.analisisDetallado && <AnalisisDetalladoSection html={estimate.analisisDetallado} />}
 
       {/* Nota al pie */}
       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
