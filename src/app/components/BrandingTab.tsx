@@ -359,65 +359,40 @@ export default function BrandingTab({
               </div>
             </div>
 
-            {/* Grid de 2 columnas para Firmante y Paleta de colores */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100">
-              {/* Firmante */}
-              {brandingData.signer && brandingData.signer.name && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Firmante</h4>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm font-semibold text-gray-900">{brandingData.signer.name}</p>
-                    {brandingData.signer.role && (
-                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.role}</p>
-                    )}
-                    {brandingData.signer.email && (
-                      <p className="text-xs text-gray-600 mt-2">{brandingData.signer.email}</p>
-                    )}
-                    {brandingData.signer.phone && (
-                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.phone}</p>
-                    )}
-                    {brandingData.signer.other && (
-                      <p className="text-xs text-gray-600 mt-1">{brandingData.signer.other}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Paleta de Colores */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3">
-                  Paleta de Colores
-                </h4>
-                <div className="space-y-3">
-                  {["primario", "secundario", "terciario"].map((key) => (
+            {/* Paleta de Colores */}
+            <div className="pt-8 border-t border-gray-100">
+              <h4 className="text-sm font-medium text-gray-900 mb-4">
+                Paleta de Colores
+              </h4>
+              <div className="grid grid-cols-3 gap-4">
+                {["primario", "secundario", "terciario"].map((key) => (
+                  <div
+                    key={key}
+                    className="flex items-center gap-3"
+                  >
                     <div
-                      key={key}
-                      className="flex items-center gap-3"
-                    >
-                      <div
-                        className="w-12 h-12 rounded-lg shadow-sm border border-gray-200 flex-shrink-0"
-                        style={{
-                          backgroundColor:
-                            brandingData.colores[
-                              key as keyof typeof brandingData.colores
-                            ],
-                        }}
-                      />
-                      <div>
-                        <span className="block text-sm font-medium text-gray-900 capitalize">
-                          {key}
-                        </span>
-                        <span className="block text-xs text-gray-500 uppercase font-mono">
-                          {
-                            brandingData.colores[
-                              key as keyof typeof brandingData.colores
-                            ]
-                          }
-                        </span>
-                      </div>
+                      className="w-12 h-12 rounded-lg shadow-sm border border-gray-200 flex-shrink-0"
+                      style={{
+                        backgroundColor:
+                          brandingData.colores[
+                            key as keyof typeof brandingData.colores
+                          ],
+                      }}
+                    />
+                    <div>
+                      <span className="block text-sm font-medium text-gray-900 capitalize">
+                        {key}
+                      </span>
+                      <span className="block text-xs text-gray-500 uppercase font-mono">
+                        {
+                          brandingData.colores[
+                            key as keyof typeof brandingData.colores
+                          ]
+                        }
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
