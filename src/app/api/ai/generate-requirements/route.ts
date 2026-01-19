@@ -59,7 +59,10 @@ IMPORTANTE:
 - Enfocarse en elementos tangibles y específicos
 - Considerar el flujo típico del tipo de proyecto identificado
 
-Responde ÚNICAMENTE con un array JSON de strings, sin explicaciones adicionales.`;
+Responde ÚNICAMENTE con un objeto JSON con este formato:
+{
+  "requirements": ["Requerimiento 1", "Requerimiento 2", ...]
+}`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-5-mini-2025-08-07',
@@ -72,15 +75,17 @@ Responde ÚNICAMENTE con un array JSON de strings, sin explicaciones adicionales
           role: 'user',
           content: 'Analiza el contenido de la cotización y genera los requerimientos apropiados.'
         }
-      ]
+      ],
+      response_format: { type: 'json_object' }
     });
 
     const generatedResponse = completion.choices[0].message.content || '';
-    
+
     // Intentar parsear la respuesta como JSON
     let requirements: string[] = [];
     try {
-      requirements = JSON.parse(generatedResponse);
+      const parsed = JSON.parse(generatedResponse);
+      requirements = parsed.requirements || parsed;
       
       // Validar que sea un array de strings
       if (!Array.isArray(requirements) || !requirements.every(req => typeof req === 'string')) {
