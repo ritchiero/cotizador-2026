@@ -331,6 +331,11 @@ const AIDisclaimer = () => (
 );
 
 const AnalisisDetalladoSection = ({ html }: { html: string }) => {
+  // Validar que html existe y no está vacío
+  if (!html || html.trim() === '') {
+    return null;
+  }
+
   // Función para limpiar y formatear el texto
   const formatearTexto = (texto: string) => {
     return texto

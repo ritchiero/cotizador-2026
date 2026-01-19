@@ -81,16 +81,28 @@ Incluye:
 TEXTO A ANALIZAR:
 ${perplexityText}
 
-INSTRUCCIONES:
-- Extrae los rangos de precios mencionados (honorarios profesionales, NO incluyas derechos gubernamentales aquí)
-- Extrae costos gubernamentales (derechos, trámites oficiales) por separado
-- Extrae tipos de cobro mencionados
-- Extrae factores que afectan el precio
-- Extrae las fuentes citadas
-- Si el texto menciona un rango (ej: "$5,000-$8,000"), usa el mínimo y máximo
-- Si no hay información clara, usa rangos aproximados basados en complejidad del servicio
+INSTRUCCIONES CRÍTICAS:
 
-Responde ÚNICAMENTE con este JSON (sin markdown):
+1. **Rangos de Honorarios**:
+   - Extrae SOLO honorarios profesionales (lo que cobran abogados/despachos)
+   - NO incluyas derechos gubernamentales aquí
+   - Si el texto dice "$0" o "gratuito", IGNÓRALO para honorarios profesionales
+   - Mínimo razonable para servicios legales: mínimo $1,000 MXN
+   - Si no hay datos: usa rangos aproximados ($3,000 - $15,000 para servicios estándar)
+
+2. **Costos Gubernamentales**:
+   - Solo derechos/trámites oficiales (IMPI, SAT, Notarios, Registros)
+   - Separado completamente de honorarios
+
+3. **Validación de Montos**:
+   - Si un monto parece irrazonable (ej: $0, $50,000,000), ajústalo a rangos sensatos
+   - Servicios simples: $1,000-$8,000 MXN
+   - Servicios especializados: $5,000-$25,000 MXN
+   - Litigios/casos complejos: $15,000-$50,000+ MXN
+
+4. **Fuentes**: Extrae URLs mencionadas en el texto
+
+Responde ÚNICAMENTE con JSON válido (sin markdown):
 {
   "rangosHonorarios": {
     "minimo": "$X,XXX MXN",
@@ -99,20 +111,20 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
   },
   "costosGubernamentales": [
     {
-      "concepto": "Nombre del derecho/trámite",
+      "concepto": "Nombre del derecho oficial",
       "monto": "$X,XXX MXN",
       "fuente": {
         "nombre": "Institución",
-        "url": "URL",
+        "url": "URL real",
         "fechaActualizacion": "2026"
       }
     }
   ],
   "tiposCobro": [
     {
-      "nombre": "Tipo de cobro",
-      "descripcion": "Descripción corta",
-      "rangoPrecios": "$X-$Y MXN",
+      "nombre": "Modelo de cobro",
+      "descripcion": "Qué incluye",
+      "rangoPrecios": "$X,XXX-$Y,YYY MXN",
       "frecuencia": "común"
     }
   ],
@@ -121,10 +133,10 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     {
       "nombre": "Nombre fuente",
       "url": "URL",
-      "descripcion": "Descripción"
+      "descripcion": "Qué info tiene"
     }
   ],
-  "analisisDetallado": "Resumen breve de la información encontrada"
+  "analisisDetallado": "Resumen breve"
 }`;
 
     const structuredResponse = await openai.chat.completions.create({
