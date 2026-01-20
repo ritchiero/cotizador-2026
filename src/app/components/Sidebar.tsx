@@ -59,6 +59,15 @@ export default function Sidebar() {
       ),
       label: 'Cotización Express',
     },
+    {
+      href: '/cotizacion-estructurada',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 0C0.896875 0 0 0.896875 0 2V14C0 15.1031 0.896875 16 2 16H14C15.1031 16 16 15.1031 16 14V2C16 0.896875 15.1031 0 14 0H2ZM1.5 2C1.5 1.725 1.725 1.5 2 1.5H14C14.275 1.5 14.5 1.725 14.5 2V4.5H1.5V2ZM1.5 6H14.5V9.5H1.5V6ZM1.5 11H14.5V14C14.5 14.275 14.275 14.5 14 14.5H2C1.725 14.5 1.5 14.275 1.5 14V11Z" fill="currentColor"/>
+        </svg>
+      ),
+      label: 'Cotización Estructurada',
+    },
   ];
 
   return (

@@ -1,21 +1,9 @@
-import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import OpenAI from 'openai';
 
-type Seccion = {
-  nombre: string;
-  elementos: string[];
-  estilo: string;
-  saltoLinea: number;
-};
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// Función para generar folio y fecha (se llama en cada request)
+// Función para generar folio y fecha
 const generarFolioYFecha = () => {
   const now = new Date();
   const fecha = new Intl.DateTimeFormat('es-MX', {
@@ -24,162 +12,231 @@ const generarFolioYFecha = () => {
     day: 'numeric'
   }).format(now);
 
-  const folio = `COT-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  const folio = `PS-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
   return { fecha, folio };
 };
 
-const getPromptTemplate = (data: any) => {
-  const detalladaSpec = data.tipoCotizacion === 'detallada' ? `
-INSTRUCCIONES PARA COTIZACIÓN DETALLADA:
-- Extensión mínima: 1200-1500 palabras
-- Desarrolla cada sección con claridad y profesionalismo
-- Mantén un tono formal pero cercano
+// ====== SUB-AGENTE 1: ENCABEZADO PROFESIONAL ======
+function generarEncabezado(userInfo: any, destinatario: any, despachoInfo: any, fecha: string, folio: string) {
+  const separador = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
-1. Carta inicial (sin header "INTRODUCCIÓN:")
-   - Saludo formal personalizado
-   - Presentación breve del despacho
-   - Contextualización del servicio solicitado
-   - NO incluir título "INTRODUCCIÓN:", empezar directo con el saludo
+  return `${despachoInfo.nombre.toUpperCase()}
+${despachoInfo.slogan || ""}
 
-2. ALCANCE DEL SERVICIO
-   - Descripción detallada del servicio legal
-   - Objetivos específicos a alcanzar
-   - Beneficios para el cliente
-   - Marco legal aplicable
+${separador}
 
-3. PROCESO DE TRABAJO
-   - Etapas del servicio
-   - Actividades principales en cada etapa
-   - Entregables específicos
-   - Metodología de trabajo
+PROPUESTA DE SERVICIOS PROFESIONALES
+${destinatario.empresa || "Servicios Legales"}
 
-4. CRONOGRAMA
-   - Duración total del servicio
-   - Desglose de tiempos por etapa
-   - Factores que podrían afectar los tiempos
-   - Fechas clave y entregables
+${separador}
 
-5. REQUERIMIENTOS
-   - Documentación necesaria
-   - Información requerida del cliente
-   - Requisitos legales específicos
-   - Responsabilidades del cliente
+Referencia:       ${folio}
+Fecha:            ${fecha}
+Preparado para:   ${destinatario.nombre}
+Confidencial:     Este documento contiene información privilegiada
 
-6. CONTRAPRESTACIÓN Y FORMA DE PAGO
-   - Honorarios profesionales detallados
-   - Estructura de pagos
-   - Gastos incluidos y no incluidos
-   - Condiciones de pago
-   - Vigencia de la cotización
+${separador}`;
+}
 
-7. TÉRMINOS Y CONDICIONES
-   - Alcances y limitaciones
-   - Confidencialidad
-   - Modificaciones al servicio
-   - Causales de terminación
+// ====== SUB-AGENTE 2: RESUMEN EJECUTIVO ======
+async function generarResumenEjecutivo(descripcionServicio: string, despachoInfo: any, tiempo: string) {
+  const prompt = `Genera un RESUMEN EJECUTIVO profesional para una propuesta de servicios legales.
 
-8. GARANTÍAS Y COMPROMISOS
-   - Compromisos de servicio
-   - Garantías profesionales
-   - Seguimiento del caso
-   - Soporte post-servicio
+DATOS:
+Despacho: ${despachoInfo.nombre}
+Servicio: ${descripcionServicio}
+Tiempo: ${tiempo}
 
-9. CIERRE
-   - Resumen de beneficios clave
-   - Información de contacto
-   - Próximos pasos
-   - Agradecimiento formal` 
-  : data.tipoCotizacion === 'media' 
-    ? '- Incluye los puntos principales con detalle moderado\n- Extensión aproximada: 400-600 palabras'
-    : data.tipoCotizacion === 'corta'
-    ? '- Incluye los puntos esenciales de forma concisa\n- Extensión aproximada: 200-400 palabras'
-    : '- Solo incluye los detalles más básicos\n- Extensión aproximada: 100-200 palabras';
+INSTRUCCIONES:
+1. Un párrafo formal de 3-4 oraciones
+2. Mencionar que ${despachoInfo.nombre} se complace en presentar la propuesta
+3. Describir brevemente el servicio
+4. Mencionar el plazo estimado (${tiempo})
+5. Tono: profesional, conciso, ejecutivo
+6. NO uses títulos como "RESUMEN EJECUTIVO:", solo el contenido
+
+EJEMPLO:
+${despachoInfo.nombre} se complace en presentar esta propuesta para [servicio]. Nuestro servicio contempla el acompañamiento integral desde [inicio] hasta [fin], garantizando [resultado] en un plazo de ${tiempo}.
+
+Genera el resumen ejecutivo:`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-nano-2025-08-07",
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  return completion.choices[0].message.content?.trim() || "";
+}
+
+// ====== SUB-AGENTE 3: ALCANCE DE SERVICIOS ======
+async function generarAlcanceServicios(servicios: any[]) {
+  const serviciosTexto = servicios.map((s: any) => {
+    let incluyeTexto = "";
+    if (Array.isArray(s.incluye)) {
+      incluyeTexto = s.incluye.map((item: any) => {
+        if (typeof item === 'object' && item.descripcion) {
+          return item.descripcion;
+        }
+        return item;
+      }).join(", ");
+    } else {
+      incluyeTexto = s.incluye;
+    }
+
+    return `${s.nombre}:
+Descripción: ${s.descripcion}
+Detalles: ${s.detalles}
+Incluye: ${incluyeTexto}`;
+  }).join("\n\n");
+
+  const prompt = `Genera la sección "II. ALCANCE DE LOS SERVICIOS" de una propuesta legal profesional.
+
+SERVICIOS A INCLUIR:
+${serviciosTexto}
+
+INSTRUCCIONES:
+1. Título: "II. ALCANCE DE LOS SERVICIOS"
+2. Dividir en subsecciones A, B, C, D, etc. (una por cada fase del servicio)
+3. Cada subsección con título descriptivo de la fase
+4. Párrafos de 2-3 oraciones explicando qué se hará
+5. Usar lenguaje formal y técnico pero claro
+6. NO usar bullets, usar párrafos corridos
+7. Formato profesional de propuesta legal
+
+EJEMPLO DE FORMATO:
+II. ALCANCE DE LOS SERVICIOS
+
+A. Fase de Estructuración
+
+Realizaremos una sesión de trabajo para definir la arquitectura corporativa...
+
+B. Elaboración de Documentos
+
+Redactaremos los estatutos sociales con cláusulas específicas...
+
+Genera la sección completa:`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-nano-2025-08-07",
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  return completion.choices[0].message.content?.trim() || "";
+}
+
+// ====== SUB-AGENTE 4: CRONOGRAMA ======
+async function generarCronograma(tiempo: string, descripcionServicio: string) {
+  const prompt = `Genera la sección "III. CRONOGRAMA ESTIMADO" para una propuesta legal.
+
+DATOS:
+Tiempo total: ${tiempo}
+Servicio: ${descripcionServicio}
+
+INSTRUCCIONES:
+1. Título: "III. CRONOGRAMA ESTIMADO"
+2. Crear una tabla con formato ASCII:
+    Actividad                                         Plazo
+    ─────────────────────────────────────────────────────────────────
+    [actividad 1]                                     Días X-Y
+    [actividad 2]                                     Días X-Y
+    ─────────────────────────────────────────────────────────────────
+
+3. Incluir 4-6 actividades principales del servicio
+4. Distribuir los días proporcionalmente según el tiempo total
+5. Al final agregar: "Los plazos anteriores son estimados y están sujetos a la disponibilidad de las autoridades competentes y a la entrega oportuna de la documentación requerida."
+
+Genera la sección completa con la tabla:`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-nano-2025-08-07",
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  return completion.choices[0].message.content?.trim() || "";
+}
+
+// ====== SUB-AGENTE 5: HONORARIOS (sin IA) ======
+function generarHonorarios(precio: string, formaPago: string, moneda: string) {
+  const precioNum = parseFloat(precio.replace(/[^0-9.]/g, ''));
+  const honorarios = precioNum / 1.16;
+  const iva = precioNum - honorarios;
+  const simbolo = moneda === "USD" ? "$" : "$";
+
+  return `IV. HONORARIOS PROFESIONALES
+
+Por los servicios descritos en la presente propuesta, nuestros honorarios ascienden a:
+
+    Concepto                                          Importe
+    ─────────────────────────────────────────────────────────────────
+    Honorarios profesionales                          ${simbolo}${honorarios.toFixed(2)} ${moneda}
+    IVA (16%)                                         ${simbolo}${iva.toFixed(2)} ${moneda}
+    ─────────────────────────────────────────────────────────────────
+    TOTAL                                             ${simbolo}${precioNum.toFixed(2)} ${moneda}
+
+Condiciones de pago: ${formaPago}
+
+Los honorarios no incluyen derechos notariales, derechos registrales ni gastos ante autoridades, los cuales serán cubiertos directamente por el cliente o facturados por separado a precio de costo.`;
+}
+
+// ====== SUB-AGENTE 6: OBLIGACIONES Y CONFIDENCIALIDAD ======
+async function generarObligacionesYCierre(despachoInfo: any, userInfo: any) {
+  const prompt = `Genera las secciones finales (V a VIII) de una propuesta legal profesional.
+
+DATOS:
+Despacho: ${despachoInfo.nombre}
+Email: ${userInfo.email || "contacto@" + despachoInfo.nombre.toLowerCase().replace(/\s/g, '') + ".mx"}
+
+INSTRUCCIONES:
+1. Generar 4 secciones:
+   - V. OBLIGACIONES DEL CLIENTE (lista de documentos/información que debe proporcionar)
+   - VI. CONFIDENCIALIDAD (párrafo sobre protección de información)
+   - VII. VIGENCIA (30 días naturales)
+   - VIII. ACEPTACIÓN (solicitud de confirmación por escrito)
+
+2. Formato profesional y conciso
+3. Usar letras a), b), c) para listar obligaciones
+4. Párrafos formales pero claros
+
+EJEMPLO PARCIAL:
+V. OBLIGACIONES DEL CLIENTE
+
+Para la adecuada ejecución de los servicios, el cliente deberá proporcionar:
+
+    a) Identificación oficial vigente de cada socio fundador
+    b) Comprobante de domicilio del domicilio social
+    ...
+
+VI. CONFIDENCIALIDAD
+
+La información proporcionada será tratada con estricta confidencialidad...
+
+Genera las 4 secciones completas:`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-nano-2025-08-07",
+    messages: [{ role: "user", content: prompt }]
+  });
+
+  return completion.choices[0].message.content?.trim() || "";
+}
+
+// ====== SUB-AGENTE 7: FOOTER ======
+function generarFooter(despachoInfo: any, userInfo: any) {
+  const separador = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+  const email = userInfo.email || `contacto@${despachoInfo.nombre.toLowerCase().replace(/\s/g, '')}.mx`;
 
   return `
-Genera una cotización profesional en español para un servicio legal usando el siguiente formato y estilo:
 
-ESTRUCTURA BASE:
-1. Inicia con "Estimado/a [nombre del cliente]:"
-2. Primer párrafo: Agradecimiento e introducción
-3. Cuerpo de la cotización organizado por secciones
-4. Cierre profesional con datos de contacto
+${separador}
 
-DATOS PARA USAR:
-Cliente: ${data.clienteNombre}
-Remitente: ${data.remitente}
-Servicio: ${data.descripcion}
-Necesidades: ${data.necesidadesCliente}
-Jurisdicción: ${data.jurisdiccion}
-Tiempo: ${data.tiempo}
-Inversión: ${data.precio}
-Forma de Pago: ${data.formaPago}
-Requerimientos: ${data.requerimientos}
+${despachoInfo.nombre.toUpperCase()}
+${email}
 
-ESTILO Y TONO:
-- Usa un tono profesional y cordial
-- Estructura clara y organizada
-- Párrafos concisos y bien definidos
-- Lenguaje formal pero accesible
+${separador}`;
+}
 
-FORMATO ESPECÍFICO:
-1. ENCABEZADO
-   - Fecha actual
-   - Referencia: Cotización de Servicios Legales
-
-2. SALUDO
-   - "Estimado/a [nombre]:"
-
-3. Carta de presentación (sin header "INTRODUCCIÓN:")
-   - Agradecimiento por el interés
-   - Breve presentación del despacho
-   - Mención del servicio solicitado
-   - NO incluir título "INTRODUCCIÓN:", empezar directo con el texto
-
-4. ALCANCE DEL SERVICIO
-   - Descripción detallada
-   - Objetivos principales
-
-5. PROCESO Y METODOLOGÍA
-   - Etapas del servicio
-   - Cronograma estimado
-
-6. REQUERIMIENTOS
-   - Lista de documentos necesarios
-   - Requisitos específicos
-
-7. CONTRAPRESTACIÓN Y FORMA DE PAGO
-   - Monto total
-   - Estructura de pagos
-   - Condiciones específicas
-
-8. TÉRMINOS Y GARANTÍAS
-   - Compromisos del despacho
-   - Plazos de entrega
-
-9. Información final (sin header "CIERRE:")
-   - Vigencia de la cotización
-   - Datos de contacto
-   - Agradecimiento final
-   - Firma profesional
-   - NO incluir título "CIERRE:", empezar directo con vigencia
-
-${data.servicioGuardado ? `
-INFORMACIÓN ADICIONAL DEL SERVICIO GUARDADO:
-${JSON.stringify(data.servicioGuardado, null, 2)}
-` : ''}
-
-INSTRUCCIONES ESPECÍFICAS SEGÚN TIPO DE COTIZACIÓN:
-${detalladaSpec}
-
-REGLA CRÍTICA - NO IGNORAR:
-❌ NO incluyas los headers "INTRODUCCIÓN:" ni "CIERRE:" en el documento
-✅ Empieza directo con el saludo (sin poner "INTRODUCCIÓN:")
-✅ Termina directo con la vigencia (sin poner "CIERRE:")
-
-Por favor, genera una cotización profesional siguiendo estas especificaciones.`;
-};
-
+// ====== ORQUESTADOR PRINCIPAL ======
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -190,161 +247,81 @@ export async function POST(req: Request) {
       tiempo,
       precio,
       formaPago,
-      tipoCotizacion,
       despachoInfo,
       servicioInfo,
-      estructura ,
+      estructura,
       userInfo
     } = body;
 
-    // Generar folio y fecha para esta cotización
+    // Generar folio y fecha
     const { fecha, folio } = generarFolioYFecha();
 
-    // Construir un prompt más detallado usando la información adicional
-    const prompt = `
-      Genera una cotización profesional en español para un servicio legal siguiendo estas instrucciones específicas:
+    console.log("🚀 Iniciando generación con sub-agentes profesionales...");
 
-      1. INFORMACIÓN BASE:
-      Despacho: ${despachoInfo.nombre}
-      Identidad: ${despachoInfo.slogan}
-      ${despachoInfo.anoFundacion ? `Experiencia: Desde ${despachoInfo.anoFundacion}` : ''}
+    // Preparar datos
+    const destinatario = {
+      nombre: clienteNombre,
+      empresa: remitente || ""
+    };
 
-      2. SERVICIO A COTIZAR:
-      ${servicioInfo ? `
-      Nombre del Servicio: ${servicioInfo.nombre}
-      
-      Descripción Técnica:
-      ${servicioInfo.detalles}
-      
-      Servicios Específicos Incluidos:
-      ${servicioInfo.incluye.map((item: { descripcion: string }) => `- ${item.descripcion}`).join('\n')}
-      ` : `
-      Descripción: ${descripcion}
-      `}
+    const moneda = estructura?.formato?.precios?.formato || 'MXN';
 
-      3. INFORMACIÓN DEL CLIENTE:
-      Nombre: ${clienteNombre}
-      Contacto: ${remitente}
-      Tiempo Estimado: ${tiempo}
-      Inversión: ${precio}
-      Forma de Pago: ${formaPago}
+    const serviciosData = servicioInfo ? [servicioInfo] : [{
+      nombre: descripcion,
+      descripcion: descripcion,
+      detalles: descripcion,
+      incluye: ["Servicio completo"]
+    }];
 
-      4. FORMATO ESPECIFICO:
-      Folio: ${folio}
-      Fecha: ${fecha}
+    // Ejecutar agentes en paralelo
+    console.log("📝 Ejecutando agentes...");
 
-      INSTRUCCIONES DE FORMATO:
+    const [resumenEjecutivo, alcanceServicios, cronograma, obligacionesYCierre] = await Promise.all([
+      generarResumenEjecutivo(descripcion, despachoInfo, tiempo),
+      generarAlcanceServicios(serviciosData),
+      generarCronograma(tiempo, descripcion),
+      generarObligacionesYCierre(despachoInfo, userInfo)
+    ]);
 
-      1. ESTRUCTURA DEL DOCUMENTO:
-      - Incluir folio ${folio} en el encabezado
-      - Usar formato profesional con espaciado claro entre secciones
-      - Evitar caracteres especiales como |, -, * o #
-      - Usar viñetas simples para listas (•)
-      - Usar numeración para pasos secuenciales
-      - Alinear precios y tablas con espacios, no con caracteres
-      - CRÍTICO: NO separar abreviaturas legales (S.A. de C.V., S.C., S. de R.L.) en líneas diferentes
-      - Mantener razones sociales en una sola línea
+    // Generar secciones sin IA
+    const encabezado = generarEncabezado(userInfo, destinatario, despachoInfo, fecha, folio);
+    const honorarios = generarHonorarios(precio, formaPago, moneda);
+    const footer = generarFooter(despachoInfo, userInfo);
 
-      2. SECCIONES REQUERIDAS:
-      ${estructura.formato.secciones.map((seccion: Seccion) => `
-        ${seccion.nombre.toUpperCase()}:
-        • Contenido: ${seccion.elementos.join(', ')}
-        • Formato: ${seccion.estilo}
-        • Espaciado: ${seccion.saltoLinea} líneas
-      `).join('\n')}
+    // Ensamblar documento
+    console.log("🔨 Ensamblando documento final...");
+    const contenidoFinal = `${encabezado}
 
-      3. NIVEL DE DETALLE: ${tipoCotizacion === 'detallada' ? `
-        - Incluir descripción exhaustiva de cada servicio
-        - Detallar beneficios y alcances
-        - Explicar cada etapa del proceso
-        - Desglosar costos y tiempos
-        - Incluir garantías y compromisos
-        - Mencionar entregables específicos
-      ` : `
-        - Mantener información concisa pero completa
-        - Enfocarse en puntos clave
-        - Resumir procesos principales
-        - Mostrar costos totales
-      `}
 
-      4. FORMATO ESPECÍFICO:
-      - Moneda: ${estructura.formato.formateo.precios.formato}
-      - Fechas: ${estructura.formato.formateo.fechas.formato}
-      - Sangrías: ${estructura.formato.formateo.listas.sangria ? 'Usar sangría en listas' : 'Sin sangría'}
-      - Espaciado: ${estructura.formato.formateo.listas.espaciado} línea(s) entre elementos
+I. RESUMEN EJECUTIVO
 
-      5. TONO Y ESTILO:
-      - Profesional pero accesible
-      - Enfatizar el valor y beneficios
-      - Usar lenguaje claro y preciso
-      - Mantener formato consistente
-      - Resaltar la experiencia del despacho
-      - Incluir próximos pasos claros
+${resumenEjecutivo}
 
-      IMPORTANTE:
-      - No usar markdown ni caracteres especiales de formateo
-      - Mantener alineación usando espacios
-      - Usar saltos de línea para separar secciones
-      - Incluir todos los servicios listados
-      - Mantener coherencia en el formato de precios
-      - Cerrar con información de contacto clara y próximos pasos
 
-      6. FIRMA:
-      - Firma con el nombre del despacho y el nombre del usuario:
-      ${despachoInfo.nombre} - ${userInfo.displayName}
+${alcanceServicios}
 
-      INSTRUCCIONES ESPECÍFICAS PARA COSTOS:
-      
-      1. FORMATO DE COSTOS:
-      • Para cotización express:
-        - Mostrar solo el monto total: ${precio}
-        - Forma de pago: ${formaPago}
-        - Usar formato simple sin tablas ni caracteres especiales
-        - Ejemplo de formato:
-          COSTOS:
-          Inversión Total:     [monto] MXN
-          Forma de Pago:       [descripción]
 
-      2. ALINEACIÓN:
-        - Usar espacios para alinear valores
-        - No usar caracteres como |, -, o *
-        - Mantener consistencia en el espaciado
+${cronograma}
 
-      3. FORMATO DE MONTOS:
-        - Usar formato: ${estructura.formato.formateo.precios.formato}
-        - Incluir separador de miles
-        - Dos decimales fijos
-        - Incluir símbolo de moneda
 
-      4. NOTAS IMPORTANTES:
-        - No desglosar costos en cotización express
-        - No inventar montos o conceptos adicionales
-        - Mantener la información simple y clara
-        - Enfocarse en el valor total y forma de pago
+${honorarios}
 
-      Por favor, genera una cotización profesional siguiendo estas especificaciones al detalle.
-    `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini-2025-08-07",
-      messages: [{ role: "user", content: prompt }],
-    });
+${obligacionesYCierre}
 
-    // Post-procesar para quitar headers innecesarios que GPT ignora
-    let contenido = completion.choices[0].message.content || '';
-    contenido = contenido.replace(/INTRODUCCIÓN:\s*/g, '');
-    contenido = contenido.replace(/CIERRE:\s*/g, '');
-    contenido = contenido.replace(/Slogan:\s*/g, '');
+${footer}`;
+
+    console.log("✅ Cotización profesional generada con éxito");
 
     return NextResponse.json({
-      contenido: contenido
+      contenido: contenidoFinal
     });
 
   } catch (error: any) {
-    console.error('Error:', error);
+    console.error('❌ Error en orquestador:', error);
     return NextResponse.json(
       { error: 'Error al generar la cotización' },
       { status: 500 }
     );
   }
-} 
+}
