@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useCompletion } from 'ai/react';
 import { db } from '@/lib/firebase/firebase';
-import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDoc} from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { query, where, onSnapshot } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import ServiceForm from './ServiceForm';
@@ -87,8 +87,8 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
   const { complete, isLoading: isAILoading } = useCompletion({
     api: '/api/openai/chat',
-    onResponse: () => {},
-    onFinish: () => {},
+    onResponse: () => { },
+    onFinish: () => { },
     onError: (error) => {
       console.error('[AI Error Event]:', {
         message: error.message,
@@ -126,7 +126,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
   // Función para estandarizar servicios con IA
   const [isStandardizing, setIsStandardizing] = useState(false);
-  
+
   const standardizeServices = async () => {
     if (!user?.uid) {
       toast.error('Usuario no autenticado');
@@ -160,7 +160,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
           }
 
           const standardizedData = await response.json();
-          
+
           // Actualizar en Firestore
           const serviceRef = doc(db, 'servicios', servicio.id);
           await updateDoc(serviceRef, {
@@ -181,7 +181,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       }
 
       toast.success('Servicios estandarizados exitosamente');
-      
+
     } catch (error) {
       console.error('Error en estandarización:', error);
       toast.error('Error al estandarizar servicios');
@@ -247,7 +247,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
       // Filtrar items vacíos de incluye
       const itemsIncluidos = newService.incluye.filter(item => item.trim() !== '');
-      
+
       if (itemsIncluidos.length === 0) {
         throw new Error('Debes incluir al menos un elemento en la lista de incluidos');
       }
@@ -442,10 +442,10 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
   // Agregar la función para eliminar servicio
   const handleDeleteService = async (serviceId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Evitar que se abra el modal de detalles
-    
+
     try {
       const isConfirmed = window.confirm('¿Estás seguro de que deseas eliminar este servicio?');
-      
+
       if (isConfirmed) {
         const serviceRef = doc(db, 'servicios', serviceId);
         await deleteDoc(serviceRef);
@@ -463,7 +463,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       if (prev === null) {
         return null;
       }
-  
+
       return {
         ...prev,
         incluye: prev.incluye?.map((item, i) => i === index ? value : item) || ['']
@@ -476,7 +476,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       if (prev === null) {
         return null;  // Si el estado es null, no hacemos nada y retornamos null
       }
-  
+
       return {
         ...prev,
         incluye: [...(prev.incluye || []), '']
@@ -489,7 +489,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       if (prev === null) {
         return null;  // Si el estado es null, no hacemos nada y retornamos null
       }
-  
+
       return {
         ...prev,
         incluye: (prev.incluye || []).filter((_, i) => i !== index)
@@ -499,12 +499,12 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-  
+
     // Si el campo es 'precio', formateamos el valor antes de actualizar
     if (name === 'precio') {
       setEditedService(prev => {
         if (prev === null) return null; // Evitamos errores si el servicio es null
-  
+
         return {
           ...prev,
           [name]: formatPrice(value), // Formateamos el precio
@@ -513,7 +513,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
     } else {
       setEditedService(prev => {
         if (prev === null) return null; // Evitamos errores si el servicio es null
-  
+
         return {
           ...prev,
           [name]: value, // Actualizamos el campo correspondiente
@@ -583,7 +583,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
     setIsEditing(true);
     setIsEditModalOpen(true); // Usar el nuevo estado para el modal de edición
   };
-  
+
   const handleServiceClick = (service: Service) => {
     setSelectedService(service); // Establece el servicio seleccionado en el estado
     setIsModalOpen(true); // Abre un modal para mostrar los detalles del servicio
@@ -635,381 +635,381 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               Gestiona los servicios que ofreces a tus clientes
             </p>
           </div>
-            <div className="flex justify-end">
-              {/* Botón móvil */}
+          <div className="flex justify-end">
+            {/* Botón móvil */}
+            <button
+              onClick={() => setIsAIModalOpen(true)}
+              className="md:hidden flex items-center gap-1 text-base font-medium text-gray-600 hover:text-primary"
+            >
+              <SparklesIcon className="h-4 w-4" />
+              Crear con IA
+            </button>
+            {/* Botones desktop con estilo del sistema maestro */}
+            <div className="hidden md:grid grid-cols-3 gap-3">
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Nuevo Servicio
+              </button>
               <button
                 onClick={() => setIsAIModalOpen(true)}
-                className="md:hidden flex items-center gap-1 text-base font-medium text-gray-600 hover:text-primary"
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-[#3B82F6] text-[#3B82F6] text-sm font-medium hover:bg-blue-50 transition-all"
               >
-                <SparklesIcon className="h-4 w-4" />
+                <SparklesIcon className="w-4 h-4 mr-2" />
                 Crear con IA
               </button>
-              {/* Botones desktop con estilo del sistema maestro */}
-              <div className="hidden md:grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
-                >
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Nuevo Servicio
-                </button>
-                <button
-                  onClick={() => setIsAIModalOpen(true)}
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-[#3B82F6] text-[#3B82F6] text-sm font-medium hover:bg-blue-50 transition-all"
-                >
-                  <SparklesIcon className="w-4 h-4 mr-2" />
-                  Crear con IA
-                </button>
-                <button
-                  onClick={standardizeServices}
-                  disabled={isStandardizing || servicios.length === 0}
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-purple-600 text-purple-600 text-sm font-medium hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isStandardizing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
-                      Estandarizando...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                      </svg>
-                      Estandarizar IA
-                    </>
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={standardizeServices}
+                disabled={isStandardizing || servicios.length === 0}
+                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-purple-600 text-purple-600 text-sm font-medium hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isStandardizing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                    Estandarizando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+                    </svg>
+                    Estandarizar IA
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Grid de Servicios */}
-        <div className="p-4 md:p-8">
-          {servicios.length > 0 ? (
-            <>
-              {/* Barra de búsqueda y controles */}
-              <div className="space-y-4 mb-6">
-                {/* Fila superior: Búsqueda y controles principales */}
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                  {/* Barra de búsqueda */}
-                  <div className="relative flex-1 max-w-md">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Buscar servicios..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-5 py-3 border border-[#E5E7EB] rounded-full focus:ring-0 focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] text-sm transition-all outline-none hover:border-[#D1D5DB] bg-white"
-                    />
-                    {searchTerm && (
-                      <button
-                        onClick={() => setSearchTerm('')}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                      >
-                        <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    )}
+      {/* Grid de Servicios */}
+      <div className="p-4 md:p-8">
+        {servicios.length > 0 ? (
+          <>
+            {/* Barra de búsqueda y controles */}
+            <div className="space-y-4 mb-6">
+              {/* Fila superior: Búsqueda y controles principales */}
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                {/* Barra de búsqueda */}
+                <div className="relative flex-1 max-w-md">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                   </div>
-
-                  {/* Controles de ordenamiento y vista */}
-                  <div className="flex items-center gap-2">
-                    {/* Ordenamiento */}
-                    <div className="flex items-center gap-1">
-                      <select
-                        value={`${sortBy}-${sortOrder}`}
-                        onChange={(e) => {
-                          const [field, order] = e.target.value.split('-');
-                          setSortBy(field as 'nombre' | 'precio' | 'tiempo' | 'fecha');
-                          setSortOrder(order as 'asc' | 'desc');
-                        }}
-                        className="text-base border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="nombre-asc">Nombre A-Z</option>
-                        <option value="nombre-desc">Nombre Z-A</option>
-                        <option value="precio-asc">Precio menor</option>
-                        <option value="precio-desc">Precio mayor</option>
-                        <option value="fecha-desc">Más reciente</option>
-                        <option value="fecha-asc">Más antiguo</option>
-                      </select>
-                    </div>
-
-                    {/* Botón de filtros */}
+                  <input
+                    type="text"
+                    placeholder="Buscar servicios..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-5 py-3 border border-[#E5E7EB] rounded-full focus:ring-0 focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] text-sm transition-all outline-none hover:border-[#D1D5DB] bg-white"
+                  />
+                  {searchTerm && (
                     <button
-                      onClick={() => setShowFilters(!showFilters)}
-                      className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                      title="Filtros"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                      <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
-
-                    {/* Divider */}
-                    <div className="w-px h-6 bg-gray-300"></div>
-
-                    {/* Toggle de vista */}
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                      title="Vista en cuadrícula"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                      title="Vista en lista"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                      </svg>
-                    </button>
-                  </div>
+                  )}
                 </div>
 
-                {/* Panel de filtros expandible */}
-                {showFilters && (
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
-                      {/* Filtro de precio */}
-                      <div className="flex-1">
-                        <label className="block text-base font-medium text-gray-700 mb-2">
-                          Rango de precio
-                        </label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="Mín"
-                            value={priceRange.min}
-                            onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                          <span className="text-gray-500">-</span>
-                          <input
-                            type="number"
-                            placeholder="Máx"
-                            value={priceRange.max}
-                            onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                            className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Botón limpiar filtros */}
-                      <button
-                        onClick={clearFilters}
-                        className="px-3 py-1.5 text-base text-gray-600 hover:text-gray-800 underline"
-                      >
-                        Limpiar filtros
-                      </button>
-                    </div>
+                {/* Controles de ordenamiento y vista */}
+                <div className="flex items-center gap-2">
+                  {/* Ordenamiento */}
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={`${sortBy}-${sortOrder}`}
+                      onChange={(e) => {
+                        const [field, order] = e.target.value.split('-');
+                        setSortBy(field as 'nombre' | 'precio' | 'tiempo' | 'fecha');
+                        setSortOrder(order as 'asc' | 'desc');
+                      }}
+                      className="text-base border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="nombre-asc">Nombre A-Z</option>
+                      <option value="nombre-desc">Nombre Z-A</option>
+                      <option value="precio-asc">Precio menor</option>
+                      <option value="precio-desc">Precio mayor</option>
+                      <option value="fecha-desc">Más reciente</option>
+                      <option value="fecha-asc">Más antiguo</option>
+                    </select>
                   </div>
-                )}
 
-                {/* Contador de resultados */}
-                <div className="flex items-center justify-between text-base text-gray-600">
-                  <div>
-                    {getFilteredAndSortedServices().length} de {servicios.length} {servicios.length === 1 ? 'servicio' : 'servicios'}
-                    {searchTerm && (
-                      <span> • Búsqueda: <strong>&quot;{searchTerm}&quot;</strong></span>
-                    )}
-                  </div>
+                  {/* Botón de filtros */}
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                    title="Filtros"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
+                    </svg>
+                  </button>
+
+                  {/* Divider */}
+                  <div className="w-px h-6 bg-gray-300"></div>
+
+                  {/* Toggle de vista */}
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                    title="Vista en cuadrícula"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                    title="Vista en lista"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
-              {/* Vista en cuadrícula mejorada */}
-              {viewMode === 'grid' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-                  {getFilteredAndSortedServices().map((servicio) => (
-                    <div
-                      key={servicio.id}
-                      onClick={() => handleServiceClick(servicio)}
-                      className="group relative bg-background-card rounded-2xl border border-border p-5 shadow transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1"
+              {/* Panel de filtros expandible */}
+              {showFilters && (
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+                    {/* Filtro de precio */}
+                    <div className="flex-1">
+                      <label className="block text-base font-medium text-gray-700 mb-2">
+                        Rango de precio
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          placeholder="Mín"
+                          value={priceRange.min}
+                          onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <span className="text-gray-500">-</span>
+                        <input
+                          type="number"
+                          placeholder="Máx"
+                          value={priceRange.max}
+                          onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                          className="w-24 px-3 py-1.5 border border-gray-300 rounded-lg text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Botón limpiar filtros */}
+                    <button
+                      onClick={clearFilters}
+                      className="px-3 py-1.5 text-base text-gray-600 hover:text-gray-800 underline"
                     >
+                      Limpiar filtros
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Contador de resultados */}
+              <div className="flex items-center justify-between text-base text-gray-600">
+                <div>
+                  {getFilteredAndSortedServices().length} de {servicios.length} {servicios.length === 1 ? 'servicio' : 'servicios'}
+                  {searchTerm && (
+                    <span> • Búsqueda: <strong>&quot;{searchTerm}&quot;</strong></span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Vista en cuadrícula mejorada */}
+            {viewMode === 'grid' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                {getFilteredAndSortedServices().map((servicio) => (
+                  <div
+                    key={servicio.id}
+                    onClick={() => handleServiceClick(servicio)}
+                    className="group relative bg-background-card rounded-2xl border border-border p-5 shadow transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1"
+                  >
+                    {/* Botón de eliminar */}
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <button
+                        onClick={(e) => handleDeleteService(servicio.id, e)}
+                        className="p-2 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {/* Título del servicio */}
+                      <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-2 font-jakarta">
+                        {servicio.nombre}
+                      </h3>
+                      {/* Descripción */}
+                      <details className="text-xs text-gray-500 font-jakarta">
+                        <summary className="cursor-pointer line-clamp-2">
+                          {servicio.descripcion}
+                        </summary>
+                        <p className="mt-1">{servicio.descripcion}</p>
+                      </details>
+                      {/* Precio y tiempo */}
+                      <div className="pt-3 border-t border-border">
+                        <div className="flex flex-col gap-2">
+                          {/* Precio */}
+                          <span className="text-base font-bold text-primary font-jakarta">
+                            {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
+                          </span>
+                          {/* Tiempo de entrega */}
+                          <div className="flex items-center text-sm text-text-secondary font-jakarta">
+                            <svg className="w-4 h-4 mr-1 flex-shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="truncate">
+                              {servicio.tiempo}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Vista en lista compacta */}
+            {viewMode === 'list' && (
+              <div className="space-y-3">
+                {getFilteredAndSortedServices().map((servicio) => (
+                  <div
+                    key={servicio.id}
+                    onClick={() => handleServiceClick(servicio)}
+                    className="group relative bg-background-card rounded-xl border border-border p-4 shadow transition-all duration-200 cursor-pointer hover:shadow-md hover:bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors truncate font-jakarta">
+                              {servicio.nombre}
+                            </h3>
+                            <p className="text-xs text-gray-500 font-jakarta line-clamp-2 mt-1">
+                              {servicio.descripcion}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
+                            <div className="flex items-center gap-1">
+                              <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>{servicio.tiempo}</span>
+                            </div>
+                            <span className="text-base font-bold text-blue-600">
+                              {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Botón de eliminar */}
-                      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
                         <button
                           onClick={(e) => handleDeleteService(servicio.id, e)}
-                          className="p-2 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
+                          className="p-1.5 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
                       </div>
-
-                      <div className="space-y-3">
-                        {/* Título del servicio */}
-                        <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-2 font-jakarta">
-                          {servicio.nombre}
-                        </h3>
-                        {/* Descripción */}
-                        <details className="text-xs text-gray-500 font-jakarta">
-                          <summary className="cursor-pointer line-clamp-2">
-                            {servicio.descripcion}
-                          </summary>
-                          <p className="mt-1">{servicio.descripcion}</p>
-                        </details>
-                        {/* Precio y tiempo */}
-                        <div className="pt-3 border-t border-border">
-                          <div className="flex flex-col gap-2">
-                            {/* Precio */}
-                            <span className="text-base font-bold text-primary font-jakarta">
-                              {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
-                            </span>
-                            {/* Tiempo de entrega */}
-                            <div className="flex items-center text-sm text-text-secondary font-jakarta">
-                              <svg className="w-4 h-4 mr-1 flex-shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span className="truncate">
-                                {servicio.tiempo}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Vista en lista compacta */}
-              {viewMode === 'list' && (
-                <div className="space-y-3">
-                  {getFilteredAndSortedServices().map((servicio) => (
-                    <div
-                      key={servicio.id}
-                      onClick={() => handleServiceClick(servicio)}
-                      className="group relative bg-background-card rounded-xl border border-border p-4 shadow transition-all duration-200 cursor-pointer hover:shadow-md hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-4">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors truncate font-jakarta">
-                                {servicio.nombre}
-                              </h3>
-                              <p className="text-xs text-gray-500 font-jakarta line-clamp-2 mt-1">
-                                {servicio.descripcion}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
-                              <div className="flex items-center gap-1">
-                                <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span>{servicio.tiempo}</span>
-                              </div>
-                              <span className="text-base font-bold text-blue-600">
-                                {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Botón de eliminar */}
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
-                          <button
-                            onClick={(e) => handleDeleteService(servicio.id, e)}
-                            className="p-1.5 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
-                          >
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Estado cuando no hay resultados de búsqueda/filtros */}
-              {getFilteredAndSortedServices().length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
                   </div>
-                  <h3 className="text-base font-medium text-gray-900 mb-2">
-                    No se encontraron servicios
-                  </h3>
-                  <p className="text-base text-gray-500 mb-4">
-                    {searchTerm || priceRange.min || priceRange.max 
-                      ? 'No hay servicios que coincidan con los filtros aplicados.' 
-                      : 'No hay servicios para mostrar.'}
-                  </p>
-                  {(searchTerm || priceRange.min || priceRange.max) && (
-                    <button
-                      onClick={clearFilters}
-                      className="text-base text-blue-600 hover:text-blue-700 font-medium underline"
-                    >
-                      Limpiar filtros
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            // Empty state para cuando no hay servicios
-            <div className="text-center py-12">
-              <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+                ))}
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
-                No hay servicios configurados
-              </h3>
-              <p className="text-base text-gray-500 mb-8 max-w-sm mx-auto">
-                Comienza agregando los servicios legales que ofreces a tus clientes
-              </p>
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-2 md:gap-4 w-full">
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700 w-full md:w-auto"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Agregar servicio
-                </button>
-                <button
-                  onClick={() => setIsAIModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-blue-600 text-blue-600 text-base font-medium hover:bg-blue-50 w-full md:w-auto"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Crear con IA
-                </button>
-              </div>
-            </div>
-      )}
-    </div>
-    {/* Botón flotante para nuevo servicio */}
-    <button
-      onClick={() => setIsCreateModalOpen(true)}
-      aria-label="Crear nuevo servicio"
-      className="md:hidden fixed bottom-4 right-4 flex items-center gap-2 rounded-full px-4 py-3 shadow-lg bg-primary text-white transition-transform duration-150 active:scale-95 z-40"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      <PlusIcon className="h-5 w-5" />
-      <span className="sr-only sm:not-sr-only">Servicio</span>
-    </button>
+            )}
 
-    {/* Modales */}
+            {/* Estado cuando no hay resultados de búsqueda/filtros */}
+            {getFilteredAndSortedServices().length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-gray-100 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-medium text-gray-900 mb-2">
+                  No se encontraron servicios
+                </h3>
+                <p className="text-base text-gray-500 mb-4">
+                  {searchTerm || priceRange.min || priceRange.max
+                    ? 'No hay servicios que coincidan con los filtros aplicados.'
+                    : 'No hay servicios para mostrar.'}
+                </p>
+                {(searchTerm || priceRange.min || priceRange.max) && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-base text-blue-600 hover:text-blue-700 font-medium underline"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          // Empty state para cuando no hay servicios
+          <div className="text-center py-12">
+            <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+              <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              No hay servicios configurados
+            </h3>
+            <p className="text-base text-gray-500 mb-8 max-w-sm mx-auto">
+              Comienza agregando los servicios legales que ofreces a tus clientes
+            </p>
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-2 md:gap-4 w-full">
+              <button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700 w-full md:w-auto"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Agregar servicio
+              </button>
+              <button
+                onClick={() => setIsAIModalOpen(true)}
+                className="inline-flex items-center px-4 py-2 rounded-lg border border-blue-600 text-blue-600 text-base font-medium hover:bg-blue-50 w-full md:w-auto"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Crear con IA
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Botón flotante para nuevo servicio */}
+      <button
+        onClick={() => setIsCreateModalOpen(true)}
+        aria-label="Crear nuevo servicio"
+        className="md:hidden fixed bottom-4 right-4 flex items-center gap-2 rounded-full px-4 py-3 shadow-lg bg-primary text-white transition-transform duration-150 active:scale-95 z-40"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <PlusIcon className="h-5 w-5" />
+        <span className="sr-only sm:not-sr-only">Servicio</span>
+      </button>
+
+      {/* Modales */}
       {/* Modal de Detalles del Servicio */}
       {isModalOpen && selectedService && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1184,23 +1184,23 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       {/* Modal de Crear Servicio - MEJORADO */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-3xl w-full mx-auto shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header Mejorado con Gradiente */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-5">
+          <div className="bg-white rounded-2xl max-w-3xl w-full mx-auto shadow-xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header Limpio - Sistema Maestro */}
+            <div className="px-8 pt-8 pb-4">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
-                  <h3 className="text-xl font-bold text-white">
+                  <h3 className="text-[18px] font-bold text-[#0E162F]">
                     Crear Nuevo Servicio
                   </h3>
-                  <p className="text-blue-100 text-sm">
+                  <p className="text-sm text-gray-500">
                     Agrega un servicio legal a tu catálogo
                   </p>
                 </div>
                 <button
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#374151] transition-all"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -1208,11 +1208,11 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
             </div>
 
             {/* Formulario con Scroll */}
-            <div className="overflow-y-auto flex-1 p-6">
+            <div className="overflow-y-auto flex-1 p-8">
               <div className="space-y-6">
                 {/* Nombre del Servicio con Contador */}
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                  <label className="flex items-center gap-2 text-sm font-medium text-[#374151] mb-2 ml-1">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
@@ -1226,22 +1226,20 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       value={newService.nombre}
                       onChange={handleNewServiceChange}
                       maxLength={60}
-                      className={`w-full px-3 pr-14 py-2 border-2 rounded-lg focus:ring-2 text-gray-900 text-sm transition-all ${
-                        newService.nombre.length >= 60
-                          ? 'border-orange-400 focus:ring-orange-500 focus:border-orange-500 bg-orange-50'
-                          : newService.nombre.length >= 50
-                            ? 'border-yellow-300 focus:ring-yellow-400 focus:border-yellow-400'
-                            : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
-                      }`}
+                      className={`w-full h-12 px-5 pr-14 border rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${newService.nombre.length >= 60
+                        ? 'border-orange-400 bg-orange-50'
+                        : newService.nombre.length >= 50
+                          ? 'border-yellow-300'
+                          : 'border-[#E5E7EB]'
+                        }`}
                       placeholder="ej: Constitución de Sociedades Anónimas"
                     />
-                    <span className={`absolute right-3 top-2 text-xs font-bold pointer-events-none transition-colors ${
-                      newService.nombre.length >= 60
-                        ? 'text-orange-600'
-                        : newService.nombre.length >= 50
-                          ? 'text-yellow-600'
-                          : 'text-gray-400'
-                    }`}>
+                    <span className={`absolute right-3 top-2 text-xs font-bold pointer-events-none transition-colors ${newService.nombre.length >= 60
+                      ? 'text-orange-600'
+                      : newService.nombre.length >= 50
+                        ? 'text-yellow-600'
+                        : 'text-gray-400'
+                      }`}>
                       {newService.nombre.length}/60
                     </span>
                   </div>
@@ -1260,7 +1258,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
                 {/* Descripción Corta con Contador */}
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                  <label className="flex items-center gap-2 text-sm font-medium text-[#374151] mb-2 ml-1">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                     </svg>
@@ -1274,22 +1272,20 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       value={newService.descripcion}
                       onChange={handleNewServiceChange}
                       maxLength={150}
-                      className={`w-full px-3 pr-16 py-2 border-2 rounded-lg focus:ring-2 text-gray-900 text-sm transition-all ${
-                        newService.descripcion.length >= 150
-                          ? 'border-orange-400 focus:ring-orange-500 focus:border-orange-500 bg-orange-50'
-                          : newService.descripcion.length >= 130
-                            ? 'border-yellow-300 focus:ring-yellow-400 focus:border-yellow-400'
-                            : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
-                      }`}
+                      className={`w-full h-12 px-5 pr-16 border rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${newService.descripcion.length >= 150
+                        ? 'border-orange-400 bg-orange-50'
+                        : newService.descripcion.length >= 130
+                          ? 'border-yellow-300'
+                          : 'border-[#E5E7EB]'
+                        }`}
                       placeholder="Resumen ejecutivo del servicio"
                     />
-                    <span className={`absolute right-3 top-2 text-xs font-bold pointer-events-none transition-colors ${
-                      newService.descripcion.length >= 150
-                        ? 'text-orange-600'
-                        : newService.descripcion.length >= 130
-                          ? 'text-yellow-600'
-                          : 'text-gray-400'
-                    }`}>
+                    <span className={`absolute right-3 top-2 text-xs font-bold pointer-events-none transition-colors ${newService.descripcion.length >= 150
+                      ? 'text-orange-600'
+                      : newService.descripcion.length >= 130
+                        ? 'text-yellow-600'
+                        : 'text-gray-400'
+                      }`}>
                       {newService.descripcion.length}/150
                     </span>
                   </div>
@@ -1308,22 +1304,24 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
                 {/* Descripción Detallada con Contador */}
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    Descripción Detallada
-                    <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Descripción Detallada
+                      <span className="text-red-500">*</span>
+                    </div>
                   </label>
                   <textarea
                     name="detalles"
                     value={newService.detalles}
                     onChange={handleNewServiceChange}
                     rows={6}
-                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm transition-all hover:border-gray-300 resize-y leading-relaxed"
+                    className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] resize-none leading-relaxed"
                     placeholder="Descripción completa del servicio, proceso y beneficios esperados..."
                   />
-                  <p className="text-sm text-gray-500">Incluye: qué es el servicio, cómo se ejecuta y beneficios específicos</p>
+                  <p className="text-xs text-gray-500 ml-1">Incluye: qué es el servicio, cómo se ejecuta y beneficios específicos</p>
                 </div>
 
                 {/* Tiempo y Precio en Grid Mejorado */}
@@ -1331,7 +1329,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   {/* Tiempo Estimado con IA */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                      <label className="flex items-center gap-2 text-sm font-medium text-[#374151] mb-2 ml-1">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1342,7 +1340,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                         type="button"
                         onClick={fetchTiempoSuggestions}
                         disabled={loadingTiempoSuggestions || (!newService.nombre && !newService.descripcion)}
-                        className="text-xs px-2 py-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-md hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-all shadow-sm"
+                        className="text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-full hover:bg-gray-50 hover:border-gray-300 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all shadow-sm font-medium"
                       >
                         {loadingTiempoSuggestions ? (
                           <>
@@ -1351,10 +1349,10 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           </>
                         ) : (
                           <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            <span className="hidden sm:inline">IA</span>
+                            <span className="hidden sm:inline">Generar con IA</span>
                           </>
                         )}
                       </button>
@@ -1365,7 +1363,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       value={newService.tiempo}
                       onChange={handleNewServiceChange}
                       onFocus={() => setShowTiempoSuggestions(false)}
-                      className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm transition-all hover:border-gray-300"
+                      className="w-full h-12 px-5 border rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] border-[#E5E7EB]"
                       placeholder="ej: 2-3 semanas"
                     />
 
@@ -1400,7 +1398,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   {/* Precio Base con Sugerencia IA */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                      <label className="flex items-center gap-2 text-sm font-medium text-[#374151] mb-2 ml-1">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -1411,7 +1409,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                         type="button"
                         onClick={fetchPrecioSuggestions}
                         disabled={loadingPrecioSuggestions || !newService.nombre || !newService.descripcion || !newService.detalles}
-                        className="text-xs px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-md hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-all shadow-sm"
+                        className="text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-full hover:bg-gray-50 hover:border-gray-300 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all shadow-sm font-medium"
                       >
                         {loadingPrecioSuggestions ? (
                           <>
@@ -1420,7 +1418,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           </>
                         ) : (
                           <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span className="hidden sm:inline">Sugerir Precio</span>
@@ -1434,7 +1432,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       {!newService.precio.replace('$', '').replace(/[,\s]/g, '').trim() && (
                         <div className="absolute inset-0 rounded-xl bg-yellow-100 border-2 border-yellow-400 animate-pulse pointer-events-none"></div>
                       )}
-                      <span className={`absolute left-3 top-2 font-semibold text-sm z-10 ${!newService.precio.replace('$', '').trim() ? 'text-yellow-600' : 'text-gray-500'}`}>$</span>
+                      <span className={`absolute left-4 top-3.5 font-semibold text-sm z-10 ${!newService.precio.replace('$', '').trim() ? 'text-yellow-600' : 'text-gray-500'}`}>$</span>
                       <input
                         type="text"
                         name="precio"
@@ -1449,13 +1447,12 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           } as React.ChangeEvent<HTMLInputElement>);
                           if (value) setPrecioError(false);
                         }}
-                        className={`w-full pl-7 pr-3 py-2 border-2 rounded-lg focus:ring-2 text-gray-900 text-sm transition-all relative z-10 bg-white ${
-                          precioError
-                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50'
-                            : !newService.precio.replace('$', '').replace(/[,\s]/g, '').trim()
-                              ? 'border-yellow-400 focus:ring-yellow-500 focus:border-yellow-500 bg-yellow-50'
-                              : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
-                        }`}
+                        className={`w-full h-12 pl-8 pr-5 border rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none relative z-10 bg-white ${precioError
+                          ? 'border-red-500 bg-red-50'
+                          : !newService.precio.replace('$', '').replace(/[,\s]/g, '').trim()
+                            ? 'border-yellow-400 bg-yellow-50'
+                            : 'border-[#E5E7EB] hover:border-[#D1D5DB]'
+                          }`}
                         placeholder="0.00"
                       />
                     </div>
@@ -1479,15 +1476,14 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                             </svg>
                             <span className="text-xs font-bold text-green-700">
                               {precioSuggestions.modeloCobro === 'FLAT_FEE' ? 'Tarifa Fija de Mercado' :
-                               precioSuggestions.modeloCobro === 'HOURLY' ? `Basado en tu tarifa ($${precioSuggestions.tarifaHorariaUsada.toLocaleString('es-MX')}/hr)` :
-                               'Modelo Mixto'}
+                                precioSuggestions.modeloCobro === 'HOURLY' ? `Basado en tu tarifa ($${precioSuggestions.tarifaHorariaUsada.toLocaleString('es-MX')}/hr)` :
+                                  'Modelo Mixto'}
                             </span>
                           </div>
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            precioSuggestions.complejidad === 'alto' ? 'bg-red-100 text-red-700' :
+                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${precioSuggestions.complejidad === 'alto' ? 'bg-red-100 text-red-700' :
                             precioSuggestions.complejidad === 'medio' ? 'bg-orange-100 text-orange-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
+                              'bg-green-100 text-green-700'
+                            }`}>
                             {precioSuggestions.complejidad.toUpperCase()}
                           </span>
                         </div>
@@ -1577,31 +1573,31 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
                 {/* Incluye - Lista Mejorada */}
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                  <label className="flex items-center gap-2 text-sm font-medium text-[#374151] mb-2 ml-1">
                     <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                     </svg>
                     Incluye
                     <span className="text-red-500">*</span>
                   </label>
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-3 border-2 border-gray-100">
+                  <div className="bg-gray-50 rounded-xl p-4 space-y-3 border border-gray-100">
                     {newService.incluye.map((item, index) => (
                       <div key={index} className="flex gap-2 group">
-                        <div className="flex items-center justify-center w-7 h-9 bg-blue-100 text-blue-700 rounded-lg font-semibold text-sm flex-shrink-0">
+                        <div className="flex items-center justify-center w-8 h-12 bg-white border border-[#E5E7EB] text-[#374151] rounded-lg font-bold text-sm flex-shrink-0 shadow-sm">
                           {index + 1}
                         </div>
                         <input
                           type="text"
                           value={item}
                           onChange={(e) => handleIncludeItemChange(index, e.target.value)}
-                          className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-sm bg-white transition-all hover:border-gray-300"
+                          className="flex-1 h-12 px-5 bg-white border border-[#E5E7EB] rounded-xl focus:ring-2 focus:ring-[#3B82F6] text-[#111827] text-sm transition-all outline-none hover:border-[#D1D5DB] shadow-sm"
                           placeholder="ej: Elaboración del acta constitutiva"
                         />
                         {newService.incluye.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemoveIncludeItem(index)}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1613,7 +1609,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     <button
                       type="button"
                       onClick={handleAddIncludeItem}
-                      className="w-full mt-2 px-3 py-2 border-2 border-dashed border-blue-300 rounded-lg text-sm text-blue-600 hover:text-blue-700 hover:border-blue-400 hover:bg-blue-50/50 font-medium transition-all flex items-center justify-center gap-2"
+                      className="w-full mt-2 h-12 border-2 border-dashed border-[#E5E7EB] rounded-xl text-sm text-[#3B82F6] hover:text-[#2563EB] hover:border-[#BFDBFE] hover:bg-blue-50/50 font-medium transition-all flex items-center justify-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -1621,65 +1617,60 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       Agregar otro ítem
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500 flex items-start gap-1">
-                    <svg className="w-4 h-4 mt-0.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <p className="text-xs text-gray-500 ml-1 flex items-start gap-1">
+                    <svg className="w-3.5 h-3.5 mt-0.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Lista los entregables específicos y tangibles del servicio (mínimo 1 ítem)
+                    Lista los entregables específicos y tangibles del servicio
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Footer Mejorado con Sombra */}
-            <div className="bg-gray-50 px-6 py-4 border-t-2 border-gray-100 flex justify-between items-center">
-              <p className="text-sm text-gray-600">
-                <span className="text-red-500">*</span> Campos obligatorios
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setIsCreateModalOpen(false);
-                    setNewService({
-                      nombre: '',
-                      descripcion: '',
-                      detalles: '',
-                      tiempo: '',
-                      precio: '',
-                      incluye: [''],
-                      requerimientos: '',
-                      userId: '',
-                      userEmail: '',
-                      createdAt: serverTimestamp(),
-                      updatedAt: serverTimestamp(),
-                      status: 'active'
-                    });
-                    setPrecioError(false);
-                  }}
-                  className="px-5 py-2.5 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleCreateService}
-                  disabled={isLoading}
-                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg text-base font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Guardando...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Crear Servicio
-                    </>
-                  )}
-                </button>
-              </div>
+            {/* Footer Mejorado - Sistema Maestro */}
+            <div className="flex justify-end gap-3 px-8 pb-8 pt-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setIsCreateModalOpen(false);
+                  setNewService({
+                    nombre: '',
+                    descripcion: '',
+                    detalles: '',
+                    tiempo: '',
+                    precio: '',
+                    incluye: [''],
+                    requerimientos: '',
+                    userId: '',
+                    userEmail: '',
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    status: 'active'
+                  });
+                  setPrecioError(false);
+                }}
+                className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCreateService}
+                disabled={isLoading}
+                className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Crear Servicio
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -1795,7 +1786,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                           type="text"
                           value={item}
                           onChange={(e) => handleEditIncludeItemChange(index, e.target.value)}
-                          className="flex-1 h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
+                          className="flex-1 h-12 px-5 bg-gray-50 border-0 rounded-xl text-sm text-[#111827] focus:ring-2 focus:ring-[#3B82F6] transition-all outline-none"
                           placeholder="ej: Acta constitutiva"
                         />
                         <button

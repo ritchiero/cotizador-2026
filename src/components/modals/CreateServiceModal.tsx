@@ -26,7 +26,7 @@ export default function CreateServiceModal({
 }: CreateServiceModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="rounded-xl p-6 bg-white shadow-xl max-w-[90%] sm:max-w-md">
+      <DialogContent className="rounded-2xl p-8 bg-white shadow-xl max-w-[90%] sm:max-w-md">
         <DialogTitle className="text-lg font-semibold mb-1">
           Crear Servicio con IA
         </DialogTitle>
@@ -39,7 +39,7 @@ export default function CreateServiceModal({
           rows={3}
           value={aiPrompt}
           onChange={(e) => onPromptChange(e.target.value)}
-          className="w-full resize-none mb-2"
+          className="w-full resize-none mb-2 rounded-2xl border-2 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           disabled={loading}
         />
         <ul className="list-disc list-inside text-xs text-gray-500 space-y-1 mb-6">
@@ -59,7 +59,7 @@ export default function CreateServiceModal({
           </div>
         )}
         <div className="flex justify-between items-center">
-          <Button variant="ghost" aria-label="Cancelar" onClick={onClose} disabled={loading}>
+          <Button variant="ghost" aria-label="Cancelar" onClick={onClose} disabled={loading} className="rounded-full">
             Cancelar
           </Button>
           <Button
@@ -67,8 +67,9 @@ export default function CreateServiceModal({
             aria-label="Generar con IA"
             onClick={onGenerate}
             disabled={loading || !aiPrompt.trim()}
+            className="rounded-full bg-blue-600 hover:bg-blue-700"
           >
-            <SparklesIcon className="h-4 w-4" />
+            <SparklesIcon className="h-4 w-4 mr-2" />
             Generar con IA
           </Button>
         </div>
