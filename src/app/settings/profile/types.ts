@@ -25,4 +25,5 @@ export interface BrandingData {
     terciario: string;
   };
   logoURL?: string;
+  signatureBlock?: string;
 }

@@ -7,18 +7,10 @@ import { db, storage } from "@/lib/firebase/firebase";
 import { toast } from "react-hot-toast";
 import { onSnapshot } from "firebase/firestore";
 
-interface BrandingData {
-  nombreDespacho: string;
-  slogan?: string;
-  anoFundacion?: string;
-  descripcion?: string;
-  colores: {
-    primario: string;
-    secundario: string;
-    terciario: string;
-  };
-  logoURL?: string;
-}
+import { BrandingData } from "@/app/settings/profile/types"; // Import definition instead of duplicate
+
+// Remove local interface BrandingData definition
+
 
 interface BrandingTabProps {
   userId: string;
@@ -266,7 +258,7 @@ export default function BrandingTab({
                       style={{
                         backgroundColor:
                           brandingData.colores[
-                            key as keyof typeof brandingData.colores
+                          key as keyof typeof brandingData.colores
                           ],
                       }}
                     />
@@ -277,13 +269,31 @@ export default function BrandingTab({
                       <span className="block text-xs text-gray-500 uppercase font-mono">
                         {
                           brandingData.colores[
-                            key as keyof typeof brandingData.colores
+                          key as keyof typeof brandingData.colores
                           ]
                         }
                       </span>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Firma Block */}
+            <div className="pt-8 border-t border-gray-100 mt-8">
+              <h4 className="text-sm font-medium text-gray-900 mb-4">
+                Firma Digital (Estilo Email)
+              </h4>
+              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                {brandingData.signatureBlock ? (
+                  <div className="prose prose-sm text-gray-600 whitespace-pre-wrap font-sans">
+                    {brandingData.signatureBlock}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">
+                    No has configurado una firma aún.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -500,7 +510,7 @@ export default function BrandingTab({
                             name={`color${key.charAt(0).toUpperCase() + key.slice(1)}`}
                             value={
                               formData.colores[
-                                key as keyof typeof formData.colores
+                              key as keyof typeof formData.colores
                               ]
                             }
                             onChange={handleInputChange}
@@ -519,6 +529,24 @@ export default function BrandingTab({
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* Firma Editor */}
+                <div className="pt-6 border-t border-gray-100">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Firma Digital (Estilo Email)
+                  </label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Esta firma aparecerá al final de tus correos o en el pie de página de las cotizaciones.
+                  </p>
+                  <textarea
+                    name="signatureBlock"
+                    value={formData.signatureBlock || ''}
+                    onChange={handleInputChange}
+                    rows={5}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 font-sans"
+                    placeholder="Atentamente,&#10;Lic. Juan Pérez&#10;Socio Fundador&#10;Bufete Jurídico..."
+                  />
                 </div>
 
                 {/* Footer con botones */}

@@ -6,7 +6,7 @@ import CotizacionForm from "./components/CotizacionForm";
 export default function CotizacionExpress() {
   const searchParams = useSearchParams();
   const serviceParam = searchParams.get('service');
-  
+
   let initialService = null;
   if (serviceParam) {
     try {
@@ -17,7 +17,7 @@ export default function CotizacionExpress() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-white">
       <main className="flex-1">
         <CotizacionForm initialService={initialService} />
       </main>

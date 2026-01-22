@@ -32,11 +32,11 @@ export default function Sidebar() {
       icon: (
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" >
           <g clipPath="url(#clip0_409_52885)">
-            <path d="M10.4861 2.17812C10.2049 1.94062 9.79548 1.94062 9.51423 2.17812L1.26424 9.17812C0.94861 9.44688 0.91111 9.91875 1.17674 10.2344C1.44236 10.55 1.91736 10.5875 2.23299 10.3219L3.00173 9.67188V15.5C3.00173 16.8813 4.12049 18 5.50174 18H14.5017C15.883 18 17.0017 16.8813 17.0017 15.5V9.67188L17.7674 10.3219C18.083 10.5906 18.558 10.55 18.8236 10.2344C19.0892 9.91875 19.0517 9.44375 18.7361 9.17812L10.4861 2.17812ZM4.50173 15.5V8.4L10.0017 3.73438L15.5017 8.4V15.5C15.5017 16.0531 15.0549 16.5 14.5017 16.5H13.0017V11.75C13.0017 11.0594 12.4424 10.5 11.7517 10.5H8.25174C7.56111 10.5 7.00174 11.0594 7.00174 11.75V16.5H5.50174C4.94861 16.5 4.50173 16.0531 4.50173 15.5ZM8.50174 16.5V12H11.5017V16.5H8.50174Z" fill="currentColor"/>
+            <path d="M10.4861 2.17812C10.2049 1.94062 9.79548 1.94062 9.51423 2.17812L1.26424 9.17812C0.94861 9.44688 0.91111 9.91875 1.17674 10.2344C1.44236 10.55 1.91736 10.5875 2.23299 10.3219L3.00173 9.67188V15.5C3.00173 16.8813 4.12049 18 5.50174 18H14.5017C15.883 18 17.0017 16.8813 17.0017 15.5V9.67188L17.7674 10.3219C18.083 10.5906 18.558 10.55 18.8236 10.2344C19.0892 9.91875 19.0517 9.44375 18.7361 9.17812L10.4861 2.17812ZM4.50173 15.5V8.4L10.0017 3.73438L15.5017 8.4V15.5C15.5017 16.0531 15.0549 16.5 14.5017 16.5H13.0017V11.75C13.0017 11.0594 12.4424 10.5 11.7517 10.5H8.25174C7.56111 10.5 7.00174 11.0594 7.00174 11.75V16.5H5.50174C4.94861 16.5 4.50173 16.0531 4.50173 15.5ZM8.50174 16.5V12H11.5017V16.5H8.50174Z" fill="currentColor" />
           </g>
           <defs>
             <clipPath id="clip0_409_52885">
-              <rect width="18" height="16" fill="white" transform="translate(1 2)"/>
+              <rect width="18" height="16" fill="white" transform="translate(1 2)" />
             </clipPath>
           </defs>
         </svg>
@@ -48,11 +48,11 @@ export default function Sidebar() {
       icon: (
         <svg width="12" height="16" viewBox="0 0 12 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <g clipPath="url(#clip0_409_52891)">
-            <path d="M1.5 14V2C1.5 1.725 1.725 1.5 2 1.5H7V4C7 4.55312 7.44688 5 8 5H10.5V14C10.5 14.275 10.275 14.5 10 14.5H2C1.725 14.5 1.5 14.275 1.5 14ZM2 0C0.896875 0 0 0.896875 0 2V14C0 15.1031 0.896875 16 2 16H10C11.1031 16 12 15.1031 12 14V4.82812C12 4.29688 11.7906 3.7875 11.4156 3.4125L8.58438 0.584375C8.20938 0.209375 7.70312 0 7.17188 0H2ZM6.75 8.75C6.75 8.33438 6.41563 8 6 8C5.58437 8 5.25 8.33438 5.25 8.75V12.75C5.25 13.1656 5.58437 13.5 6 13.5C6.41563 13.5 6.75 13.1656 6.75 12.75V8.75ZM9.5 9.75C9.5 9.33438 9.16562 9 8.75 9C8.33438 9 8 9.33438 8 9.75V12.75C8 13.1656 8.33438 13.5 8.75 13.5C9.16562 13.5 9.5 13.1656 9.5 12.75V9.75ZM4 10.75C4 10.3344 3.66563 10 3.25 10C2.83437 10 2.5 10.3344 2.5 10.75V12.75C2.5 13.1656 2.83437 13.5 3.25 13.5C3.66563 13.5 4 13.1656 4 12.75V10.75Z" fill="currentColor"/>
+            <path d="M1.5 14V2C1.5 1.725 1.725 1.5 2 1.5H7V4C7 4.55312 7.44688 5 8 5H10.5V14C10.5 14.275 10.275 14.5 10 14.5H2C1.725 14.5 1.5 14.275 1.5 14ZM2 0C0.896875 0 0 0.896875 0 2V14C0 15.1031 0.896875 16 2 16H10C11.1031 16 12 15.1031 12 14V4.82812C12 4.29688 11.7906 3.7875 11.4156 3.4125L8.58438 0.584375C8.20938 0.209375 7.70312 0 7.17188 0H2ZM6.75 8.75C6.75 8.33438 6.41563 8 6 8C5.58437 8 5.25 8.33438 5.25 8.75V12.75C5.25 13.1656 5.58437 13.5 6 13.5C6.41563 13.5 6.75 13.1656 6.75 12.75V8.75ZM9.5 9.75C9.5 9.33438 9.16562 9 8.75 9C8.33438 9 8 9.33438 8 9.75V12.75C8 13.1656 8.33438 13.5 8.75 13.5C9.16562 13.5 9.5 13.1656 9.5 12.75V9.75ZM4 10.75C4 10.3344 3.66563 10 3.25 10C2.83437 10 2.5 10.3344 2.5 10.75V12.75C2.5 13.1656 2.83437 13.5 3.25 13.5C3.66563 13.5 4 13.1656 4 12.75V10.75Z" fill="currentColor" />
           </g>
           <defs>
             <clipPath id="clip0_409_52891">
-              <rect width="12" height="16" fill="white"/>
+              <rect width="12" height="16" fill="white" />
             </clipPath>
           </defs>
         </svg>
@@ -63,7 +63,7 @@ export default function Sidebar() {
       href: '/cotizacion-estructurada',
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M2 0C0.896875 0 0 0.896875 0 2V14C0 15.1031 0.896875 16 2 16H14C15.1031 16 16 15.1031 16 14V2C16 0.896875 15.1031 0 14 0H2ZM1.5 2C1.5 1.725 1.725 1.5 2 1.5H14C14.275 1.5 14.5 1.725 14.5 2V4.5H1.5V2ZM1.5 6H14.5V9.5H1.5V6ZM1.5 11H14.5V14C14.5 14.275 14.275 14.5 14 14.5H2C1.725 14.5 1.5 14.275 1.5 14V11Z" fill="currentColor"/>
+          <path d="M2 0C0.896875 0 0 0.896875 0 2V14C0 15.1031 0.896875 16 2 16H14C15.1031 16 16 15.1031 16 14V2C16 0.896875 15.1031 0 14 0H2ZM1.5 2C1.5 1.725 1.725 1.5 2 1.5H14C14.275 1.5 14.5 1.725 14.5 2V4.5H1.5V2ZM1.5 6H14.5V9.5H1.5V6ZM1.5 11H14.5V14C14.5 14.275 14.275 14.5 14 14.5H2C1.725 14.5 1.5 14.275 1.5 14V11Z" fill="currentColor" />
         </svg>
       ),
       label: 'Cotización Estructurada',
@@ -96,9 +96,8 @@ export default function Sidebar() {
                       <Tooltip.Trigger asChild>
                         <Link
                           href={item.href}
-                          className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
-                            isActive ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
-                          }`}
+                          className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${isActive ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
+                            }`}
                         >
                           <span className={`${isActive ? 'text-[#4570EB]' : 'text-[#67676F]'}`}>
                             {item.icon}
@@ -123,13 +122,44 @@ export default function Sidebar() {
             </ul>
           </nav>
 
+          {/* Estilos Link (Bottom) */}
+          <div className="px-3 mb-2">
+            <Tooltip.Root>
+              <Tooltip.Trigger asChild>
+                <Link
+                  href="/estilos"
+                  className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${pathname === '/estilos' ? 'bg-[#ECF1FD] text-[#4570EB]' : 'text-[#67676F] hover:bg-gray-50'
+                    }`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 21.36V21A5 5 0 0 1 17 16H18.79A5.4 5.4 0 0 0 23 12.18V8A7 7 0 0 0 10.15 4.38A6.88 6.88 0 0 0 8 4A7 7 0 0 0 1 11V14A7 7 0 0 0 8 21Z" />
+                    <path d="M10 8V8.01" />
+                    <path d="M14 8V8.01" />
+                    <path d="M7 11V11.01" />
+                    <path d="M17 11V11.01" />
+                  </svg>
+                  <span className="sr-only">Estilos</span>
+                </Link>
+              </Tooltip.Trigger>
+              <Tooltip.Portal>
+                <Tooltip.Content
+                  side="right"
+                  sideOffset={8}
+                  className="px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-lg z-50"
+                >
+                  Estilos
+                  <Tooltip.Arrow className="fill-gray-900" />
+                </Tooltip.Content>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </div>
+
           {/* Avatar del usuario en la parte inferior con menú */}
-          <div className="px-3 mt-auto relative" ref={menuRef}>
+          <div className="px-3 relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${
-                pathname.startsWith('/settings') ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
-              }`}
+              className={`flex items-center justify-center h-12 w-full rounded-xl transition-colors ${pathname.startsWith('/settings') ? 'bg-[#ECF1FD]' : 'hover:bg-gray-50'
+                }`}
             >
               <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200">
                 <img

@@ -35,6 +35,12 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null;
     }
+
+    // Plantillas de términos legales - Solo el dueño puede leer/escribir
+    match /terms_templates/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
   }
 }
 

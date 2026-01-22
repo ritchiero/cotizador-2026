@@ -12,12 +12,22 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import SlateEditor from "./SlateEditor";
-import InputGroup, { AIButton } from "./InputGroup";
+import InputGroup, { AIButton } from "@/app/components/InputGroup";
 import RequirementsAIModal from "@/components/modals/RequirementsAIModal";
 import PaymentAIModal from "@/components/modals/PaymentAIModal";
 import { TipoCotizacion, tiposCotizacion } from "@/constants/cotizacion";
 import { formatDate } from "@/lib/utils/date";
-import { SparklesIcon } from "@heroicons/react/24/outline";
+import {
+  SparklesIcon,
+  UserIcon,
+  BuildingOfficeIcon,
+  BoltIcon,
+  ClockIcon,
+  MapPinIcon,
+  ClipboardDocumentCheckIcon,
+  CreditCardIcon,
+  CurrencyDollarIcon
+} from "@heroicons/react/24/outline";
 
 interface BrandingInfo {
   anoFundacion?: string;
@@ -125,8 +135,10 @@ const ServicioInput = ({
       <div className="p-5">
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 group-hover:bg-blue-500 transition-colors duration-200" />
-            <label className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+            <div className="text-gray-400 group-hover:text-blue-500 transition-colors duration-200">
+              <ClipboardDocumentCheckIcon className="w-5 h-5" />
+            </div>
+            <label className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
               Descripción breve del servicio
             </label>
           </div>
@@ -136,22 +148,20 @@ const ServicioInput = ({
               <button
                 type="button"
                 onClick={() => setShowSelector(false)}
-                className={`text-xs px-4 py-1.5 rounded transition-all ${
-                  !showSelector
-                    ? "bg-white text-gray-700 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`text-xs px-4 py-1.5 rounded transition-all ${!showSelector
+                  ? "bg-white text-gray-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 Manual
               </button>
               <button
                 type="button"
                 onClick={() => setShowSelector(true)}
-                className={`text-xs px-4 py-1.5 rounded transition-all ${
-                  showSelector
-                    ? "bg-white text-gray-700 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
+                className={`text-xs px-4 py-1.5 rounded transition-all ${showSelector
+                  ? "bg-white text-gray-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 Servicios Guardados
               </button>
@@ -585,13 +595,13 @@ export default function CotizacionForm({
   const [servicioCompleto, setServicioCompleto] = useState(
     initialService
       ? {
-          nombre: initialService.nombre,
-          descripcion: initialService.descripcion,
-          detalles: initialService.detalles,
-          tiempo: initialService.tiempo,
-          precio: initialService.precio,
-          incluye: initialService.incluye,
-        }
+        nombre: initialService.nombre,
+        descripcion: initialService.descripcion,
+        detalles: initialService.detalles,
+        tiempo: initialService.tiempo,
+        precio: initialService.precio,
+        incluye: initialService.incluye,
+      }
       : null,
   );
   const [necesidadesCliente, setNecesidadesCliente] = useState("");
@@ -802,146 +812,146 @@ export default function CotizacionForm({
           body: JSON.stringify(
             tipoCotizacion === "corta"
               ? {
-                  // Payload para cotización corta sin cambios
-                  clienteNombre: destinatario.trim(),
-                  remitente: senderInfo.trim(),
-                  descripcion: descripcionServicio.trim(),
-                  tiempo: estimacionTiempo.trim(),
-                  precio: precio.trim(),
-                  formaPago: formaPago.trim(),
-                  despachoInfo: {
-                    nombre: brandingInfo?.nombreDespacho || "",
-                    slogan: brandingInfo?.slogan || "",
-                    anoFundacion: brandingInfo?.anoFundacion || "",
-                  },
-                  userInfo: {
-                    displayName: user?.displayName || "",
-                    despacho: brandingInfo?.nombreDespacho || "",
-                  },
-                  servicioInfo: servicioCompleto
-                    ? {
-                        nombre: servicioCompleto.nombre,
-                        descripcion: servicioCompleto.descripcion,
-                        detalles: servicioCompleto.detalles,
-                        incluye: Object.entries(servicioCompleto.incluye)
-                          .map(([key, value]) => ({
-                            orden: key,
-                            descripcion: value,
-                          }))
-                          .sort((a, b) => Number(a.orden) - Number(b.orden)),
-                      }
-                    : null,
-                }
+                // Payload para cotización corta sin cambios
+                clienteNombre: destinatario.trim(),
+                remitente: senderInfo.trim(),
+                descripcion: descripcionServicio.trim(),
+                tiempo: estimacionTiempo.trim(),
+                precio: precio.trim(),
+                formaPago: formaPago.trim(),
+                despachoInfo: {
+                  nombre: brandingInfo?.nombreDespacho || "",
+                  slogan: brandingInfo?.slogan || "",
+                  anoFundacion: brandingInfo?.anoFundacion || "",
+                },
+                userInfo: {
+                  displayName: user?.displayName || "",
+                  despacho: brandingInfo?.nombreDespacho || "",
+                },
+                servicioInfo: servicioCompleto
+                  ? {
+                    nombre: servicioCompleto.nombre,
+                    descripcion: servicioCompleto.descripcion,
+                    detalles: servicioCompleto.detalles,
+                    incluye: Object.entries(servicioCompleto.incluye)
+                      .map(([key, value]) => ({
+                        orden: key,
+                        descripcion: value,
+                      }))
+                      .sort((a, b) => Number(a.orden) - Number(b.orden)),
+                  }
+                  : null,
+              }
               : {
-                  // Payload completo para cotización detallada
-                  clienteNombre: destinatario.trim(),
-                  remitente: senderInfo.trim(),
-                  descripcion: descripcionServicio.trim(),
-                  tiempo: estimacionTiempo.trim(),
-                  precio: precio.trim(),
-                  formaPago: formaPago.trim(),
-                  tipoCotizacion,
-                  despachoInfo: {
-                    nombre: brandingInfo?.nombreDespacho || "",
-                    slogan: brandingInfo?.slogan || "",
-                    anoFundacion: brandingInfo?.anoFundacion || "",
-                  },
-                  userInfo: {
-                    displayName: user?.displayName || "",
-                    despacho: brandingInfo?.nombreDespacho || "",
-                  },
-                  servicioInfo: servicioCompleto
-                    ? {
-                        nombre: servicioCompleto.nombre,
-                        descripcion: servicioCompleto.descripcion,
-                        detalles: servicioCompleto.detalles,
-                        incluye: Object.entries(servicioCompleto.incluye)
-                          .map(([key, value]) => ({
-                            orden: key,
-                            descripcion: value,
-                          }))
-                          .sort((a, b) => Number(a.orden) - Number(b.orden)),
-                      }
-                    : null,
-                  estructura: {
-                    formato: {
-                      secciones: [
-                        {
-                          nombre: "encabezado",
-                          elementos: ["ciudad", "fecha"],
-                          estilo: "separado",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "destinatario",
-                          elementos: ["nombre", "direccion", "contacto"],
-                          estilo: "bloque",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "introduccion",
-                          elementos: [
-                            "saludo",
-                            "contexto",
-                            "detalles_servicio",
-                          ],
-                          estilo: "parrafo",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "servicios",
-                          elementos: [
-                            "descripcion_general",
-                            "servicios_incluidos",
-                          ],
-                          estilo: "lista_numerada",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "proceso",
-                          elementos: [
-                            "tiempo",
-                            "responsabilidades",
-                            "comunicacion",
-                          ],
-                          estilo: "lista_viñetas",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "costos",
-                          elementos: ["honorarios", "desglose", "forma_pago"],
-                          estilo: "tabla",
-                          saltoLinea: 2,
-                        },
-                        {
-                          nombre: "cierre",
-                          elementos: [
-                            "vigencia",
-                            "contacto",
-                            "firma",
-                            "slogan",
-                          ],
-                          estilo: "bloque",
-                          saltoLinea: 2,
-                        },
-                      ],
-                      formateo: {
-                        precios: {
-                          estilo: "moneda",
-                          formato: "MXN",
-                        },
-                        fechas: {
-                          formato: "largo",
-                          locale: "es-MX",
-                        },
-                        listas: {
-                          sangria: true,
-                          espaciado: 1,
-                        },
+                // Payload completo para cotización detallada
+                clienteNombre: destinatario.trim(),
+                remitente: senderInfo.trim(),
+                descripcion: descripcionServicio.trim(),
+                tiempo: estimacionTiempo.trim(),
+                precio: precio.trim(),
+                formaPago: formaPago.trim(),
+                tipoCotizacion,
+                despachoInfo: {
+                  nombre: brandingInfo?.nombreDespacho || "",
+                  slogan: brandingInfo?.slogan || "",
+                  anoFundacion: brandingInfo?.anoFundacion || "",
+                },
+                userInfo: {
+                  displayName: user?.displayName || "",
+                  despacho: brandingInfo?.nombreDespacho || "",
+                },
+                servicioInfo: servicioCompleto
+                  ? {
+                    nombre: servicioCompleto.nombre,
+                    descripcion: servicioCompleto.descripcion,
+                    detalles: servicioCompleto.detalles,
+                    incluye: Object.entries(servicioCompleto.incluye)
+                      .map(([key, value]) => ({
+                        orden: key,
+                        descripcion: value,
+                      }))
+                      .sort((a, b) => Number(a.orden) - Number(b.orden)),
+                  }
+                  : null,
+                estructura: {
+                  formato: {
+                    secciones: [
+                      {
+                        nombre: "encabezado",
+                        elementos: ["ciudad", "fecha"],
+                        estilo: "separado",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "destinatario",
+                        elementos: ["nombre", "direccion", "contacto"],
+                        estilo: "bloque",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "introduccion",
+                        elementos: [
+                          "saludo",
+                          "contexto",
+                          "detalles_servicio",
+                        ],
+                        estilo: "parrafo",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "servicios",
+                        elementos: [
+                          "descripcion_general",
+                          "servicios_incluidos",
+                        ],
+                        estilo: "lista_numerada",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "proceso",
+                        elementos: [
+                          "tiempo",
+                          "responsabilidades",
+                          "comunicacion",
+                        ],
+                        estilo: "lista_viñetas",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "costos",
+                        elementos: ["honorarios", "desglose", "forma_pago"],
+                        estilo: "tabla",
+                        saltoLinea: 2,
+                      },
+                      {
+                        nombre: "cierre",
+                        elementos: [
+                          "vigencia",
+                          "contacto",
+                          "firma",
+                          "slogan",
+                        ],
+                        estilo: "bloque",
+                        saltoLinea: 2,
+                      },
+                    ],
+                    formateo: {
+                      precios: {
+                        estilo: "moneda",
+                        formato: "MXN",
+                      },
+                      fechas: {
+                        formato: "largo",
+                        locale: "es-MX",
+                      },
+                      listas: {
+                        sangria: true,
+                        espaciado: 1,
                       },
                     },
                   },
                 },
+              },
           ),
         },
       );
@@ -1040,6 +1050,7 @@ export default function CotizacionForm({
           hint="Ingrese el nombre de la persona o empresa que solicita la cotización"
           value={destinatario}
           onChange={setDestinatario}
+          icon={<UserIcon className="w-5 h-5" />}
         />
 
         <InputGroup
@@ -1048,6 +1059,7 @@ export default function CotizacionForm({
           value={senderInfo}
           onChange={(value) => setSenderInfo(value)}
           hint="Nombre y división del abogado o despacho que envía la cotización. Puede editar este campo si necesita personalizarlo para esta cotización."
+          icon={<BuildingOfficeIcon className="w-5 h-5" />}
         />
 
         <ServicioInput
@@ -1062,6 +1074,7 @@ export default function CotizacionForm({
           hint="Explique el contexto y las razones detrás de la solicitud"
           value={necesidadesCliente}
           onChange={setNecesidadesCliente}
+          icon={<BoltIcon className="w-5 h-5" />}
         >
           <div className="flex justify-end mt-2">
             <AIButton onClick={generateNeeds} />
@@ -1074,6 +1087,7 @@ export default function CotizacionForm({
           hint="Incluya una estimación realista del tiempo necesario"
           value={estimacionTiempo}
           onChange={setEstimacionTiempo}
+          icon={<ClockIcon className="w-5 h-5" />}
         >
           <div className="flex justify-end mt-2">
             <AIButton onClick={generateTimeEstimation} />
@@ -1086,6 +1100,7 @@ export default function CotizacionForm({
           hint="Especifique la ubicación geográfica o jurisdicción legal relevante"
           value={jurisdiccion}
           onChange={setJurisdiccion}
+          icon={<MapPinIcon className="w-5 h-5" />}
         />
 
         <InputGroup
@@ -1094,6 +1109,7 @@ export default function CotizacionForm({
           hint="Documentos, información o recursos necesarios"
           value={requerimientos}
           onChange={setRequerimientos}
+          icon={<ClipboardDocumentCheckIcon className="w-5 h-5" />}
         >
           <div className="flex justify-end mt-2">
             <AIButton onClick={generateRequirements} />
@@ -1106,6 +1122,7 @@ export default function CotizacionForm({
           hint="Detalles sobre la estructura de pagos y exhibiciones"
           value={formaPago}
           onChange={setFormaPago}
+          icon={<CreditCardIcon className="w-5 h-5" />}
         >
           <div className="flex justify-end mt-2">
             <AIButton onClick={generatePaymentOptions} />
@@ -1118,6 +1135,7 @@ export default function CotizacionForm({
           hint="Monto total del servicio"
           value={precio}
           onChange={setPrecio}
+          icon={<CurrencyDollarIcon className="w-5 h-5" />}
         />
 
         <div className="lg:col-span-3 border-t border-gray-200 pt-6 mt-6">
@@ -1134,20 +1152,18 @@ export default function CotizacionForm({
             {tiposCotizacion.map((tipo) => (
               <div
                 key={tipo.id}
-                className={`group relative overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300 ${
-                  tipoCotizacion === tipo.id
-                    ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg scale-[1.02]"
-                    : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md hover:scale-[1.01]"
-                }`}
+                className={`group relative overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300 ${tipoCotizacion === tipo.id
+                  ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg scale-[1.02]"
+                  : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md hover:scale-[1.01]"
+                  }`}
                 onClick={() => setTipoCotizacion(tipo.id)}
               >
                 {/* Indicador de selección */}
                 <div
-                  className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 transition-all duration-200 ${
-                    tipoCotizacion === tipo.id
-                      ? "border-blue-500 bg-blue-500 shadow-md"
-                      : "border-gray-300 bg-white group-hover:border-blue-400"
-                  }`}
+                  className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 transition-all duration-200 ${tipoCotizacion === tipo.id
+                    ? "border-blue-500 bg-blue-500 shadow-md"
+                    : "border-gray-300 bg-white group-hover:border-blue-400"
+                    }`}
                 >
                   {tipoCotizacion === tipo.id && (
                     <div className="w-2 h-2 rounded-full bg-white mx-auto mt-1"></div>
@@ -1159,11 +1175,10 @@ export default function CotizacionForm({
                   <div className="flex items-start gap-4">
                     {/* Icono destacado */}
                     <div
-                      className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                        tipoCotizacion === tipo.id
-                          ? "bg-blue-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600"
-                      }`}
+                      className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-200 ${tipoCotizacion === tipo.id
+                        ? "bg-blue-500 text-white shadow-md"
+                        : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-600"
+                        }`}
                     >
                       <div className="w-6 h-6">{tipo.icon}</div>
                     </div>
@@ -1171,20 +1186,18 @@ export default function CotizacionForm({
                     {/* Contenido de texto */}
                     <div className="flex-1 min-w-0">
                       <h4
-                        className={`text-lg font-semibold transition-colors duration-200 ${
-                          tipoCotizacion === tipo.id
-                            ? "text-blue-900"
-                            : "text-gray-900 group-hover:text-blue-900"
-                        }`}
+                        className={`text-lg font-semibold transition-colors duration-200 ${tipoCotizacion === tipo.id
+                          ? "text-blue-900"
+                          : "text-gray-900 group-hover:text-blue-900"
+                          }`}
                       >
                         {tipo.label}
                       </h4>
                       <p
-                        className={`text-sm mt-2 transition-colors duration-200 ${
-                          tipoCotizacion === tipo.id
-                            ? "text-blue-700"
-                            : "text-gray-600 group-hover:text-gray-700"
-                        }`}
+                        className={`text-sm mt-2 transition-colors duration-200 ${tipoCotizacion === tipo.id
+                          ? "text-blue-700"
+                          : "text-gray-600 group-hover:text-gray-700"
+                          }`}
                       >
                         {tipo.description}
                       </p>
@@ -1195,20 +1208,18 @@ export default function CotizacionForm({
                           {tipo.id === "corta" ? (
                             <>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  tipoCotizacion === tipo.id
-                                    ? "bg-blue-200 text-blue-800"
-                                    : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
-                                }`}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${tipoCotizacion === tipo.id
+                                  ? "bg-blue-200 text-blue-800"
+                                  : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
+                                  }`}
                               >
                                 ⚡ Rápida
                               </span>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  tipoCotizacion === tipo.id
-                                    ? "bg-blue-200 text-blue-800"
-                                    : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
-                                }`}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${tipoCotizacion === tipo.id
+                                  ? "bg-blue-200 text-blue-800"
+                                  : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
+                                  }`}
                               >
                                 📄 Concisa
                               </span>
@@ -1216,20 +1227,18 @@ export default function CotizacionForm({
                           ) : (
                             <>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  tipoCotizacion === tipo.id
-                                    ? "bg-blue-200 text-blue-800"
-                                    : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
-                                }`}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${tipoCotizacion === tipo.id
+                                  ? "bg-blue-200 text-blue-800"
+                                  : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
+                                  }`}
                               >
                                 📋 Completa
                               </span>
                               <span
-                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                                  tipoCotizacion === tipo.id
-                                    ? "bg-blue-200 text-blue-800"
-                                    : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
-                                }`}
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium transition-colors ${tipoCotizacion === tipo.id
+                                  ? "bg-blue-200 text-blue-800"
+                                  : "bg-gray-100 text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700"
+                                  }`}
                               >
                                 🎯 Profesional
                               </span>
@@ -1252,11 +1261,10 @@ export default function CotizacionForm({
           <button
             type="submit"
             disabled={!isFormValid() || isGenerating}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${
-              isFormValid() && !isGenerating
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-200 text-gray-500 cursor-not-allowed"
-            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${isFormValid() && !isGenerating
+              ? "bg-blue-600 text-white hover:bg-blue-700"
+              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
           >
             <SparklesIcon className="w-5 h-5" />
             {isGenerating ? (

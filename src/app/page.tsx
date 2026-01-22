@@ -15,7 +15,8 @@ import { BillingData, BrandingData } from './settings/profile/types';
 import type { PaymentMethod } from '@/lib/types/payment';
 import ServicesTab from '@/app/components/ServicesTab';
 import ProfileTab from '@/app/components/ProfileTab';
-import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon } from '@heroicons/react/24/outline';
+import LegalSettingsTab from '@/app/components/LegalSettingsTab';
+import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 interface UserProfile {
   location?: string;
@@ -25,7 +26,7 @@ interface UserProfile {
 }
 
 export default function Home() {
-    const { user } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [selectedTab, setSelectedTab] = useState('Servicios');
@@ -40,7 +41,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [servicios, setServicios] = useState<any[]>([]);
   const [isFacturacionModalOpen, setIsFacturacionModalOpen] = useState(false);
-  
+
   // Estado para datos fiscales
   const [datosFiscales, setDatosFiscales] = useState<BillingData>({
     razonSocial: '',
@@ -95,8 +96,8 @@ export default function Home() {
 
   const { complete, isLoading: isAILoading } = useCompletion({
     api: '/api/openai/chat',
-    onResponse: () => {},
-    onFinish: () => {},
+    onResponse: () => { },
+    onFinish: () => { },
     onError: (error) => {
       console.error('[AI Error Event]:', {
         message: error.message,
@@ -120,7 +121,7 @@ export default function Home() {
       try {
         const serviciosRef = collection(db, 'servicios');
         const q = query(serviciosRef, where('userId', '==', user.uid));
-        
+
         const unsubscribe = onSnapshot(q, (snapshot) => {
           const serviciosData = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -313,6 +314,7 @@ export default function Home() {
               { label: 'Facturación', Icon: DocumentTextIcon },
               { label: 'Pago', Icon: CreditCardIcon },
               { label: 'Branding', Icon: SparklesIcon },
+              { label: 'Configuración', Icon: Cog6ToothIcon },
             ].map(({ label, Icon }) => (
               <button
                 key={label}
@@ -346,7 +348,7 @@ export default function Home() {
               onServiciosUpdate={setServicios}
             />
           ) : selectedTab === 'Facturación' ? (
-            <BillingTab 
+            <BillingTab
               userId={user?.uid || ''}
               billingData={datosFiscales}
               onBillingUpdate={setDatosFiscales}
@@ -356,14 +358,16 @@ export default function Home() {
               userId={user?.uid || ''}
               paymentMethods={paymentMethods}
               onPaymentUpdate={setPaymentMethods}
-              onDefaultChange={() => {}}
+              onDefaultChange={() => { }}
             />
           ) : selectedTab === 'Branding' ? (
-            <BrandingTab 
+            <BrandingTab
               userId={user?.uid || ''}
               brandingData={brandingData}
               onBrandingUpdate={setBrandingData}
             />
+          ) : selectedTab === 'Configuración' ? (
+            <LegalSettingsTab />
           ) : (
             <div className="w-full text-center py-12">
               <h2 className="text-xl font-bold mb-4">Sube tu primer proyecto</h2>
