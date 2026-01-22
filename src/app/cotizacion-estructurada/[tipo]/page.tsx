@@ -1,12 +1,13 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { db } from '@/lib/firebase/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase/firebase';
+import { collection, query, where, getDocs, doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { TermTemplate } from '@/lib/types/terms';
-import { PaymentMethod } from '@/lib/types/payment'; // Ensure this type exists or create/mock it
-import { doc, onSnapshot, getDoc } from 'firebase/firestore'; // Added imports
+import { PaymentMethod } from '@/lib/types/payment';
+import Image from 'next/image';
 import AddOnsSelector from './components/AddOnsSelector';
 import { toast } from 'react-hot-toast'; // Added toast for notifications
 import {
@@ -29,7 +30,13 @@ import {
   ClipboardDocumentCheckIcon,
   CreditCardIcon,
   CurrencyDollarIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  PencilSquareIcon,
+  PaperClipIcon,
+  CalendarIcon,
+  ShieldCheckIcon,
+  BanknotesIcon,
+  ReceiptPercentIcon
 } from "@heroicons/react/24/outline";
 
 
@@ -86,6 +93,11 @@ export default function CotizacionEstructuradaForm() {
   const [paymentOptions, setPaymentOptions] = useState<string[]>([]);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
+  // Notes AI
+  const [notesModalOpen, setNotesModalOpen] = useState(false);
+  const [notesOptions, setNotesOptions] = useState<string[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+
   // Configuraciones por tipo de cotización
   const tiposConfig: Record<string, any> = {
     '1': { // Honorarios Fijos
@@ -128,6 +140,10 @@ export default function CotizacionEstructuradaForm() {
 
   // States for Service Selector
   const { user } = useAuth(); // Moved up
+  const [brandingData, setBrandingData] = useState<any>(null); // Store branding info
+  const [signatureMode, setSignatureMode] = useState<'upload' | 'draw'>('upload');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const [formData, setFormData] = useState({
     quotationName: '',
@@ -156,8 +172,14 @@ export default function CotizacionEstructuradaForm() {
     contactEmail: '',
     contactPhone: '',
     includeSignature: false,
-    includeAttachments: false
+    contactEmail: '',
+    contactPhone: '',
+    includeSignature: false,
+    includeAttachments: false,
+    attachments: [] as File[] // Store actual files
   });
+
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Update contact info when user loads
   useEffect(() => {
@@ -167,6 +189,16 @@ export default function CotizacionEstructuradaForm() {
         contactName: prev.contactName || user.displayName || '',
         contactEmail: prev.contactEmail || user.email || ''
       }));
+
+      // Fetch Branding Info
+      const brandingRef = doc(db, 'brandingInfo', user.uid);
+      const unsubscribeBranding = onSnapshot(brandingRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setBrandingData(docSnap.data());
+        }
+      });
+
+      return () => unsubscribeBranding();
     }
   }, [user]);
 
@@ -218,23 +250,185 @@ export default function CotizacionEstructuradaForm() {
     }
   };
 
-  const handleAddOnToggle = (addOnId: string) => {
-    const newSelected = new Set(selectedAddOns);
-    if (newSelected.has(addOnId)) {
-      newSelected.delete(addOnId);
-    } else {
-      newSelected.add(addOnId);
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+
+    // Validate
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen debe ser menor a 5MB");
+      return;
     }
-    setSelectedAddOns(newSelected);
+
+    try {
+      const storageRef = ref(storage, `logos/${user.uid}/signature_${Date.now()}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      // Save to Branding Info
+      const brandingRef = doc(db, 'brandingInfo', user.uid);
+      await setDoc(brandingRef, { signatureURL: url }, { merge: true });
+      toast.success("Firma actualizada exitosamente");
+    } catch (error) {
+      console.error("Error uploading signature", error);
+      toast.error("Error al subir la firma");
+    }
+  };
+
+  // Signature Drawing Functions
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    const rect = canvas.getBoundingClientRect();
+    const x = ('clientX' in e ? e.clientX : e.touches[0].clientX) - rect.left;
+    const y = ('clientY' in e ? e.clientY : e.touches[0].clientY) - rect.top;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = ('clientX' in e ? e.clientX : e.touches[0].clientX) - rect.left;
+    const y = ('clientY' in e ? e.clientY : e.touches[0].clientY) - rect.top;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.closePath();
+    }
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const saveDrawnSignature = async () => {
+    if (!user || !canvasRef.current) return;
+
+    try {
+      const canvas = canvasRef.current;
+      // Check if empty
+      const blank = document.createElement('canvas');
+      blank.width = canvas.width;
+      blank.height = canvas.height;
+      if (canvas.toDataURL() === blank.toDataURL()) {
+        toast.error("Por favor dibuja tu firma antes de guardar");
+        return;
+      }
+
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return;
+
+      const storageRef = ref(storage, `logos/${user.uid}/signature_drawn_${Date.now()}`);
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+
+      // Save to Branding Info
+      const brandingRef = doc(db, 'brandingInfo', user.uid);
+      await setDoc(brandingRef, { signatureURL: url }, { merge: true });
+      toast.success("Firma guardada exitosamente");
+      setSignatureMode('upload'); // Switch back to view it
+    } catch (error) {
+      console.error("Error saving signature", error);
+      toast.error("Error al guardar la firma");
+    }
+  };
+
+  const handleAddOnToggle = (addOnId: string) => {
+    const isSelected = selectedAddOns.has(addOnId);
+
+    if (isSelected) {
+      // Unselect
+      const newSelected = new Set(selectedAddOns);
+      newSelected.delete(addOnId);
+      setSelectedAddOns(newSelected);
+
+      // If we are currently configuring this one, close the sheet
+      if (activeConfigAddOn === addOnId) {
+        setIsSheetOpen(false);
+      }
+    } else {
+      // Select AND Open Configuration
+      const newSelected = new Set(selectedAddOns);
+      newSelected.add(addOnId);
+      setSelectedAddOns(newSelected);
+
+      setActiveConfigAddOn(addOnId);
+      setIsSheetOpen(true);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.length) return;
+
+    // Convert FileList to Array
+    const files = Array.from(e.target.files);
+    const MAX_SIZE_MB = 50;
+    const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+    // Validate size
+    const validFiles = files.filter(file => {
+      if (file.size > MAX_SIZE_BYTES) {
+        toast.error(`El archivo "${file.name}" excede el límite de ${MAX_SIZE_MB}MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...validFiles]
+      }));
+      toast.success(`${validFiles.length} archivo(s) agregado(s).`);
+    }
+
+    // Reset input value so same file can be selected again if needed
+    e.target.value = '';
+  };
+
+  const removeAttachment = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      attachments: (prev.attachments || []).filter((_, i) => i !== index)
+    }));
   };
 
   const handleConfigureAddOn = (addOnId: string) => {
     setActiveConfigAddOn(addOnId);
     setIsSheetOpen(true);
 
-    // Auto-select the add-on if not selected
+    // Auto-select the add-on if not selected (without toggling)
     if (!selectedAddOns.has(addOnId)) {
-      handleAddOnToggle(addOnId);
+      setSelectedAddOns(prev => {
+        const next = new Set(prev);
+        next.add(addOnId);
+        return next;
+      });
     }
   };
 
@@ -523,18 +717,31 @@ export default function CotizacionEstructuradaForm() {
 
       case 'notes':
         return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Notas Adicionales</h3>
-              <p className="text-sm text-gray-600">Agrega notas libres, aclaraciones o comentarios finales para el cliente.</p>
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
+              <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center rounded-t-xl">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contenido de la nota</span>
+                <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Opcional</span>
+              </div>
+              <textarea
+                value={formData.notes || ''}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                placeholder="Escribe aquí cualquier aclaración importante, condiciones especiales o mensajes personalizados para tu cliente..."
+                rows={8}
+                className="w-full px-4 py-4 bg-white rounded-b-xl border-none focus:ring-0 text-gray-700 placeholder:text-gray-400 resize-none text-base leading-relaxed"
+              />
             </div>
-            <textarea
-              value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              placeholder="Escribe aquí tus notas..."
-              rows={6}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none mx-1"
-            />
+
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={generateNotesSuggestions}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-blue-50"
+              >
+                <SparklesIcon className="w-3.5 h-3.5" />
+                Mejorar con AI
+              </button>
+            </div>
           </div>
         );
 
@@ -557,39 +764,46 @@ export default function CotizacionEstructuradaForm() {
       case 'contact_details':
         return (
           <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Datos de Contacto</h3>
-              <p className="text-sm text-gray-600">Información de contacto que aparecerá en la cotización.</p>
-            </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                <input
-                  type="text"
-                  value={formData.contactName || ''}
-                  onChange={(e) => handleInputChange('contactName', e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 outline-none"
-                />
+              <div className="bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+                <div className="grid grid-cols-1 gap-4 p-4">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Nombre Completo</label>
+                    <input
+                      type="text"
+                      value={formData.contactName || ''}
+                      onChange={(e) => handleInputChange('contactName', e.target.value)}
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      placeholder="Ej. Juan Pérez"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Email Profesional</label>
+                    <input
+                      type="email"
+                      value={formData.contactEmail || ''}
+                      onChange={(e) => handleInputChange('contactEmail', e.target.value)}
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      placeholder="juan@empresa.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Teléfono / WhatsApp</label>
+                    <input
+                      type="tel"
+                      value={formData.contactPhone || ''}
+                      onChange={(e) => handleInputChange('contactPhone', e.target.value)}
+                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      placeholder="+52 55 1234 5678"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.contactEmail || ''}
-                  onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input
-                  type="tel"
-                  value={formData.contactPhone || ''}
-                  onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-500 outline-none"
-                  placeholder="+52 ..."
-                />
-              </div>
+              <p className="text-xs text-gray-400 text-center">
+                Estos datos aparecerán en el pie de página de tu cotización.
+              </p>
             </div>
           </div>
         );
@@ -601,25 +815,130 @@ export default function CotizacionEstructuradaForm() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Firma Digital</h3>
               <p className="text-sm text-gray-600">Incluye tu firma digital en el documento.</p>
             </div>
-            <div
-              onClick={() => handleInputChange('includeSignature', !formData.includeSignature)}
-              className={`cursor-pointer p-4 rounded-lg border transition-all flex items-center justify-between
-                  ${formData.includeSignature
-                  ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                  : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
-                `}
-            >
-              <div>
-                <p className="font-medium text-gray-900">Incluir espacio para firma</p>
-                <p className="text-xs text-gray-500">Se generará un bloque para firma al final del PDF.</p>
-              </div>
-              <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors
-                    ${formData.includeSignature ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}
-                  `}>
-                {formData.includeSignature && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>}
-              </div>
+
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+              <label className="flex items-start gap-3 cursor-pointer p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <input
+                  type="checkbox"
+                  checked={formData.includeSignature}
+                  onChange={(e) => handleInputChange('includeSignature', e.target.checked)}
+                  className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-900">Incluir espacio para firma</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Se generará un bloque para firma al final del PDF.</p>
+                </div>
+              </label>
+
+              {/* Signature Preview/Config */}
+              {formData.includeSignature && (
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+                  {/* Mode Toggle */}
+                  <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setSignatureMode('upload')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                        signatureMode === 'upload'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Subir Imagen
+                    </button>
+                    <button
+                      onClick={() => setSignatureMode('draw')}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                        signatureMode === 'draw'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Dibujar Firma
+                    </button>
+                  </div>
+
+                  {/* Upload Mode */}
+                  {signatureMode === 'upload' && (
+                    <div className="space-y-3">
+                      {brandingData?.signatureURL ? (
+                        <div className="bg-gray-50 p-4 rounded-lg flex flex-col items-center">
+                          <div className="relative w-48 h-24 mb-3 border border-gray-200 bg-white rounded-md overflow-hidden">
+                            <Image
+                              src={brandingData.signatureURL}
+                              alt="Firma"
+                              fill
+                              className="object-contain p-2"
+                            />
+                          </div>
+                          <button
+                            onClick={() => document.getElementById('sig-upload')?.click()}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                          >
+                            Cambiar firma
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="bg-orange-50 p-4 rounded-lg border border-orange-100 text-center">
+                          <p className="text-sm text-orange-800 font-medium mb-3">No tienes una firma configurada</p>
+                          <button
+                            onClick={() => document.getElementById('sig-upload')?.click()}
+                            className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm"
+                          >
+                            Subir Imagen de Firma
+                          </button>
+                          <p className="text-[10px] text-gray-500 mt-2">Recomendado: Imagen PNG con fondo transparente</p>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        id="sig-upload"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleSignatureUpload}
+                      />
+                    </div>
+                  )}
+
+                  {/* Draw Mode */}
+                  {signatureMode === 'draw' && (
+                    <div className="space-y-4">
+                      <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white relative">
+                        <canvas
+                          ref={canvasRef}
+                          width={500}
+                          height={200}
+                          className="w-full h-40 touch-none cursor-crosshair"
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                        />
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <button
+                          onClick={clearSignature}
+                          className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all"
+                        >
+                          Limpiar
+                        </button>
+                        <button
+                          onClick={saveDrawnSignature}
+                          className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full text-sm font-medium hover:from-blue-600 hover:to-blue-700 shadow-sm hover:shadow-md transition-all"
+                        >
+                          Guardar Firma
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-500 text-center">
+                        Dibuja tu firma en el recuadro. Puedes usar el mouse o tu dedo en dispositivos táctiles.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            {/* Future: Add draw signature pad here */}
           </div>
         );
 
@@ -630,14 +949,53 @@ export default function CotizacionEstructuradaForm() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Adjuntos</h3>
               <p className="text-sm text-gray-600">Sube archivos adicionales para anexar a la cotización.</p>
             </div>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer">
-              <svg className="w-10 h-10 text-gray-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
+
+            <div
+              onClick={() => document.getElementById('file-upload')?.click()}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer group"
+            >
+              <input
+                type="file"
+                id="file-upload"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              />
+              <div className="w-12 h-12 bg-white rounded-full shadow-sm border border-gray-100 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                <PaperClipIcon className="w-6 h-6 text-blue-500" />
+              </div>
               <p className="text-sm font-medium text-gray-900">Haz clic para subir archivos</p>
-              <p className="text-xs text-gray-500 mt-1">PDF, JPG, PNG (Max 5MB)</p>
+              <p className="text-xs text-gray-500 mt-1">PDF, Documentos, Imágenes (Max 50MB por archivo)</p>
             </div>
-            <p className="text-xs text-gray-400 text-center">Funcionalidad de carga de archivos próximamente.</p>
+
+            {/* File List */}
+            {formData.attachments && formData.attachments.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Archivos seleccionados ({formData.attachments.length})</h4>
+                {formData.attachments.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <DocumentTextIcon className="w-4 h-4 text-gray-500" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                        <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeAttachment(idx)}
+                      className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 
@@ -763,10 +1121,75 @@ export default function CotizacionEstructuradaForm() {
     setTimeModalOpen(false);
   };
 
+  const generateNotesSuggestions = async () => {
+    setNotesModalOpen(true);
+    setNotesLoading(true);
+    try {
+      const response = await fetch("/api/cotizacion/notas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          descripcionServicio: `${formData.quotationName} ${formData.contextDescription}`,
+          context: formData.details
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setNotesOptions(data.options || []);
+      } else {
+        toast.error(data.error || "Error al generar sugerencias de notas");
+      }
+    } catch (error) {
+      console.error("Error generando notas:", error);
+      toast.error("Error al generar sugerencias de notas");
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleSelectNotes = (selected: string[]) => {
+    handleInputChange('notes', selected.join("\n\n")); // Join with double newline for paragraphs
+    setNotesModalOpen(false);
+  };
+
   const handleGenerateQuote = async () => {
     // 1. Basic Validation
     if (!formData.client || !formData.pricing) {
       toast.error('Por favor completa los campos obligatorios (Cliente y Precio/Monto).');
+      return;
+    }
+
+    // 1.5 Add-On Validations
+    if (selectedAddOns.has('notes') && !formData.notes?.trim()) {
+      toast.error('Agregaste "Notas" pero no escribiste contenido.', { duration: 4000 });
+      handleConfigureAddOn('notes');
+      return;
+    }
+
+    if (selectedAddOns.has('expiration_date') && !formData.expirationDate) {
+      toast.error('Agregaste "Fecha de Expiración" pero no seleccionaste una fecha.', { duration: 4000 });
+      handleConfigureAddOn('expiration_date');
+      return;
+    }
+
+    if (selectedAddOns.has('bank_account') && !selectedBankAccount) {
+      toast.error('Agregaste "Cuenta Bancaria" pero no seleccionaste ninguna.', { duration: 4000 });
+      handleConfigureAddOn('bank_account');
+      return;
+    }
+
+    // Check terms (checking generic selectedTermId - considering current limitation)
+    if ((selectedAddOns.has('specific_tc') || selectedAddOns.has('general_tc') || selectedAddOns.has('privacy_policy')) && !selectedTermId) {
+      toast.error('Seleccionaste una opción legal pero no elegiste una plantilla.', { duration: 4000 });
+      if (selectedAddOns.has('specific_tc')) handleConfigureAddOn('specific_tc');
+      else if (selectedAddOns.has('general_tc')) handleConfigureAddOn('general_tc');
+      else handleConfigureAddOn('privacy_policy');
+      return;
+    }
+
+    if (selectedAddOns.has('contact_details') && (!formData.contactName || !formData.contactEmail)) {
+      toast.error('Agregaste "Datos de Contacto" pero faltan campos requeridos.', { duration: 4000 });
+      handleConfigureAddOn('contact_details');
       return;
     }
 
@@ -1202,14 +1625,47 @@ export default function CotizacionEstructuradaForm() {
             />
 
             <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
-              <SheetContent className="sm:max-w-md w-full">
-                <SheetHeader>
-                  <SheetTitle>Configurar Opción</SheetTitle>
-                  <SheetDescription>
-                    Personaliza los detalles para esta sección.
-                  </SheetDescription>
-                </SheetHeader>
-                {renderAddOnConfigContent()}
+              <SheetContent className="sm:max-w-md w-full p-0 gap-0 overflow-hidden bg-[#F9FAFB]">
+                {/* Premium Header */}
+                <div className="bg-white border-b border-gray-100 p-6 flex items-start gap-4">
+                  <div className={`p-3 rounded-xl ${activeConfigAddOn && ['notes', 'signature'].includes(activeConfigAddOn) ? 'bg-blue-50 text-blue-600' : 'bg-gray-50 text-gray-900'}`}>
+                    {activeConfigAddOn === 'notes' && <PencilSquareIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'attachments' && <PaperClipIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'expiration_date' && <CalendarIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'contact_details' && <UserIcon className="w-6 h-6" />}
+                    {(activeConfigAddOn === 'specific_tc' || activeConfigAddOn === 'general_tc') && <DocumentTextIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'privacy_policy' && <ShieldCheckIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'bank_account' && <BanknotesIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'invoicing_info' && <ReceiptPercentIcon className="w-6 h-6" />}
+                    {activeConfigAddOn === 'signature' && <PencilSquareIcon className="w-6 h-6" />}
+                  </div>
+                  <div>
+                    <SheetTitle className="text-xl font-bold text-gray-900">
+                      {activeConfigAddOn === 'notes' && 'Notas Adicionales'}
+                      {activeConfigAddOn === 'attachments' && 'Adjuntos'}
+                      {activeConfigAddOn === 'expiration_date' && 'Fecha de Expiración'}
+                      {activeConfigAddOn === 'contact_details' && 'Datos de Contacto'}
+                      {activeConfigAddOn === 'specific_tc' && 'Términos Específicos'}
+                      {activeConfigAddOn === 'general_tc' && 'Términos Generales'}
+                      {activeConfigAddOn === 'privacy_policy' && 'Política de Privacidad'}
+                      {activeConfigAddOn === 'bank_account' && 'Cuenta Bancaria'}
+                      {activeConfigAddOn === 'invoicing_info' && 'Facturación'}
+                      {activeConfigAddOn === 'signature' && 'Firma Digital'}
+                    </SheetTitle>
+                    <SheetDescription className="text-sm text-gray-500 mt-1">
+                      {activeConfigAddOn === 'notes' && 'Agrega detalles puntuales o aclaraciones para el cliente.'}
+                      {activeConfigAddOn === 'attachments' && 'Sube documentos complementarios.'}
+                      {activeConfigAddOn === 'expiration_date' && 'Define la vigencia de esta propuesta.'}
+                      {activeConfigAddOn === 'contact_details' && 'Edita la información de contacto visible.'}
+                      {activeConfigAddOn === 'bank_account' && 'Selecciona dónde recibir el pago.'}
+                      {['specific_tc', 'general_tc', 'privacy_policy'].includes(activeConfigAddOn || '') && 'Selecciona la plantilla legal adecuada.'}
+                    </SheetDescription>
+                  </div>
+                </div>
+
+                <div className="p-6 h-full overflow-y-auto">
+                  {renderAddOnConfigContent()}
+                </div>
               </SheetContent>
             </Sheet>
 
@@ -1269,6 +1725,14 @@ export default function CotizacionEstructuradaForm() {
         onClose={() => setTimeModalOpen(false)}
         onSelect={handleSelectTime}
         customTitle="Sugerencias de Tiempo Estimado"
+      />
+      <RequirementsAIModal
+        isOpen={notesModalOpen}
+        loading={notesLoading}
+        options={notesOptions}
+        onClose={() => setNotesModalOpen(false)}
+        onSelect={handleSelectNotes}
+        customTitle="Sugerencias de Notas Adicionales"
       />
     </div>
   );
