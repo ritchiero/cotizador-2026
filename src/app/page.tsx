@@ -298,16 +298,16 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <div className="w-full mx-auto px-4 box-border max-w-full">
-      <div className="md:hidden sticky top-16 z-10 bg-background border-b border-border py-3">
-        <h1 className="text-lg font-semibold text-text-main text-center">Configurador de Cotizador con IA</h1>
+    <div className="w-full mx-auto px-4 box-border max-w-full bg-[#F5F6F8] min-h-screen font-jakarta">
+      <div className="md:hidden sticky top-16 z-10 bg-white border-b border-gray-200 py-3">
+        <h1 className="text-lg font-semibold text-[#0E162F] text-center">Configurador de Cotizador con IA</h1>
       </div>
       <div className="flex flex-col items-center">
-        <h1 className="hidden md:block text-2xl font-bold text-text-main mb-2 text-center mt-8">Configurador de Cotizador con IA</h1>
-        <p className="hidden md:block text-base text-text-secondary mb-3 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
-        {/* Navegación */}
+        <h1 className="hidden md:block text-[18px] font-bold text-[#0E162F] mb-2 text-center mt-8">Configurador de Cotizador con IA</h1>
+        <p className="hidden md:block text-[16px] text-[#3B3D45] mb-3 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
+        {/* Navegación con estilo del sistema maestro */}
         <div className="w-full flex justify-center mb-2">
-          <nav className="flex gap-2 bg-background-card rounded-xl p-2 shadow-sm overflow-x-auto snap-x whitespace-nowrap">
+          <nav className="flex gap-0 bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
             {[
               { label: 'Perfil', Icon: UserIcon },
               { label: 'Servicios', Icon: HomeIcon },
@@ -319,17 +319,14 @@ export default function Home() {
               <button
                 key={label}
                 onClick={() => setSelectedTab(label)}
-                aria-selected={selectedTab === label}
-                aria-label={label}
-                className={`relative flex-none snap-start min-h-[44px] text-sm font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 step-tab
-                  after:absolute after:bottom-0 after:left-1.5 after:right-1.5 after:h-0.5 after:bg-primary after:rounded-full after:transition-transform
+                className={`px-5 py-4 text-sm font-medium transition-all border-b-2 flex items-center gap-2
                   ${selectedTab === label
-                    ? 'active text-primary after:scale-x-100'
-                    : 'inactive text-text-secondary hover:text-primary after:scale-x-0'}
+                    ? 'text-[#3B82F6] border-[#3B82F6] font-semibold'
+                    : 'text-[#6B7280] border-transparent hover:text-[#374151] hover:border-gray-200'}
                 `}
               >
                 <Icon className="w-5 h-5" />
-                <span className="tab-label">{label}</span>
+                <span>{label}</span>
               </button>
             ))}
           </nav>
@@ -370,11 +367,11 @@ export default function Home() {
             <LegalSettingsTab />
           ) : (
             <div className="w-full text-center py-12">
-              <h2 className="text-xl font-bold mb-4">Sube tu primer proyecto</h2>
-              <p className="text-gray-500 mb-6">
+              <h2 className="text-[18px] font-bold text-[#0E162F] mb-4">Sube tu primer proyecto</h2>
+              <p className="text-[16px] text-[#3B3D45] mb-6">
                 Muestra tu mejor trabajo. Recibe retroalimentación y sé parte de una comunidad en crecimiento.
               </p>
-              <button className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800">
+              <button className="px-6 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
                 Subir primer proyecto
               </button>
             </div>

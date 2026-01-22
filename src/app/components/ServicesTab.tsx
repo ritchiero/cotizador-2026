@@ -644,18 +644,18 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 <SparklesIcon className="h-4 w-4" />
                 Crear con IA
               </button>
-              {/* Botones desktop */}
-              <div className="hidden md:grid grid-cols-3 gap-2">
+              {/* Botones desktop con estilo del sistema maestro */}
+              <div className="hidden md:grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                 >
                   <PlusIcon className="w-4 h-4 mr-2" />
                   Nuevo Servicio
                 </button>
                 <button
                   onClick={() => setIsAIModalOpen(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-blue-600 text-blue-600 text-base font-medium hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-[#3B82F6] text-[#3B82F6] text-sm font-medium hover:bg-blue-50 transition-all"
                 >
                   <SparklesIcon className="w-4 h-4 mr-2" />
                   Crear con IA
@@ -663,7 +663,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 <button
                   onClick={standardizeServices}
                   disabled={isStandardizing || servicios.length === 0}
-                  className="inline-flex items-center px-4 py-2 rounded-lg border border-purple-600 text-purple-600 text-base font-medium hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-purple-600 text-purple-600 text-sm font-medium hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isStandardizing ? (
                     <>
@@ -704,7 +704,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       placeholder="Buscar servicios..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                      className="w-full pl-10 pr-5 py-3 border border-[#E5E7EB] rounded-full focus:ring-0 focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] text-sm transition-all outline-none hover:border-[#D1D5DB] bg-white"
                     />
                     {searchTerm && (
                       <button
@@ -1012,13 +1012,13 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
     {/* Modales */}
       {/* Modal de Detalles del Servicio */}
       {isModalOpen && selectedService && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 space-y-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-8 space-y-6 font-jakarta">
               {/* Header del Modal */}
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-[18px] font-bold text-[#0E162F] leading-tight">
                     {selectedService.nombre}
                   </h3>
                 </div>
@@ -1026,18 +1026,18 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   {!isEditing && (
                     <button
                       onClick={handleEditClick(selectedService)}
-                      className="text-gray-400 hover:text-blue-500"
+                      className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#374151] hover:border-[#D1D5DB] transition-all"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                   )}
-                  <button 
+                  <button
                     onClick={() => setIsModalOpen(false)}
-                    className="text-gray-400 hover:text-gray-500"
+                    className="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#374151] transition-all"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -1046,45 +1046,56 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
               {/* Contenido del Modal */}
               <div className="space-y-4">
-                <div className="flex items-center gap-4 text-base">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="tiempo"
-                        value={editedService?.tiempo || ''}  
-                        onChange={handleInputChange}
-                        className="px-2 py-1 border rounded-lg text-gray-900"
-                        placeholder="ej: 2-3 semanas"
-                      />
-                    ) : (
-                      <span>{selectedService?.tiempo}</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {isEditing ? (
-                      <input
-                        type="text"
-                        name="precio"
-                        value={editedService?.precio || ''}
-                        onChange={handleInputChange}
-                        className="px-2 py-1 border rounded-lg text-gray-900"
-                        placeholder="$0.00"
-                      />
-                    ) : (
-                      <span>{selectedService?.precio}</span>
-                    )}
-                  </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {isEditing ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          name="tiempo"
+                          value={editedService?.tiempo || ''}
+                          onChange={handleInputChange}
+                          className="px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:border-[#3B82F6] focus:ring-0 outline-none"
+                          placeholder="ej: 2-3 semanas"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          name="precio"
+                          value={editedService?.precio || ''}
+                          onChange={handleInputChange}
+                          className="px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:border-[#3B82F6] focus:ring-0 outline-none"
+                          placeholder="$0.00"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full">
+                        <svg className="w-4 h-4 text-[#3B82F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-[14px] font-medium text-[#3B82F6]">{selectedService?.tiempo}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-100 rounded-full">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-[14px] font-medium text-green-700">{selectedService?.precio}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Incluye</h4>
+                  <h4 className="text-sm font-semibold text-[#374151] mb-3">Incluye</h4>
                   {isEditing ? (
                     <div className="space-y-2">
                       {editedService?.incluye?.map((item: string, index: number) => (
@@ -1110,38 +1121,43 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       <button
                         type="button"
                         onClick={handleAddEditIncludeItem}
-                        className="text-base text-blue-600 hover:text-blue-700 font-medium"
+                        className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
                       >
                         + Agregar ítem
                       </button>
                     </div>
                   ) : (
-                    <ul className="space-y-2">
+                    <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
                       {selectedService?.incluye?.map((item: string, index: number) => (
-                        <li key={index} className="flex items-center gap-2 text-base text-gray-600">
-                          <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          {item}
-                        </li>
+                        <div
+                          key={index}
+                          className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-[#F9FAFB] transition-colors"
+                        >
+                          <div className="flex-shrink-0">
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <span className="text-[14px] text-[#111827] font-medium">{item}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Footer del Modal */}
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              {/* Footer del Modal - Estilos del Sistema Maestro */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-base font-medium text-gray-700 hover:text-gray-900"
+                  className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
                 >
                   Cancelar
                 </button>
                 {isEditing ? (
                   <button
                     onClick={handleSaveEdit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700 disabled:opacity-50"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Guardando...' : 'Guardar Cambios'}
@@ -1149,12 +1165,12 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 ) : (
                   <button
                     onClick={() => {
-                      setIsModalOpen(false); // Primero cerramos el modal
+                      setIsModalOpen(false);
                       if (selectedService) {
-                        handleSolicitarServicio(selectedService); // Luego redirigimos
+                        handleSolicitarServicio(selectedService);
                       }
                     }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700"
+                    className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
                   >
                     Solicitar Servicio
                   </button>
@@ -1669,36 +1685,36 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
         </div>
       )}
 
-      {/* Modal de Editar Servicio */}
+      {/* Modal de Editar Servicio - Sistema Maestro */}
       {isEditModalOpen && editedService && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 space-y-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="p-8 space-y-6 font-jakarta">
               {/* Header */}
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-[18px] font-bold text-[#0E162F]">
                     Editar Servicio
                   </h3>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setIsEditing(false);
                     setEditedService(null);
                   }}
-                  className="text-gray-400 hover:text-gray-500"
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#374151] transition-all"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              {/* Formulario de edición */}
-              <div className="space-y-4">
+              {/* Formulario de edición con Sistema Maestro */}
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Nombre del Servicio
                   </label>
                   <input
@@ -1706,13 +1722,13 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     name="nombre"
                     value={editedService?.nombre || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     placeholder="ej: Constitución de Sociedades"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Descripción Corta
                   </label>
                   <input
@@ -1720,13 +1736,13 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     name="descripcion"
                     value={editedService?.descripcion || ''}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     placeholder="Breve descripción del servicio"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Descripción Detallada
                   </label>
                   <textarea
@@ -1734,14 +1750,14 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     value={editedService?.detalles || ''}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] resize-none"
                     placeholder="Descripción completa del servicio..."
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-base font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                       Tiempo Estimado
                     </label>
                     <input
@@ -1749,12 +1765,12 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       name="tiempo"
                       value={editedService?.tiempo || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                       placeholder="ej: 2-3 semanas"
                     />
                   </div>
                   <div>
-                    <label className="block text-base font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                       Precio Base
                     </label>
                     <input
@@ -1762,30 +1778,30 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       name="precio"
                       value={editedService?.precio || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                       placeholder="$0.00"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-base font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-3 ml-1">
                     Incluye
                   </label>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {editedService?.incluye?.map((item, index) => (
-                      <div key={index} className="flex gap-2">
+                      <div key={index} className="flex gap-3 items-center">
                         <input
                           type="text"
                           value={item}
                           onChange={(e) => handleEditIncludeItemChange(index, e.target.value)}
-                          className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="flex-1 h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                           placeholder="ej: Acta constitutiva"
                         />
                         <button
                           type="button"
                           onClick={() => handleRemoveEditIncludeItem(index)}
-                          className="text-red-500 hover:text-red-700"
+                          className="w-9 h-9 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50 transition-all flex-shrink-0"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1796,7 +1812,7 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     <button
                       type="button"
                       onClick={handleAddEditIncludeItem}
-                      className="text-base text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium px-3 py-2 rounded-full hover:bg-blue-50 transition-all"
                     >
                       + Agregar ítem
                     </button>
@@ -1804,21 +1820,21 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="flex justify-end gap-3 pt-6 border-t">
+              {/* Footer con Sistema Maestro */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
                     setIsEditing(false);
                     setEditedService(null);
                   }}
-                  className="px-4 py-2 text-base font-medium text-gray-700 hover:text-gray-900"
+                  className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-base font-medium hover:bg-blue-700"
+                  className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Guardando...' : 'Guardar Cambios'}
