@@ -22,11 +22,52 @@ interface ServicesTabProps {
   onServiciosUpdate: (servicios: Service[]) => void;
 }
 
+// === CONSTANTES DE ESTILOS ===
+const INPUT_CLASS = "w-full h-12 px-5 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]";
+
+const TEXTAREA_CLASS = "w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] resize-none leading-relaxed";
+
+const BUTTON_PRIMARY = "px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5";
+
+const BUTTON_SECONDARY = "px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all";
+
+const BUTTON_AI = "text-xs px-3 py-1.5 border border-gray-200 text-gray-600 rounded-full hover:bg-gray-50 hover:border-gray-300 hover:text-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 transition-all shadow-sm font-medium";
+
+// === COMPONENTES DE ÍCONOS ===
+const ClockIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const MoneyIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const CheckIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const CloseIcon: React.FC<{ className?: string }> = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const SparkleIcon: React.FC<{ className?: string }> = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
 export default function ServicesTab({ userId, servicios, onServiciosUpdate }: ServicesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [editedService, setEditedService] = useState<Service | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -34,7 +75,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
   const [aiPrompt, setAiPrompt] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [precioError, setPrecioError] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [userMoneda, setUserMoneda] = useState<'MXN' | 'USD'>('MXN');
   const { user } = useAuth();
   const router = useRouter();
@@ -98,10 +138,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
       setError(`Error: ${error.message}`);
     }
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Cargar moneda preferida del usuario
   useEffect(() => {
@@ -565,7 +601,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
       // Cerrar modal de edición
       setIsEditModalOpen(false);
-      setIsEditing(false);
 
       // Mostrar mensaje de éxito
       toast.success('Servicio actualizado exitosamente');
@@ -580,7 +615,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
   const handleEditClick = (service: Service) => (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation(); // Evitar que se abra el modal de detalles
     setEditedService(service);
-    setIsEditing(true);
     setIsEditModalOpen(true); // Usar el nuevo estado para el modal de edición
   };
 
@@ -602,26 +636,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
 
     // Navegar a cotización-express con los datos
     router.push(`/cotizacion-express?service=${serviceData}`);
-  };
-
-  // Ejemplo de función para abrir el modal y cargar sugerencias
-  const openRequirementsAIModal = async () => {
-    setIsRequirementsAIModalOpen(true);
-    setRequirementsLoading(true);
-    // Aquí deberías llamar a tu API para obtener sugerencias
-    // Por ejemplo:
-    // const res = await fetch('/api/cotizacion/requerimientos', { ... });
-    // const data = await res.json();
-    // setRequirementsOptions(data.options);
-    // Simulación:
-    setTimeout(() => {
-      setRequirementsOptions([
-        "Documentación legal de la empresa o producto que se desea proteger.",
-        "Análisis de viabilidad y originalidad de la marca a registrar.",
-        "Pago de las tarifas correspondientes al registro de la marca en la jurisdicción deseada."
-      ]);
-      setRequirementsLoading(false);
-    }, 500);
   };
 
   return (
@@ -704,14 +718,14 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                     placeholder="Buscar servicios..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-5 py-3 border border-[#E5E7EB] rounded-full focus:ring-0 focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] text-sm transition-all outline-none hover:border-[#D1D5DB] bg-white"
+                    className="w-full pl-11 pr-5 py-3 border border-[#E5E7EB] rounded-full focus:ring-0 focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] text-sm transition-all outline-none hover:border-[#D1D5DB] bg-white placeholder-gray-400"
                   />
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      className="absolute inset-y-0 right-3 flex items-center"
                     >
-                      <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -743,36 +757,44 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   {/* Botón de filtros */}
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`p-2 rounded-lg transition-colors ${showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                    className={`p-2.5 rounded-full border transition-all ${showFilters
+                      ? 'bg-blue-50 border-blue-200 text-blue-600'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700 hover:bg-gray-50'}`}
                     title="Filtros"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" />
                     </svg>
                   </button>
 
                   {/* Divider */}
-                  <div className="w-px h-6 bg-gray-300"></div>
+                  <div className="w-px h-8 bg-gray-200 mx-1"></div>
 
                   {/* Toggle de vista */}
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                    title="Vista en cuadrícula"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                    title="Vista en lista"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                    </svg>
-                  </button>
+                  <div className="flex bg-white rounded-full border border-gray-200 p-1">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 rounded-full transition-all ${viewMode === 'grid'
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'}`}
+                      title="Vista en cuadrícula"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 rounded-full transition-all ${viewMode === 'list'
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-gray-400 hover:text-gray-600'}`}
+                      title="Vista en lista"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -833,13 +855,13 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   <div
                     key={servicio.id}
                     onClick={() => handleServiceClick(servicio)}
-                    className="group relative bg-background-card rounded-2xl border border-border p-5 shadow transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1"
+                    className="group relative bg-white rounded-2xl border border-gray-200/60 p-6 shadow-sm transition-all duration-200 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-blue-200"
                   >
                     {/* Botón de eliminar */}
-                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                       <button
                         onClick={(e) => handleDeleteService(servicio.id, e)}
-                        className="p-2 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
+                        className="p-2 rounded-full bg-white shadow-sm border border-gray-100 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -847,34 +869,36 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                       </button>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                          <span className="text-xl font-bold">{servicio.nombre.charAt(0)}</span>
+                        </div>
+                      </div>
+
                       {/* Título del servicio */}
-                      <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors line-clamp-2 font-jakarta">
+                      <h3 className="text-lg font-bold text-[#0E162F] group-hover:text-blue-600 transition-colors line-clamp-2">
                         {servicio.nombre}
                       </h3>
                       {/* Descripción */}
-                      <details className="text-xs text-gray-500 font-jakarta">
-                        <summary className="cursor-pointer line-clamp-2">
-                          {servicio.descripcion}
-                        </summary>
-                        <p className="mt-1">{servicio.descripcion}</p>
-                      </details>
+                      <p className="text-sm text-[#3B3D45] line-clamp-2 leading-relaxed h-10">
+                        {servicio.descripcion}
+                      </p>
+
                       {/* Precio y tiempo */}
-                      <div className="pt-3 border-t border-border">
-                        <div className="flex flex-col gap-2">
-                          {/* Precio */}
-                          <span className="text-base font-bold text-primary font-jakarta">
-                            {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
+                      <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
+                        <span className="text-lg font-bold text-[#0E162F]">
+                          {formatPrice(servicio.precio)}
+                          <span className="text-xs font-medium text-gray-400 ml-1">{servicio.moneda || userMoneda}</span>
+                        </span>
+
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100 w-full">
+                          <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="block text-xs font-medium text-gray-600 truncate" title={servicio.tiempo}>
+                            {servicio.tiempo}
                           </span>
-                          {/* Tiempo de entrega */}
-                          <div className="flex items-center text-sm text-text-secondary font-jakarta">
-                            <svg className="w-4 h-4 mr-1 flex-shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="truncate">
-                              {servicio.tiempo}
-                            </span>
-                          </div>
                         </div>
                       </div>
                     </div>
@@ -890,40 +914,45 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   <div
                     key={servicio.id}
                     onClick={() => handleServiceClick(servicio)}
-                    className="group relative bg-background-card rounded-xl border border-border p-4 shadow transition-all duration-200 cursor-pointer hover:shadow-md hover:bg-gray-50"
+                    className="group relative bg-white rounded-xl border border-gray-100 p-4 shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md hover:bg-gray-50 hover:border-blue-100"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-base font-semibold text-text-main group-hover:text-primary transition-colors truncate font-jakarta">
-                              {servicio.nombre}
-                            </h3>
-                            <p className="text-xs text-gray-500 font-jakarta line-clamp-2 mt-1">
-                              {servicio.descripcion}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-4 text-xs text-gray-400 shrink-0">
-                            <div className="flex items-center gap-1">
-                              <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span>{servicio.tiempo}</span>
-                            </div>
-                            <span className="text-base font-bold text-blue-600">
-                              {formatPrice(servicio.precio)} {servicio.moneda || userMoneda}
-                            </span>
-                          </div>
+                    <div className="flex items-center justify-between gap-4">
+
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex-shrink-0 flex items-center justify-center text-blue-600 font-bold">
+                          {servicio.nombre.charAt(0)}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-bold text-[#0E162F] group-hover:text-blue-600 transition-colors truncate">
+                            {servicio.nombre}
+                          </h3>
+                          <p className="text-xs text-[#3B3D45] truncate opacity-80">
+                            {servicio.descripcion}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Botón de eliminar */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                      <div className="flex items-center gap-6 flex-shrink-0">
+                        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
+                          <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="block text-xs font-medium text-gray-600 truncate max-w-[120px] sm:max-w-[140px]" title={servicio.tiempo}>
+                            {servicio.tiempo}
+                          </span>
+                        </div>
+
+                        <span className="text-sm font-bold text-[#0E162F] w-24 text-right">
+                          {formatPrice(servicio.precio)}
+                        </span>
+
+                        {/* Botón de eliminar */}
                         <button
                           onClick={(e) => handleDeleteService(servicio.id, e)}
-                          className="p-1.5 rounded-full bg-white shadow border border-border text-text-secondary hover:text-accent hover:border-accent"
+                          className="w-8 h-8 flex items-center justify-center rounded-full text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
                         >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
@@ -976,24 +1005,26 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               Comienza agregando los servicios legales que ofreces a tus clientes
             </p>
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-2 md:gap-4 w-full">
-              <button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-base font-medium hover:bg-blue-700 w-full md:w-auto"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Agregar servicio
-              </button>
-              <button
-                onClick={() => setIsAIModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg border border-blue-600 text-blue-600 text-base font-medium hover:bg-blue-50 w-full md:w-auto"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Crear con IA
-              </button>
+              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-center gap-3 w-full">
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-bold hover:from-[#2563EB] hover:to-[#1D4ED8] w-full md:w-auto shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Agregar servicio
+                </button>
+                <button
+                  onClick={() => setIsAIModalOpen(true)}
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-full border-2 border-dashed border-blue-200 text-blue-600 text-sm font-bold hover:bg-blue-50 hover:border-blue-400 w-full md:w-auto transition-all"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Crear con IA
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1023,16 +1054,14 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   </h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  {!isEditing && (
-                    <button
-                      onClick={handleEditClick(selectedService)}
-                      className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#374151] hover:border-[#D1D5DB] transition-all"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  )}
+                  <button
+                    onClick={handleEditClick(selectedService)}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#374151] hover:border-[#D1D5DB] transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => setIsModalOpen(false)}
                     className="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#374151] transition-all"
@@ -1047,102 +1076,31 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               {/* Contenido del Modal */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 flex-wrap">
-                  {isEditing ? (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <input
-                          type="text"
-                          name="tiempo"
-                          value={editedService?.tiempo || ''}
-                          onChange={handleInputChange}
-                          className="px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:border-[#3B82F6] focus:ring-0 outline-none"
-                          placeholder="ej: 2-3 semanas"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#6B7280]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <input
-                          type="text"
-                          name="precio"
-                          value={editedService?.precio || ''}
-                          onChange={handleInputChange}
-                          className="px-3 py-1.5 border border-gray-200 rounded-full text-sm focus:border-[#3B82F6] focus:ring-0 outline-none"
-                          placeholder="$0.00"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full">
-                        <svg className="w-4 h-4 text-[#3B82F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-[14px] font-medium text-[#3B82F6]">{selectedService?.tiempo}</span>
-                      </div>
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-100 rounded-full">
-                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-[14px] font-medium text-green-700">{selectedService?.precio}</span>
-                      </div>
-                    </>
-                  )}
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full">
+                    <ClockIcon className="text-[#3B82F6]" />
+                    <span className="text-[14px] font-medium text-[#3B82F6]">{selectedService?.tiempo}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-100 rounded-full">
+                    <MoneyIcon className="text-green-600" />
+                    <span className="text-[14px] font-medium text-green-700">{selectedService?.precio}</span>
+                  </div>
                 </div>
 
                 <div>
                   <h4 className="text-sm font-semibold text-[#374151] mb-3">Incluye</h4>
-                  {isEditing ? (
-                    <div className="space-y-2">
-                      {editedService?.incluye?.map((item: string, index: number) => (
-                        <div key={index} className="flex gap-2">
-                          <input
-                            type="text"
-                            value={item}
-                            onChange={(e) => handleEditIncludeItemChange(index, e.target.value)}
-                            className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
-                            placeholder="ej: Redacción del contrato"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveEditIncludeItem(index)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={handleAddEditIncludeItem}
-                        className="text-sm text-[#3B82F6] hover:text-[#2563EB] font-medium"
+                  <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
+                    {selectedService?.incluye?.map((item: string, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-[#F9FAFB] transition-colors"
                       >
-                        + Agregar ítem
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="bg-white border border-gray-100 rounded-lg overflow-hidden">
-                      {selectedService?.incluye?.map((item: string, index: number) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-[#F9FAFB] transition-colors"
-                        >
-                          <div className="flex-shrink-0">
-                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          </div>
-                          <span className="text-[14px] text-[#111827] font-medium">{item}</span>
+                        <div className="flex-shrink-0">
+                          <CheckIcon className="text-green-500" />
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <span className="text-[14px] text-[#111827] font-medium">{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -1150,31 +1108,21 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
+                  className={BUTTON_SECONDARY}
                 >
                   Cancelar
                 </button>
-                {isEditing ? (
-                  <button
-                    onClick={handleSaveEdit}
-                    className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Guardando...' : 'Guardar Cambios'}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      if (selectedService) {
-                        handleSolicitarServicio(selectedService);
-                      }
-                    }}
-                    className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
-                  >
-                    Solicitar Servicio
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    if (selectedService) {
+                      handleSolicitarServicio(selectedService);
+                    }
+                  }}
+                  className={BUTTON_PRIMARY}
+                >
+                  Solicitar Servicio
+                </button>
               </div>
             </div>
           </div>
@@ -1648,14 +1596,14 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                   });
                   setPrecioError(false);
                 }}
-                className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
+                className={BUTTON_SECONDARY}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleCreateService}
                 disabled={isLoading}
-                className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-2"
+                className={`${BUTTON_PRIMARY} disabled:opacity-50 flex items-center gap-2`}
               >
                 {isLoading ? (
                   <>
@@ -1691,7 +1639,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
-                    setIsEditing(false);
                     setEditedService(null);
                   }}
                   className="w-9 h-9 flex items-center justify-center rounded-full text-[#9CA3AF] hover:bg-[#F3F4F6] hover:text-[#374151] transition-all"
@@ -1816,16 +1763,15 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
-                    setIsEditing(false);
                     setEditedService(null);
                   }}
-                  className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
+                  className={BUTTON_SECONDARY}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  className="px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                  className={`${BUTTON_PRIMARY} disabled:opacity-50`}
                   disabled={isLoading}
                 >
                   {isLoading ? 'Guardando...' : 'Guardar Cambios'}

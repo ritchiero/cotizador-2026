@@ -4,22 +4,7 @@ import { doc, updateDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/firebase';
 import { toast } from 'react-hot-toast';
 
-// Actualizar la interfaz BillingData para quitar regimenFiscal
-export interface BillingData {
-  razonSocial: string;
-  rfc: string;
-  email: string;
-  telefono: string;
-  direccion: {
-    calle: string;
-    numeroExterior: string;
-    numeroInterior: string;
-    colonia: string;
-    codigoPostal: string;
-    municipio: string;
-    estado: string;
-  };
-}
+import { BillingData } from '../settings/profile/types';
 
 interface BillingTabProps {
   userId: string;
@@ -27,7 +12,7 @@ interface BillingTabProps {
   onBillingUpdate: (data: BillingData) => void;
 }
 
-const estados = [
+const estadosMexico = [
   'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
   'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
   'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
@@ -35,11 +20,18 @@ const estados = [
   'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
 ];
 
-// Funciones de validación
-const validateRFC = (rfc: string): string | null => {
-  const rfcClean = rfc.toUpperCase().trim();
+const countries = [
+  { code: 'MX', name: 'México' },
+  { code: 'US', name: 'Estados Unidos' },
+  { code: 'OTHER', name: 'Otro' }
+];
 
-  if (!rfcClean) return null; // Permitir vacío mientras escribe
+// Funciones de validación
+const validateRFC = (rfc: string, country: string): string | null => {
+  if (country !== 'MX') return null; // No validation for other countries yet
+
+  const rfcClean = rfc.toUpperCase().trim();
+  if (!rfcClean) return null;
 
   if (rfcClean.length !== 12 && rfcClean.length !== 13) {
     return 'El RFC debe tener 12 caracteres (persona moral) o 13 (persona física)';
@@ -53,10 +45,12 @@ const validateRFC = (rfc: string): string | null => {
   return null;
 };
 
-const validateCP = (cp: string): string | null => {
+const validateCP = (cp: string, country: string): string | null => {
   if (!cp) return null;
-  if (!/^\d{5}$/.test(cp)) {
-    return 'El código postal debe tener exactamente 5 dígitos';
+  if (country === 'MX') {
+    if (!/^\d{5}$/.test(cp)) {
+      return 'El código postal debe tener exactamente 5 dígitos';
+    }
   }
   return null;
 };
@@ -64,14 +58,20 @@ const validateCP = (cp: string): string | null => {
 const validateTelefono = (telefono: string): string | null => {
   if (!telefono) return null;
   const digits = telefono.replace(/\D/g, '');
-  if (digits.length !== 10) {
-    return 'El teléfono debe tener 10 dígitos';
+  if (digits.length < 10) {
+    return 'El teléfono debe tener al menos 10 dígitos';
   }
   return null;
 };
 
 export default function BillingTab({ userId, billingData, onBillingUpdate }: BillingTabProps) {
-  const [formData, setFormData] = useState<BillingData>(billingData);
+  const [formData, setFormData] = useState<BillingData>({
+    ...billingData,
+    direccion: {
+      ...billingData.direccion,
+      pais: billingData.direccion?.pais || 'MX'
+    }
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [errors, setErrors] = useState({
@@ -82,7 +82,13 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
   });
 
   useEffect(() => {
-    setFormData(billingData);
+    setFormData({
+      ...billingData,
+      direccion: {
+        ...billingData.direccion,
+        pais: billingData.direccion?.pais || 'MX'
+      }
+    });
   }, [billingData]);
 
   // Función para verificar si hay datos fiscales
@@ -92,15 +98,16 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    const currentCountry = name === 'direccion.pais' ? value : formData.direccion.pais || 'Mexico';
 
     // Validar según el campo
     if (name === 'rfc') {
-      const error = validateRFC(value);
+      const error = validateRFC(value, currentCountry);
       setErrors(prev => ({ ...prev, rfc: error || '' }));
     }
 
     if (name === 'direccion.codigoPostal') {
-      const error = validateCP(value);
+      const error = validateCP(value, currentCountry);
       setErrors(prev => ({ ...prev, codigoPostal: error || '' }));
     }
 
@@ -140,8 +147,8 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
     e.preventDefault();
 
     // Validar todo antes de guardar
-    const rfcError = validateRFC(formData.rfc);
-    const cpError = validateCP(formData.direccion.codigoPostal);
+    const rfcError = validateRFC(formData.rfc, formData.direccion.pais || 'Mexico');
+    const cpError = validateCP(formData.direccion.codigoPostal, formData.direccion.pais || 'Mexico');
     const telError = validateTelefono(formData.telefono);
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -162,7 +169,6 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
     setIsLoading(true);
 
     try {
-
       // Crear/actualizar documento en la colección billing
       const billingRef = doc(db, 'billing', userId);
       await setDoc(billingRef, {
@@ -183,46 +189,33 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
     }
   };
 
+  const isMexico = formData.direccion.pais === 'MX';
+
   // Vista cuando no hay datos fiscales
   if (!hasBillingData() && !isEditing) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Configura tu información fiscal para la facturación
-                </p>
-              </div>
-            </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 p-12 text-center">
+          <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+            <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
           </div>
-          
-          <div className="p-12">
-            <div className="text-center">
-              <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
-                No hay datos fiscales configurados
-              </h3>
-              <p className="text-sm text-gray-500 mb-8 max-w-sm mx-auto">
-                Agrega tu información fiscal para poder generar facturas para tus clientes
-              </p>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                Agregar Datos Fiscales
-              </button>
-            </div>
-          </div>
+          <h3 className="text-lg font-bold text-[#0E162F] mb-2">
+            No hay datos fiscales configurados
+          </h3>
+          <p className="text-[#3B3D45] mb-8 max-w-sm mx-auto">
+            Agrega tu información fiscal para poder generar facturas para tus clientes.
+          </p>
+          <button
+            onClick={() => setIsEditing(true)}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Agregar Datos Fiscales
+          </button>
         </div>
       </div>
     );
@@ -232,89 +225,104 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
   if (!isEditing && hasBillingData()) {
     return (
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">Datos Fiscales</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Información fiscal para la facturación
-                </p>
-              </div>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-                Editar
-              </button>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-[#0E162F]">Datos Fiscales</h2>
+              <p className="mt-1 text-sm text-[#3B3D45]">
+                Información fiscal para la facturación
+              </p>
             </div>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="inline-flex items-center px-5 py-2.5 rounded-full border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+              Editar
+            </button>
           </div>
 
           <div className="p-8">
             {/* Información Principal */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-8">
+              <div className="space-y-8">
                 <div>
-                  <h3 className="text-base font-medium text-gray-900 mb-4">Información General</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  <h3 className="text-sm font-bold text-[#0E162F] uppercase tracking-wide mb-6 pb-2 border-b border-gray-100">
+                    Información General
+                  </h3>
+                  <div className="space-y-6">
                     <div>
-                      <p className="text-sm text-gray-500">Razón Social</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.razonSocial}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">País</p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">
+                        {countries.find(c => c.code === formData.direccion.pais)?.name || 'México'}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">RFC</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.rfc}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Razón Social</p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.razonSocial}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{isMexico ? 'RFC' : 'Tax ID / EIN'}</p>
+                      <p className="text-base font-medium text-[#3B3D45] font-mono leading-relaxed">{formData.rfc}</p>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-base font-medium text-gray-900 mb-4">Contacto</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                  <h3 className="text-sm font-bold text-[#0E162F] uppercase tracking-wide mb-6 pb-2 border-b border-gray-100">
+                    Contacto
+                  </h3>
+                  <div className="space-y-6">
                     <div>
-                      <p className="text-sm text-gray-500">Email para Facturación</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.email}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email para Facturación</p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.email}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Teléfono</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.telefono}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Teléfono</p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.telefono}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div>
-                <h3 className="text-base font-medium text-gray-900 mb-4">Dirección Fiscal</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+                <h3 className="text-sm font-bold text-[#0E162F] uppercase tracking-wide mb-6 pb-2 border-b border-gray-100">
+                  Dirección Fiscal
+                </h3>
+                <div className="space-y-6">
                   <div>
-                    <p className="text-sm text-gray-500">Dirección Completa</p>
-                    <p className="text-sm font-medium text-gray-900 mt-1">
-                      {formData.direccion.calle} {formData.direccion.numeroExterior}
-                      {formData.direccion.numeroInterior && `, Int. ${formData.direccion.numeroInterior}`}
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      {isMexico ? 'Dirección Completa' : 'Address'}
+                    </p>
+                    <p className="text-base font-medium text-[#3B3D45] leading-relaxed max-w-sm">
+                      {formData.direccion.calle}
+                      {isMexico && ` ${formData.direccion.numeroExterior}`}
+                      {isMexico && formData.direccion.numeroInterior && `, Int. ${formData.direccion.numeroInterior}`}
+                      <br />
+                      {formData.direccion.colonia && <span>{formData.direccion.colonia}<br /></span>}
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <p className="text-sm text-gray-500">Colonia</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.direccion.colonia}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        {isMexico ? 'Municipio' : 'City'}
+                      </p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.direccion.municipio}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Código Postal</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.direccion.codigoPostal}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                        {isMexico ? 'Código Postal' : 'Zip Code'}
+                      </p>
+                      <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.direccion.codigoPostal}</p>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500">Municipio</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.direccion.municipio}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Estado</p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">{formData.direccion.estado}</p>
-                    </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      {isMexico ? 'Estado' : 'State / Province'}
+                    </p>
+                    <p className="text-base font-medium text-[#3B3D45] leading-relaxed">{formData.direccion.estado}</p>
                   </div>
                 </div>
               </div>
@@ -329,28 +337,40 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
   return (
     <div className="max-w-4xl mx-auto">
       <form onSubmit={handleSubmit}>
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="px-8 py-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {hasBillingData() ? 'Editar Datos Fiscales' : 'Agregar Datos Fiscales'}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  Ingresa tu información fiscal para la facturación
-                </p>
-              </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+          <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-[#0E162F]">
+                {hasBillingData() ? 'Editar Datos Fiscales' : 'Agregar Datos Fiscales'}
+              </h2>
+              <p className="mt-1 text-sm text-[#3B3D45]">
+                Ingresa tu información fiscal para la facturación
+              </p>
+            </div>
+            {/* Country Selector */}
+            <div className="w-64">
+              <label className="block text-xs font-medium text-gray-400 mb-1 ml-1 uppercase tracking-wider">País de Facturación</label>
+              <select
+                name="direccion.pais"
+                value={formData.direccion.pais}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white cursor-pointer"
+              >
+                {countries.map(c => (
+                  <option key={c.code} value={c.code}>{c.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div className="p-8 space-y-8">
             {/* Información General */}
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-4">Información General</h3>
+              <h3 className="text-base font-bold text-[#0E162F] mb-4">Información General</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Razón Social */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Razón Social <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -358,37 +378,38 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                     name="razonSocial"
                     value={formData.razonSocial}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     required
-                    placeholder="Empresa S.A. de C.V."
+                    placeholder={isMexico ? "Empresa S.A. de C.V." : "Company Name LLC"}
                   />
                 </div>
 
-                {/* RFC */}
+                {/* RFC / Tax ID */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    RFC <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'RFC' : 'Tax ID / EIN'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="rfc"
                     value={formData.rfc}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 uppercase ${
-                      errors.rfc ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-5 py-3 border rounded-full text-sm text-[#111827] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${isMexico ? 'uppercase' : ''} ${errors.rfc
+                      ? 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
+                      : 'border-[#E5E7EB] focus:border-[#3B82F6]'
+                      }`}
                     required
-                    maxLength={13}
-                    placeholder="ABC123456XYZ"
+                    maxLength={isMexico ? 13 : 20}
+                    placeholder={isMexico ? "ABC123456XYZ" : "12-3456789"}
                   />
                   {errors.rfc && (
-                    <p className="mt-1 text-sm text-red-600">{errors.rfc}</p>
+                    <p className="mt-1 ml-1 text-sm text-red-600">{errors.rfc}</p>
                   )}
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Email para Facturación <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -396,20 +417,21 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-5 py-3 border rounded-full text-sm text-[#111827] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${errors.email
+                      ? 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
+                      : 'border-[#E5E7EB] focus:border-[#3B82F6]'
+                      }`}
                     required
                     placeholder="facturacion@ejemplo.com"
                   />
                   {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                    <p className="mt-1 ml-1 text-sm text-red-600">{errors.email}</p>
                   )}
                 </div>
 
                 {/* Teléfono */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
                     Teléfono <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -417,15 +439,16 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                     name="telefono"
                     value={formData.telefono}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.telefono ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-5 py-3 border rounded-full text-sm text-[#111827] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${errors.telefono
+                      ? 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
+                      : 'border-[#E5E7EB] focus:border-[#3B82F6]'
+                      }`}
                     required
-                    maxLength={10}
+                    maxLength={15}
                     placeholder="5512345678"
                   />
                   {errors.telefono && (
-                    <p className="mt-1 text-sm text-red-600">{errors.telefono}</p>
+                    <p className="mt-1 ml-1 text-sm text-red-600">{errors.telefono}</p>
                   )}
                 </div>
               </div>
@@ -433,140 +456,167 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
 
             {/* Dirección Fiscal */}
             <div>
-              <h3 className="text-base font-medium text-gray-900 mb-4">Dirección Fiscal</h3>
+              <h3 className="text-base font-bold text-[#0E162F] mb-4">Dirección Fiscal</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Calle */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Calle <span className="text-red-500">*</span>
+                {/* Calle / Address Line 1 */}
+                <div className={isMexico ? '' : 'col-span-2'}>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'Calle' : 'Address Line 1'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="direccion.calle"
                     value={formData.direccion.calle}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     required
+                    placeholder={isMexico ? "Av. Reforma" : "123 Main St"}
                   />
                 </div>
 
-                {/* Número Exterior */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número Exterior <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="direccion.numeroExterior"
-                    value={formData.direccion.numeroExterior}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
+                {/* Num Exterior (Only Mexico) */}
+                {isMexico && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                      Número Exterior <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="direccion.numeroExterior"
+                      value={formData.direccion.numeroExterior}
+                      onChange={handleInputChange}
+                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
+                      required
+                    />
+                  </div>
+                )}
 
-                {/* Número Interior */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Número Interior
-                  </label>
-                  <input
-                    type="text"
-                    name="direccion.numeroInterior"
-                    value={formData.direccion.numeroInterior}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                {/* Num Interior (Only Mexico) */}
+                {isMexico && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                      Número Interior
+                    </label>
+                    <input
+                      type="text"
+                      name="direccion.numeroInterior"
+                      value={formData.direccion.numeroInterior}
+                      onChange={handleInputChange}
+                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
+                    />
+                  </div>
+                )}
 
-                {/* Colonia */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Colonia <span className="text-red-500">*</span>
+                {/* Colonia / Address Line 2 */}
+                <div className={isMexico ? '' : 'col-span-2'}>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'Colonia' : 'Address Line 2 (Optional)'} <span className={isMexico ? "text-red-500" : "hidden"}>*</span>
                   </label>
                   <input
                     type="text"
                     name="direccion.colonia"
                     value={formData.direccion.colonia}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
+                    required={isMexico}
+                    placeholder={isMexico ? "Centro" : "Apt 4B"}
                   />
                 </div>
 
-                {/* Código Postal */}
+                {/* CP / Zip Code */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Código Postal <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'Código Postal' : 'Zip / Postal Code'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="direccion.codigoPostal"
                     value={formData.direccion.codigoPostal}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.codigoPostal ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={`w-full px-5 py-3 border rounded-full text-sm text-[#111827] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] ${errors.codigoPostal
+                      ? 'border-red-500 focus:border-red-500 focus:shadow-[0_0_0_3px_rgba(239,68,68,0.1)]'
+                      : 'border-[#E5E7EB] focus:border-[#3B82F6]'
+                      }`}
                     required
-                    maxLength={5}
-                    placeholder="01000"
+                    maxLength={isMexico ? 5 : 10}
+                    placeholder={isMexico ? "01000" : "90210"}
                   />
                   {errors.codigoPostal && (
-                    <p className="mt-1 text-sm text-red-600">{errors.codigoPostal}</p>
+                    <p className="mt-1 ml-1 text-sm text-red-600">{errors.codigoPostal}</p>
                   )}
                 </div>
 
-                {/* Municipio/Alcaldía */}
+                {/* Municipio / City */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Municipio/Alcaldía <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'Municipio/Alcaldía' : 'City'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="direccion.municipio"
                     value={formData.direccion.municipio}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     required
+                    placeholder={isMexico ? "Cuauhtémoc" : "New York"}
                   />
                 </div>
 
-                {/* Estado */}
+                {/* Estado / State */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Estado <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-[#374151] mb-2 ml-1">
+                    {isMexico ? 'Estado' : 'State / Province'} <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    name="direccion.estado"
-                    value={formData.direccion.estado}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Selecciona un estado</option>
-                    {estados.map(estado => (
-                      <option key={estado} value={estado}>
-                        {estado}
-                      </option>
-                    ))}
-                  </select>
+                  {isMexico ? (
+                    <div className="relative">
+                      <select
+                        name="direccion.estado"
+                        value={formData.direccion.estado}
+                        onChange={handleInputChange}
+                        className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white"
+                        required
+                      >
+                        <option value="">Selecciona un estado</option>
+                        {estadosMexico.map(estado => (
+                          <option key={estado} value={estado}>
+                            {estado}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      name="direccion.estado"
+                      value={formData.direccion.estado}
+                      onChange={handleInputChange}
+                      className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
+                      required
+                      placeholder="NY"
+                    />
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Botones de acción */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
+            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                className="px-6 py-2.5 text-sm font-medium text-[#374151] border border-[#D1D5DB] rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isLoading || !!errors.rfc || !!errors.email || !!errors.telefono || !!errors.codigoPostal}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
               >
                 {isLoading ? (
                   <>
@@ -586,4 +636,4 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
       </form>
     </div>
   );
-} 
+}
