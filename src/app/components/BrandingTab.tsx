@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { doc, updateDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase/firebase";
@@ -27,6 +27,12 @@ export default function BrandingTab({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
   const [formData, setFormData] = useState<BrandingData>(brandingData);
+
+  // Signature Pad State
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
 
   // Mantén sincronizado el formulario con los datos de branding que reciba el componente
   useEffect(() => {
@@ -120,6 +126,105 @@ export default function BrandingTab({
     }
   };
 
+  // Signature Drawing Functions
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    setIsDrawing(true);
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+  };
+
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+    setIsDrawing(false);
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.closePath();
+    }
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const saveDrawnSignature = async () => {
+    if (!userId || !canvasRef.current) return;
+
+    try {
+      setSavingSignature(true);
+      const canvas = canvasRef.current;
+      // Check if empty
+      const blank = document.createElement('canvas');
+      blank.width = canvas.width;
+      blank.height = canvas.height;
+      if (canvas.toDataURL() === blank.toDataURL()) {
+        toast.error("Por favor dibuja tu firma antes de guardar");
+        return;
+      }
+
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob) return;
+
+      const storageRef = ref(storage, `logos/${userId}/signature_drawn_${Date.now()}`);
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+
+      // Save to Branding Info
+      const brandingRef = doc(db, 'brandingInfo', userId);
+      await setDoc(brandingRef, { signatureURL: url }, { merge: true });
+
+      // Update local state
+      onBrandingUpdate({ ...brandingData, signatureURL: url });
+      setFormData(prev => ({ ...prev, signatureURL: url }));
+
+      toast.success("Firma guardada exitosamente");
+      setIsSignatureModalOpen(false);
+    } catch (error) {
+      console.error("Error saving signature", error);
+      toast.error("Error al guardar la firma");
+    } finally {
+      setSavingSignature(false);
+    }
+  };
+
   const handleSaveBranding = async () => {
     try {
       setIsLoading(true);
@@ -181,10 +286,10 @@ export default function BrandingTab({
               </div>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-5 h-5 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -202,7 +307,7 @@ export default function BrandingTab({
           </div>
 
           {/* Contenido con bg-white */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 hover:border-blue-400 transition-all duration-300 hover:shadow-md">
             {/* Información principal del despacho */}
             <div className="flex flex-col md:flex-row gap-6 mb-8">
               {/* Logo */}
@@ -281,25 +386,72 @@ export default function BrandingTab({
 
             {/* Firma Block */}
             <div className="pt-8 border-t border-gray-100 mt-8">
-              <h4 className="text-sm font-medium text-gray-900 mb-4">
-                Firma Digital (Estilo Email)
-              </h4>
-              <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                {brandingData.signatureBlock ? (
-                  <div className="prose prose-sm text-gray-600 whitespace-pre-wrap font-sans">
-                    {brandingData.signatureBlock}
+              <div className="flex justify-between items-start mb-4">
+                <h4 className="text-sm font-medium text-gray-900">
+                  Firma Digital
+                </h4>
+                <button
+                  onClick={() => setIsSignatureModalOpen(true)}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Abrir Pad de Firma
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Estilo Email */}
+                <div>
+                  <span className="text-xs text-gray-500 mb-2 block font-medium">Estilo Email (Texto)</span>
+                  <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    {brandingData.signatureBlock ? (
+                      <div className="prose prose-sm text-gray-600 whitespace-pre-wrap font-sans">
+                        {brandingData.signatureBlock}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">
+                        No has configurado una firma de texto aún.
+                      </p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-sm text-gray-400 italic">
-                    No has configurado una firma aún.
-                  </p>
-                )}
+                </div>
+
+                {/* Estilo Manuscrito */}
+                <div>
+                  <span className="text-xs text-gray-500 mb-2 block font-medium">Firma Manuscrita (Imagen)</span>
+                  <div className="bg-white rounded-lg p-4 border border-gray-200 flex items-center justify-center h-[140px]">
+                    {brandingData.signatureURL ? (
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={brandingData.signatureURL}
+                          alt="Firma Manuscrita"
+                          layout="fill"
+                          objectFit="contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-xs text-gray-400 italic mb-2">
+                          No has guardado una firma manuscrita.
+                        </p>
+                        <button
+                          onClick={() => setIsSignatureModalOpen(true)}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Dibujar ahora
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-blue-400 transition-all duration-300 hover:shadow-md">
           <div className="px-8 py-12">
             <div className="text-center">
               <div className="w-20 h-20 bg-blue-50 rounded-2xl mx-auto mb-6 flex items-center justify-center">
@@ -326,10 +478,10 @@ export default function BrandingTab({
               </p>
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+                className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-5 h-5 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -351,7 +503,7 @@ export default function BrandingTab({
       {/* Modal - Los estilos del modal también se pueden mejorar pero necesitaría más espacio */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">
@@ -448,7 +600,7 @@ export default function BrandingTab({
                       name="nombreDespacho"
                       value={formData.nombreDespacho}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                       placeholder="Ej: Bufete Jurídico González & Asociados"
                     />
                   </div>
@@ -461,7 +613,7 @@ export default function BrandingTab({
                       name="anoFundacion"
                       value={formData.anoFundacion}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                       placeholder="Ej: 2010"
                     />
                   </div>
@@ -474,7 +626,7 @@ export default function BrandingTab({
                       name="slogan"
                       value={formData.slogan}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                       placeholder="Ej: Excelencia jurídica a tu servicio"
                     />
                   </div>
@@ -487,8 +639,9 @@ export default function BrandingTab({
                       value={formData.descripcion}
                       onChange={handleInputChange}
                       maxLength={300}
-                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      className="w-full px-5 py-4 border border-gray-200 rounded-2xl focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 resize-y transition-all"
                       placeholder="Máx. 300 caracteres"
+                      rows={3}
                     />
                   </div>
                 </div>
@@ -553,14 +706,14 @@ export default function BrandingTab({
                 <div className="flex justify-end gap-3 pt-6 border-t mt-8">
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                    className="px-6 py-2.5 rounded-full border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleSaveBranding}
                     disabled={isLoading}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 flex items-center gap-2"
                   >
                     {isLoading ? (
                       <>
@@ -592,6 +745,72 @@ export default function BrandingTab({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Signature Pad Modal */}
+      {isSignatureModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900">Dibuja tu firma</h3>
+              <button
+                onClick={() => setIsSignatureModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 bg-gray-50">
+              <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 shadow-sm overflow-hidden touch-none relative">
+                <canvas
+                  ref={canvasRef}
+                  width={500}
+                  height={250}
+                  className="w-full h-[200px] cursor-crosshair bg-white"
+                  onMouseDown={startDrawing}
+                  onMouseMove={draw}
+                  onMouseUp={stopDrawing}
+                  onMouseLeave={stopDrawing}
+                  onTouchStart={startDrawing}
+                  onTouchMove={draw}
+                  onTouchEnd={stopDrawing}
+                />
+                <div className="absolute top-3 right-3">
+                  <button
+                    onClick={clearSignature}
+                    className="p-1.5 bg-white shadow-sm border border-gray-200 text-gray-500 rounded-lg hover:text-red-500 hover:border-red-200 transition-colors"
+                    title="Borrar firma"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <p className="text-center text-xs text-gray-400 mt-2">
+                Dibuja tu firma arriba usando tu mouse o dedo.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 flex justify-end gap-3 border-t border-gray-100">
+              <button
+                onClick={() => setIsSignatureModalOpen(false)}
+                className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-50 rounded-lg transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveDrawnSignature}
+                disabled={savingSignature}
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50"
+              >
+                {savingSignature ? 'Guardando...' : 'Guardar Firma'}
+              </button>
             </div>
           </div>
         </div>
