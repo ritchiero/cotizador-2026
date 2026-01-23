@@ -2022,131 +2022,116 @@ export default function CotizacionEstructuradaForm() {
         )}
 
         {step === 3 && (
-          /* STEP 3: Format & Tone */
-          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Formato de Entrega</h2>
-                <p className="text-sm text-gray-500">Selecciona la extensión y estructura del documento final.</p>
-              </div>
+          /* STEP 3: Format & Tone - Versión Compacta */
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-8">
 
-              <div className="space-y-4 mb-10">
-                <div
-                  onClick={() => setFormatType('one-pager')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'one-pager' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'one-pager' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
-                    <DocumentIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${formatType === 'one-pager' ? 'text-blue-900' : 'text-gray-900'}`}>One Pager</h3>
-                    <p className="text-sm text-gray-500 mt-1">Un resumen ejecutivo de una sola página. Conciso y directo al punto.</p>
-                  </div>
-                </div>
+              {/* Formato de Entrega - Grid Compacto */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Formato de Entrega</h2>
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setFormatType('one-pager')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'one-pager' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                  >
+                    <DocumentIcon className={`w-6 h-6 ${formatType === 'one-pager' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium text-center ${formatType === 'one-pager' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      One Pager
+                    </span>
+                  </button>
 
-                <div
-                  onClick={() => setFormatType('short')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'short' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'short' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
-                    <DocumentTextIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${formatType === 'short' ? 'text-blue-900' : 'text-gray-900'}`}>Formato Corto (menos de 300 palabras)</h3>
-                    <p className="text-sm text-gray-500 mt-1">Breve descripción de servicios y costos, ideal para clientes que ya conocen tu trabajo.</p>
-                  </div>
-                </div>
+                  <button
+                    onClick={() => setFormatType('short')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'short' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                  >
+                    <DocumentTextIcon className={`w-6 h-6 ${formatType === 'short' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium text-center ${formatType === 'short' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      Corto<br/>
+                      <span className="text-xs opacity-75">(-300 palabras)</span>
+                    </span>
+                  </button>
 
-                <div
-                  onClick={() => setFormatType('large')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'large' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'large' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
-                    <BookOpenIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${formatType === 'large' ? 'text-blue-900' : 'text-gray-900'}`}>Formato Largo y Detallado (+500 palabras)</h3>
-                    <p className="text-sm text-gray-500 mt-1">Propuesta exhaustiva con metodología, cronograma detallado y desglose completo.</p>
-                  </div>
+                  <button
+                    onClick={() => setFormatType('large')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'large' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                  >
+                    <BookOpenIcon className={`w-6 h-6 ${formatType === 'large' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium text-center ${formatType === 'large' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      Detallado<br/>
+                      <span className="text-xs opacity-75">(+500 palabras)</span>
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              <div className="mb-8 pt-8 border-t border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Tono de Comunicación</h2>
-                <p className="text-sm text-gray-500">Define cómo nos dirigimos al cliente en el documento.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div
-                  onClick={() => setToneType('friendly')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${toneType === 'friendly' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${toneType === 'friendly' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
-                    <FaceSmileIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${toneType === 'friendly' ? 'text-blue-900' : 'text-gray-900'}`}>Amigable y Cercano</h3>
-                    <p className="text-sm text-gray-500 mt-1">Lenguaje accesible, cálido y empático. Ideal para startups o clientes recurrentes.</p>
-                  </div>
-                </div>
-
-                <div
-                  onClick={() => setToneType('formal')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${toneType === 'formal' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${toneType === 'formal' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
-                    <BriefcaseIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${toneType === 'formal' ? 'text-blue-900' : 'text-gray-900'}`}>Formal y Corporativo</h3>
-                    <p className="text-sm text-gray-500 mt-1">Lenguaje técnico, preciso y serio. Recomendado para corporativos, licitaciones o temas sensibles.</p>
-                  </div>
+              {/* Tono - Segment Control */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Tono de Comunicación</h2>
+                <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1 max-w-md mx-auto">
+                  <button
+                    onClick={() => setToneType('friendly')}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${
+                      toneType === 'friendly'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <FaceSmileIcon className="w-4 h-4" />
+                    <span>Amigable</span>
+                  </button>
+                  <button
+                    onClick={() => setToneType('formal')}
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${
+                      toneType === 'formal'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <BriefcaseIcon className="w-4 h-4" />
+                    <span>Formal</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="mb-8 pt-8 border-t border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Idioma del Documento</h2>
-                <p className="text-sm text-gray-500">Selecciona el idioma en el que se generará la cotización.</p>
-              </div>
-
-              <div className="space-y-4">
-                <div
-                  onClick={() => setLanguageType('es')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'es' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'es' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+              {/* Idioma - Pills Compactos */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Idioma del Documento</h2>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setLanguageType('es')}
+                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                      languageType === 'es'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                    }`}
+                  >
                     <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${languageType === 'es' ? 'text-blue-900' : 'text-gray-900'}`}>Español</h3>
-                    <p className="text-sm text-gray-500 mt-1">Documento completamente en español. Ideal para clientes hispanohablantes.</p>
-                  </div>
-                </div>
+                    <span className="text-sm font-medium">Español</span>
+                  </button>
 
-                <div
-                  onClick={() => setLanguageType('en')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'en' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'en' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                  <button
+                    onClick={() => setLanguageType('en')}
+                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                      languageType === 'en'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                    }`}
+                  >
                     <GlobeAltIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${languageType === 'en' ? 'text-blue-900' : 'text-gray-900'}`}>Inglés</h3>
-                    <p className="text-sm text-gray-500 mt-1">Documento completamente en inglés. Perfecto para clientes internacionales.</p>
-                  </div>
-                </div>
+                    <span className="text-sm font-medium">Inglés</span>
+                  </button>
 
-                <div
-                  onClick={() => setLanguageType('es-en')}
-                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'es-en' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
-                >
-                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'es-en' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                  <button
+                    onClick={() => setLanguageType('es-en')}
+                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                      languageType === 'es-en'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                    }`}
+                  >
                     <LanguageIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className={`text-sm font-semibold ${languageType === 'es-en' ? 'text-blue-900' : 'text-gray-900'}`}>Bilingüe (Español/Inglés)</h3>
-                    <p className="text-sm text-gray-500 mt-1">Secciones clave en ambos idiomas. Excelente para empresas multinacionales.</p>
-                  </div>
+                    <span className="text-sm font-medium">Bilingüe</span>
+                  </button>
                 </div>
               </div>
 
