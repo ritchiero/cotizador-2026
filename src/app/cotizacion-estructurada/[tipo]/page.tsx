@@ -3,7 +3,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { db, storage } from '@/lib/firebase/firebase';
-import { collection, query, where, getDocs, doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot, getDoc, setDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { TermTemplate } from '@/lib/types/terms';
 import { PaymentMethod } from '@/lib/types/payment';
@@ -157,6 +157,11 @@ export default function CotizacionEstructuradaForm() {
     clabe: ''
   });
   const [savingBank, setSavingBank] = useState(false);
+
+  // States for inline template creation
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [newTemplateData, setNewTemplateData] = useState({ name: '', content: '' });
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -381,6 +386,43 @@ export default function CotizacionEstructuradaForm() {
     }
   };
 
+  const handleSaveTemplate = async () => {
+    if (!newTemplateData.name.trim() || !newTemplateData.content.trim()) {
+      toast.error('Nombre y contenido son obligatorios');
+      return;
+    }
+    if (!user?.uid) {
+      toast.error('Ocurrió un error (Usuario no identificado)');
+      return;
+    }
+
+    setSavingTemplate(true);
+    try {
+      // Determine type based on activeConfigAddOn
+      let type = 'GENERAL';
+      if (activeConfigAddOn === 'specific_tc') type = 'SPECIFIC';
+      else if (activeConfigAddOn === 'privacy_policy') type = 'POLICY';
+
+      await addDoc(collection(db, 'terms_templates'), {
+        name: newTemplateData.name,
+        content: newTemplateData.content,
+        type,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      toast.success('Plantilla creada exitosamente');
+      setIsCreatingTemplate(false);
+      setNewTemplateData({ name: '', content: '' });
+    } catch (error) {
+      console.error("Error creating template", error);
+      toast.error('Error al crear la plantilla');
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
   const handleSaveBankAccount = async () => {
     // Validación
     if (!newBankData.bankName || !newBankData.accountNumber || !newBankData.accountHolder) {
@@ -398,7 +440,22 @@ export default function CotizacionEstructuradaForm() {
 
       // Generar ID único
       const id = Date.now().toString();
-      const newMethod = { ...newBankData, id };
+
+      // Structure matches PaymentMethod interface expected by PaymentTab
+      const newMethod = {
+        id,
+        type: 'bank_account',
+        details: {
+          bank: newBankData.bankName,
+          accountNumber: newBankData.accountNumber,
+          beneficiary: newBankData.accountHolder, // Mapping Account Holder to Beneficiary
+          clabe: newBankData.clabe
+        },
+        isActive: true,
+        isDefault: paymentMethods.length === 0, // First one is default
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
 
       // Guardar en Firestore
       const paymentRef = doc(db, 'paymentInfo', user.uid);
@@ -597,7 +654,7 @@ export default function CotizacionEstructuradaForm() {
     switch (activeConfigAddOn) {
       case 'general_tc':
       case 'specific_tc':
-      case 'privacy_policy':
+      case 'privacy_policy': {
         // Filter templates based on specific selection if needed, or show all
         const filteredTemplates = termsTemplates.filter(t => {
           if (activeConfigAddOn === 'specific_tc') return t.type === 'SPECIFIC';
@@ -624,6 +681,48 @@ export default function CotizacionEstructuradaForm() {
               {loadingTerms ? (
                 <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : isCreatingTemplate ? (
+                <div className="bg-white p-6 rounded-xl border border-blue-200 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-gray-900">Nueva Plantilla</h4>
+                    <button
+                      onClick={() => setIsCreatingTemplate(false)}
+                      className="text-sm text-gray-500 hover:text-gray-700"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre</label>
+                      <input
+                        type="text"
+                        value={newTemplateData.name}
+                        onChange={(e) => setNewTemplateData(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        placeholder="Ej. Cláusula Estándar"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1">Contenido</label>
+                      <textarea
+                        value={newTemplateData.content}
+                        onChange={(e) => setNewTemplateData(prev => ({ ...prev, content: e.target.value }))}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm h-32"
+                        placeholder="Escribe el contenido legal aquí..."
+                      />
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <button
+                        onClick={handleSaveTemplate}
+                        disabled={savingTemplate}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {savingTemplate ? 'Guardando...' : 'Guardar Plantilla'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               ) : filteredTemplates.length > 0 ? (
                 <div className="space-y-3">
@@ -654,7 +753,10 @@ export default function CotizacionEstructuradaForm() {
                   <div className="pt-4 mt-4 border-t border-gray-100">
                     <button
                       className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-2"
-                      onClick={() => {/* TODO: Navigate to create term */ }}
+                      onClick={() => {
+                        setIsCreatingTemplate(true);
+                        setNewTemplateData({ name: '', content: '' });
+                      }}
                     >
                       <span className="text-lg">+</span> Crear nueva plantilla
                     </button>
@@ -663,11 +765,14 @@ export default function CotizacionEstructuradaForm() {
               ) : (
                 <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 flex flex-col items-center text-center">
                   <p className="text-sm mb-3">
-                    No tienes plantillas de TyC guardadas.
+                    No tienes plantillas guardadas para esta sección.
                   </p>
                   <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm"
-                    onClick={() => {/* TODO: Navigate to create term logic */ }}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-pill transition-colors shadow-sm rounded-full"
+                    onClick={() => {
+                      setIsCreatingTemplate(true);
+                      setNewTemplateData({ name: '', content: '' });
+                    }}
                   >
                     Crear primera plantilla
                   </button>
@@ -676,6 +781,7 @@ export default function CotizacionEstructuradaForm() {
             </div>
           </div>
         );
+      }
       case 'bank_account':
         return (
           <div className="space-y-6">
@@ -802,8 +908,13 @@ export default function CotizacionEstructuradaForm() {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900">{method.bankName}</p>
-                            <p className="text-sm text-gray-500">{method.accountNumber} - {method.accountHolder}</p>
+                            <p className="font-medium text-gray-900">
+                              {method.details?.bank || method.details?.name || 'Banco desconocido'}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {method.details?.accountNumber || method.details?.clabe || 'Sin número'}
+                              {method.details?.beneficiary ? ` - ${method.details.beneficiary}` : ''}
+                            </p>
                           </div>
                           {selectedBankAccount === JSON.stringify(method) && (
                             <div className="h-4 w-4 rounded-full bg-indigo-600 flex items-center justify-center">
