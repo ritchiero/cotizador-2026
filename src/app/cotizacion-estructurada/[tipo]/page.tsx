@@ -2026,10 +2026,10 @@ export default function CotizacionEstructuradaForm() {
           <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-8">
 
-              {/* Formato de Entrega - Grid Compacto */}
+              {/* Formato de Entrega - Grid Compacto 4 columnas */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Formato de Entrega</h2>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <button
                     onClick={() => setFormatType('one-pager')}
                     className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'one-pager' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
@@ -2047,7 +2047,7 @@ export default function CotizacionEstructuradaForm() {
                     <DocumentTextIcon className={`w-6 h-6 ${formatType === 'short' ? 'text-blue-600' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium text-center ${formatType === 'short' ? 'text-blue-900' : 'text-gray-700'}`}>
                       Corto<br/>
-                      <span className="text-xs opacity-75">(-300 palabras)</span>
+                      <span className="text-xs opacity-75">(~500 palabras)</span>
                     </span>
                   </button>
 
@@ -2058,7 +2058,17 @@ export default function CotizacionEstructuradaForm() {
                     <BookOpenIcon className={`w-6 h-6 ${formatType === 'large' ? 'text-blue-600' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium text-center ${formatType === 'large' ? 'text-blue-900' : 'text-gray-700'}`}>
                       Detallado<br/>
-                      <span className="text-xs opacity-75">(+500 palabras)</span>
+                      <span className="text-xs opacity-75">(+1000 palabras)</span>
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => setFormatType('custom')}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'custom' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                  >
+                    <PencilSquareIcon className={`w-6 h-6 ${formatType === 'custom' ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className={`text-sm font-medium text-center ${formatType === 'custom' ? 'text-blue-900' : 'text-gray-700'}`}>
+                      Customizado
                     </span>
                   </button>
                 </div>
@@ -2093,7 +2103,7 @@ export default function CotizacionEstructuradaForm() {
                 </div>
               </div>
 
-              {/* Idioma - Pills Compactos */}
+              {/* Idioma - Pills Compactos (3 opciones) */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Idioma del Documento</h2>
                 <div className="flex items-center justify-center gap-3">
@@ -2122,15 +2132,15 @@ export default function CotizacionEstructuradaForm() {
                   </button>
 
                   <button
-                    onClick={() => setLanguageType('es-en')}
+                    onClick={() => setLanguageType('other')}
                     className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                      languageType === 'es-en'
+                      languageType === 'other'
                         ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
                         : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
                     }`}
                   >
                     <LanguageIcon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Bilingüe</span>
+                    <span className="text-sm font-medium">Otro</span>
                   </button>
                 </div>
               </div>
