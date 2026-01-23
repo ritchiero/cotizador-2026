@@ -132,7 +132,7 @@ export default function LegalSettingsTab() {
                             type="text"
                             value={currentTemplate?.name || ''}
                             onChange={(e) => setCurrentTemplate(prev => ({ ...prev!, name: e.target.value }))}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
+                            className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm text-gray-900"
                             placeholder="Ej. Cláusula de Confidencialidad"
                         />
                     </div>
@@ -145,7 +145,7 @@ export default function LegalSettingsTab() {
                             <select
                                 value={currentTemplate?.type || activeSubTab}
                                 onChange={(e) => setCurrentTemplate(prev => ({ ...prev!, type: e.target.value as any }))}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none appearance-none cursor-pointer"
+                                className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none appearance-none cursor-pointer text-sm text-gray-900"
                             >
                                 <option value="GENERAL">Términos Generales</option>
                                 <option value="SPECIFIC">Términos Específicos</option>
@@ -167,7 +167,7 @@ export default function LegalSettingsTab() {
                     <textarea
                         value={currentTemplate?.content || ''}
                         onChange={(e) => setCurrentTemplate(prev => ({ ...prev!, content: e.target.value }))}
-                        className="w-full px-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none min-h-[300px] text-base leading-relaxed font-sans resize-y"
+                        className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none min-h-[300px] text-base leading-relaxed font-sans resize-y text-gray-900"
                         placeholder="Escribe o pega el contenido legal aquí..."
                     />
                     <p className="text-xs text-gray-400 text-right">
@@ -178,14 +178,14 @@ export default function LegalSettingsTab() {
                 <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                     <button
                         onClick={() => setIsEditing(false)}
-                        className="px-4 py-2 text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 hover:text-gray-900 rounded-lg transition-colors font-medium text-sm"
+                        className="px-6 py-2.5 rounded-full border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleSave}
                         // disabled={isSaving} // Not implemented yet
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm hover:shadow-md transition-all font-medium text-sm flex items-center gap-2"
+                        className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2"
                     >
                         Guardar Plantilla
                     </button>
@@ -233,7 +233,7 @@ export default function LegalSettingsTab() {
                         <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
                             <button
                                 onClick={() => setViewingTemplate(null)}
-                                className="px-5 py-2 bg-white border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition shadow-sm"
+                                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 font-medium rounded-full hover:bg-gray-50 transition shadow-sm hover:shadow-md"
                             >
                                 Cerrar
                             </button>
@@ -257,13 +257,13 @@ export default function LegalSettingsTab() {
                             <div className="flex gap-3 w-full mt-2">
                                 <button
                                     onClick={() => setTemplateToDelete(null)}
-                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={confirmDelete}
-                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition"
                                 >
                                     Eliminar
                                 </button>
@@ -280,7 +280,7 @@ export default function LegalSettingsTab() {
                 </div>
                 <button
                     onClick={handleCreateNew}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
                 >
                     <PlusIcon className="w-5 h-5" />
                     <span>Crear Nueva Plantilla</span>
@@ -338,21 +338,21 @@ export default function LegalSettingsTab() {
                                         <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity bg-white pl-2">
                                             <button
                                                 onClick={() => setViewingTemplate(template)}
-                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                                                 title="Vista Rápida"
                                             >
                                                 <EyeIcon className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => { setCurrentTemplate(template); setIsEditing(true); }}
-                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
                                                 title="Editar"
                                             >
                                                 <PencilIcon className="w-5 h-5" />
                                             </button>
                                             <button
                                                 onClick={() => setTemplateToDelete(template.id)}
-                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
                                                 title="Eliminar"
                                             >
                                                 <TrashIcon className="w-5 h-5" />
