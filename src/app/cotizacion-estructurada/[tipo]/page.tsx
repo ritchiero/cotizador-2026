@@ -38,6 +38,11 @@ import {
   BanknotesIcon,
   ReceiptPercentIcon
 } from "@heroicons/react/24/outline";
+import { Calendar } from "@/app/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
+import { Button } from "@/app/components/ui/button";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 
 interface Servicio {
@@ -142,6 +147,16 @@ export default function CotizacionEstructuradaForm() {
   const { user } = useAuth(); // Moved up
   const [brandingData, setBrandingData] = useState<any>(null); // Store branding info
   const [signatureMode, setSignatureMode] = useState<'upload' | 'draw'>('upload');
+
+  // States for inline bank account adding
+  const [isAddingBank, setIsAddingBank] = useState(false);
+  const [newBankData, setNewBankData] = useState({
+    bankName: '',
+    accountNumber: '',
+    accountHolder: '',
+    clabe: ''
+  });
+  const [savingBank, setSavingBank] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
@@ -284,8 +299,12 @@ export default function CotizacionEstructuradaForm() {
 
     setIsDrawing(true);
     const rect = canvas.getBoundingClientRect();
-    const x = ('clientX' in e ? e.clientX : e.touches[0].clientX) - rect.left;
-    const y = ('clientY' in e ? e.clientY : e.touches[0].clientY) - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
 
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -302,8 +321,12 @@ export default function CotizacionEstructuradaForm() {
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = ('clientX' in e ? e.clientX : e.touches[0].clientX) - rect.left;
-    const y = ('clientY' in e ? e.clientY : e.touches[0].clientY) - rect.top;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
 
     ctx.lineTo(x, y);
     ctx.stroke();
@@ -355,6 +378,55 @@ export default function CotizacionEstructuradaForm() {
     } catch (error) {
       console.error("Error saving signature", error);
       toast.error("Error al guardar la firma");
+    }
+  };
+
+  const handleSaveBankAccount = async () => {
+    // Validación
+    if (!newBankData.bankName || !newBankData.accountNumber || !newBankData.accountHolder) {
+      toast.error('Por favor completa todos los campos obligatorios');
+      return;
+    }
+
+    if (!user?.uid) {
+      toast.error('Usuario no autenticado');
+      return;
+    }
+
+    try {
+      setSavingBank(true);
+
+      // Generar ID único
+      const id = Date.now().toString();
+      const newMethod = { ...newBankData, id };
+
+      // Guardar en Firestore
+      const paymentRef = doc(db, 'paymentInfo', user.uid);
+      await setDoc(paymentRef, {
+        methods: {
+          [id]: newMethod
+        }
+      }, { merge: true });
+
+      // Actualizar estado local
+      setPaymentMethods(prev => [...prev, newMethod]);
+      setSelectedBankAccount(JSON.stringify(newMethod));
+
+      // Reset y cerrar formulario
+      setNewBankData({
+        bankName: '',
+        accountNumber: '',
+        accountHolder: '',
+        clabe: ''
+      });
+      setIsAddingBank(false);
+
+      toast.success('Cuenta bancaria agregada exitosamente');
+    } catch (error) {
+      console.error('Error al guardar cuenta bancaria:', error);
+      toast.error('Error al guardar la cuenta bancaria');
+    } finally {
+      setSavingBank(false);
     }
   };
 
@@ -612,57 +684,158 @@ export default function CotizacionEstructuradaForm() {
               <p className="text-sm text-gray-600">Selecciona la cuenta donde deseas recibir el pago.</p>
             </div>
 
-            {loadingPaymentMethods ? (
-              <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              </div>
-            ) : paymentMethods.length > 0 ? (
-              <div className="space-y-3">
-                {paymentMethods.map((method, index) => (
-                  <div
-                    key={index}
-                    onClick={() => setSelectedBankAccount(JSON.stringify(method))}
-                    className={`
-                        cursor-pointer p-4 rounded-lg border transition-all
-                        ${selectedBankAccount === JSON.stringify(method)
-                        ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                        : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
-                      `}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-900">{method.bankName}</p>
-                        <p className="text-sm text-gray-500">{method.accountNumber} - {method.accountHolder}</p>
-                      </div>
-                      {selectedBankAccount === JSON.stringify(method) && (
-                        <div className="h-4 w-4 rounded-full bg-indigo-600 flex items-center justify-center">
-                          <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div className="pt-4 mt-4 border-t border-gray-100">
+            {/* Formulario Inline para Agregar Cuenta */}
+            {isAddingBank ? (
+              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-semibold text-gray-900">Nueva Cuenta Bancaria</h4>
                   <button
-                    className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-2"
-                    onClick={() => window.open('/settings/profile', '_blank')}
+                    onClick={() => {
+                      setIsAddingBank(false);
+                      setNewBankData({ bankName: '', accountNumber: '', accountHolder: '', clabe: '' });
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    <span className="text-lg">+</span> Gestionar cuentas bancarias
+                    Cancelar
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Banco <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newBankData.bankName}
+                      onChange={(e) => setNewBankData(prev => ({ ...prev, bankName: e.target.value }))}
+                      placeholder="Ej. BBVA, Santander, Banorte"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Número de Cuenta <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newBankData.accountNumber}
+                      onChange={(e) => setNewBankData(prev => ({ ...prev, accountNumber: e.target.value }))}
+                      placeholder="Ej. 1234567890"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      CLABE Interbancaria
+                    </label>
+                    <input
+                      type="text"
+                      value={newBankData.clabe}
+                      onChange={(e) => setNewBankData(prev => ({ ...prev, clabe: e.target.value }))}
+                      placeholder="18 dígitos (opcional)"
+                      maxLength={18}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                      Titular de la Cuenta <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newBankData.accountHolder}
+                      onChange={(e) => setNewBankData(prev => ({ ...prev, accountHolder: e.target.value }))}
+                      placeholder="Nombre completo o razón social"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      setIsAddingBank(false);
+                      setNewBankData({ bankName: '', accountNumber: '', accountHolder: '', clabe: '' });
+                    }}
+                    className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveBankAccount}
+                    disabled={savingBank}
+                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full text-sm font-medium hover:from-blue-600 hover:to-blue-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {savingBank ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Guardando...
+                      </>
+                    ) : (
+                      'Guardar Cuenta'
+                    )}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 flex flex-col items-center text-center">
-                <p className="text-sm mb-3">
-                  No tienes cuentas bancarias guardadas.
-                </p>
-                <button
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm"
-                  onClick={() => window.open('/settings/profile', '_blank')}
-                >
-                  Agregar cuenta bancaria
-                </button>
-              </div>
+              <>
+                {loadingPaymentMethods ? (
+                  <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : paymentMethods.length > 0 ? (
+                  <div className="space-y-3">
+                    {paymentMethods.map((method, index) => (
+                      <div
+                        key={index}
+                        onClick={() => setSelectedBankAccount(JSON.stringify(method))}
+                        className={`
+                            cursor-pointer p-4 rounded-lg border transition-all
+                            ${selectedBankAccount === JSON.stringify(method)
+                            ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
+                            : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
+                          `}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-gray-900">{method.bankName}</p>
+                            <p className="text-sm text-gray-500">{method.accountNumber} - {method.accountHolder}</p>
+                          </div>
+                          {selectedBankAccount === JSON.stringify(method) && (
+                            <div className="h-4 w-4 rounded-full bg-indigo-600 flex items-center justify-center">
+                              <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="pt-4 mt-4 border-t border-gray-100">
+                      <button
+                        className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-2"
+                        onClick={() => setIsAddingBank(true)}
+                      >
+                        <span className="text-lg">+</span> Agregar otra cuenta
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 flex flex-col items-center text-center">
+                    <p className="text-sm mb-3">
+                      No tienes cuentas bancarias guardadas.
+                    </p>
+                    <button
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm"
+                      onClick={() => setIsAddingBank(true)}
+                    >
+                      Agregar cuenta bancaria
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         );
@@ -752,13 +925,34 @@ export default function CotizacionEstructuradaForm() {
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Fecha de Expiración</h3>
               <p className="text-sm text-gray-600">Define hasta cuándo es válida esta cotización.</p>
             </div>
-            <input
-              type="date"
-              value={formData.expirationDate || ''}
-              onChange={(e) => handleInputChange('expirationDate', e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
-            />
-          </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={`w-full justify-start text-left font-normal h-12 rounded-xl border-gray-200 ${!formData.expirationDate && "text-muted-foreground"}`}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.expirationDate ? (
+                    format(new Date(formData.expirationDate + 'T12:00:00'), "dd/MM/yyyy")
+                  ) : (
+                    <span>dd/mm/aaaa</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.expirationDate ? new Date(formData.expirationDate + 'T12:00:00') : undefined}
+                  onSelect={(date) => {
+                    handleInputChange('expirationDate', date ? format(date, 'yyyy-MM-dd') : '');
+                  }}
+                  initialFocus
+                  locale={es}
+                />
+              </PopoverContent>
+            </Popover>
+          </div >
         );
 
       case 'contact_details':
@@ -837,21 +1031,19 @@ export default function CotizacionEstructuradaForm() {
                   <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setSignatureMode('upload')}
-                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                        signatureMode === 'upload'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${signatureMode === 'upload'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
                     >
                       Subir Imagen
                     </button>
                     <button
                       onClick={() => setSignatureMode('draw')}
-                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${
-                        signatureMode === 'draw'
-                          ? 'bg-white text-blue-600 shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
-                      }`}
+                      className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all ${signatureMode === 'draw'
+                        ? 'bg-white text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                        }`}
                     >
                       Dibujar Firma
                     </button>
