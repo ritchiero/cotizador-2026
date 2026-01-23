@@ -306,9 +306,9 @@ export default function Home() {
       <div className="flex flex-col items-center">
         <h1 className="hidden md:block text-[18px] font-bold text-[#0E162F] mb-2 text-center mt-8">Configurador de Cotizador con IA</h1>
         <p className="hidden md:block text-[16px] text-[#3B3D45] mb-3 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
-        {/* Navegación con estilo del sistema maestro */}
+        {/* Navegación con estilo Flat Tabs del sistema */}
         <div className="w-full flex justify-center mb-6">
-          <nav className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 overflow-x-auto mx-auto max-w-4xl">
+          <nav className="flex border-b border-gray-100 overflow-x-auto mx-auto max-w-4xl bg-white px-4 rounded-t-2xl">
             {[
               { label: 'Perfil', Icon: UserIcon },
               { label: 'Servicios', Icon: HomeIcon },
@@ -320,13 +320,13 @@ export default function Home() {
               <button
                 key={label}
                 onClick={() => setSelectedTab(label)}
-                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap
+                className={`flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 transition-all whitespace-nowrap
                   ${selectedTab === label
-                    ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}
+                    ? 'text-[#3B82F6] border-[#3B82F6] font-semibold'
+                    : 'text-[#6B7280] border-transparent hover:text-[#374151] hover:border-gray-200'}
                 `}
               >
-                <Icon className={`w-4 h-4 ${selectedTab === label ? 'text-blue-500' : 'text-gray-400'}`} />
+                <Icon className={`w-4 h-4 ${selectedTab === label ? 'text-blue-600' : 'text-gray-400'}`} />
                 <span>{label}</span>
               </button>
             ))}

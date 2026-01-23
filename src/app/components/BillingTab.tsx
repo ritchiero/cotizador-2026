@@ -354,7 +354,7 @@ export default function BillingTab({ userId, billingData, onBillingUpdate }: Bil
                 name="direccion.pais"
                 value={formData.direccion.pais}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white cursor-pointer"
+                className="w-full h-12 px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white cursor-pointer"
               >
                 {countries.map(c => (
                   <option key={c.code} value={c.code}>{c.name}</option>
