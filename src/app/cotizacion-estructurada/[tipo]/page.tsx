@@ -212,9 +212,28 @@ export default function CotizacionEstructuradaForm() {
   });
 
   // Format & Tone State
-  const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large'>('one-pager'); // A, B, C
-  const [toneType, setToneType] = useState<'friendly' | 'formal'>('friendly'); // A, B
-  const [languageType, setLanguageType] = useState<'es' | 'en' | 'es-en'>('es'); // A, B, C
+  const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large' | 'custom'>('one-pager');
+  const [toneType, setToneType] = useState<'friendly' | 'formal'>('friendly');
+  const [languageType, setLanguageType] = useState<'es' | 'en' | 'other'>('es');
+
+  // Estados para configuración customizada
+  interface CustomBlock {
+    id: string;
+    name: string;
+    enabled: boolean;
+    detailLevel: 'short' | 'medium' | 'long';
+    order: number;
+  }
+
+  const [customBlocks, setCustomBlocks] = useState<CustomBlock[]>([
+    { id: 'intro', name: 'Introducción', enabled: true, detailLevel: 'medium', order: 0 },
+    { id: 'services', name: 'Alcance de Servicios', enabled: true, detailLevel: 'medium', order: 1 },
+    { id: 'process', name: 'Metodología/Proceso', enabled: true, detailLevel: 'short', order: 2 },
+    { id: 'timeline', name: 'Cronograma', enabled: false, detailLevel: 'short', order: 3 },
+    { id: 'costs', name: 'Costos y Forma de Pago', enabled: true, detailLevel: 'long', order: 4 },
+    { id: 'terms', name: 'Términos y Condiciones', enabled: true, detailLevel: 'short', order: 5 },
+    { id: 'closing', name: 'Cierre y Firma', enabled: true, detailLevel: 'short', order: 6 },
+  ]);
 
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
@@ -1526,6 +1545,38 @@ export default function CotizacionEstructuradaForm() {
     }));
   };
 
+  // Funciones para configuración customizada
+  const handleToggleBlock = (blockId: string) => {
+    setCustomBlocks(prev => prev.map(block =>
+      block.id === blockId ? { ...block, enabled: !block.enabled } : block
+    ));
+  };
+
+  const handleDetailLevelChange = (blockId: string, level: 'short' | 'medium' | 'long') => {
+    setCustomBlocks(prev => prev.map(block =>
+      block.id === blockId ? { ...block, detailLevel: level } : block
+    ));
+  };
+
+  const handleReorderBlocks = (fromIndex: number, toIndex: number) => {
+    setCustomBlocks(prev => {
+      const newBlocks = [...prev];
+      const [moved] = newBlocks.splice(fromIndex, 1);
+      newBlocks.splice(toIndex, 0, moved);
+      return newBlocks.map((block, idx) => ({ ...block, order: idx }));
+    });
+  };
+
+  const moveBlockUp = (index: number) => {
+    if (index === 0) return;
+    handleReorderBlocks(index, index - 1);
+  };
+
+  const moveBlockDown = (index: number) => {
+    if (index === customBlocks.length - 1) return;
+    handleReorderBlocks(index, index + 1);
+  };
+
 
 
   return (
@@ -2073,6 +2124,118 @@ export default function CotizacionEstructuradaForm() {
                   </button>
                 </div>
               </div>
+
+              {/* Configurador Customizado */}
+              {formatType === 'custom' && (
+                <div className="mt-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">Personaliza cada bloque</h3>
+                      <p className="text-xs text-gray-600 mt-1">Activa, ordena y ajusta el nivel de detalle de cada sección</p>
+                    </div>
+                    <span className="text-xs font-medium text-blue-700 bg-white px-3 py-1.5 rounded-full border border-blue-200">
+                      {customBlocks.filter(b => b.enabled).length} bloques activos
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {customBlocks.map((block, index) => (
+                      <div
+                        key={block.id}
+                        className={`bg-white rounded-xl p-4 border-2 transition-all ${
+                          block.enabled
+                            ? 'border-gray-200 shadow-sm'
+                            : 'border-gray-100 bg-gray-50 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {/* Drag Handle & Checkbox */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                onClick={() => moveBlockUp(index)}
+                                disabled={index === 0}
+                                className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="Subir"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => moveBlockDown(index)}
+                                disabled={index === customBlocks.length - 1}
+                                className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="Bajar"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={block.enabled}
+                              onChange={() => handleToggleBlock(block.id)}
+                              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all cursor-pointer"
+                            />
+                          </div>
+
+                          {/* Nombre del Bloque */}
+                          <div className="flex-1">
+                            <span className={`text-sm font-medium ${block.enabled ? 'text-gray-900' : 'text-gray-500'}`}>
+                              {block.name}
+                            </span>
+                          </div>
+
+                          {/* Nivel de Detalle */}
+                          {block.enabled && (
+                            <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg p-0.5">
+                              <button
+                                onClick={() => handleDetailLevelChange(block.id, 'short')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                  block.detailLevel === 'short'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                              >
+                                Breve
+                              </button>
+                              <button
+                                onClick={() => handleDetailLevelChange(block.id, 'medium')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                  block.detailLevel === 'medium'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                              >
+                                Medio
+                              </button>
+                              <button
+                                onClick={() => handleDetailLevelChange(block.id, 'long')}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                                  block.detailLevel === 'long'
+                                    ? 'bg-white text-blue-600 shadow-sm'
+                                    : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                              >
+                                Extenso
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-gray-600 mt-4 flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Usa las flechas para reordenar los bloques según tus preferencias
+                  </p>
+                </div>
+              )}
 
               {/* Tono - Segment Control */}
               <div>
