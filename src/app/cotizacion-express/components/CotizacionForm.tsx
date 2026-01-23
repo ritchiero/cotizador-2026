@@ -131,7 +131,7 @@ const ServicioInput = ({
   }, [user?.uid, showSelector]);
 
   return (
-    <div className="group bg-white rounded-lg border border-gray-200 hover:border-gray-400 transition-all duration-200">
+    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-gray-400 transition-all duration-300 shadow-sm hover:shadow-md">
       <div className="p-5">
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-2">
@@ -144,12 +144,12 @@ const ServicioInput = ({
           </div>
 
           <div className="flex justify-center">
-            <div className="inline-flex p-0.5 rounded-md bg-gray-100">
+            <div className="inline-flex p-1 rounded-full bg-gray-100 border border-gray-200">
               <button
                 type="button"
                 onClick={() => setShowSelector(false)}
-                className={`text-xs px-4 py-1.5 rounded transition-all ${!showSelector
-                  ? "bg-white text-gray-700 shadow-sm"
+                className={`text-xs px-4 py-1.5 rounded-full font-medium transition-all ${!showSelector
+                  ? "bg-white text-gray-800 shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
                   }`}
               >
@@ -158,8 +158,8 @@ const ServicioInput = ({
               <button
                 type="button"
                 onClick={() => setShowSelector(true)}
-                className={`text-xs px-4 py-1.5 rounded transition-all ${showSelector
-                  ? "bg-white text-gray-700 shadow-sm"
+                className={`text-xs px-4 py-1.5 rounded-full font-medium transition-all ${showSelector
+                  ? "bg-white text-gray-800 shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
                   }`}
               >
@@ -1152,9 +1152,9 @@ export default function CotizacionForm({
             {tiposCotizacion.map((tipo) => (
               <div
                 key={tipo.id}
-                className={`group relative overflow-hidden rounded-xl border-2 cursor-pointer transition-all duration-300 ${tipoCotizacion === tipo.id
-                  ? "border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg scale-[1.02]"
-                  : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md hover:scale-[1.01]"
+                className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${tipoCotizacion === tipo.id
+                  ? "border-blue-500 bg-gradient-to-br from-blue-50/50 to-blue-100/50 shadow-lg scale-[1.01]"
+                  : "border-gray-200 bg-white hover:border-blue-300 hover:shadow-md hover:scale-[1.005]"
                   }`}
                 onClick={() => setTipoCotizacion(tipo.id)}
               >
@@ -1261,10 +1261,10 @@ export default function CotizacionForm({
           <button
             type="submit"
             disabled={!isFormValid() || isGenerating}
-            className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${isFormValid() && !isGenerating
-              ? "bg-blue-600 text-white hover:bg-blue-700"
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            className={`px-8 py-3 rounded-full font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isFormValid() && !isGenerating
+              ? "bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white hover:from-[#2563EB] hover:to-[#1D4ED8]"
+              : "bg-gray-200 text-gray-500 cursor-not-allowed transform-none"
+              } focus:outline-none`}
           >
             <SparklesIcon className="w-5 h-5" />
             {isGenerating ? (

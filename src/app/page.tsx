@@ -16,7 +16,7 @@ import type { PaymentMethod } from '@/lib/types/payment';
 import ServicesTab from '@/app/components/ServicesTab';
 import ProfileTab from '@/app/components/ProfileTab';
 import LegalSettingsTab from '@/app/components/LegalSettingsTab';
-import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon, Cog6ToothIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 interface UserProfile {
   location?: string;
@@ -54,6 +54,7 @@ export default function Home() {
       codigoPostal: '',
       municipio: '',
       estado: '',
+      pais: 'MX',
     },
     email: '',
     telefono: ''
@@ -306,8 +307,8 @@ export default function Home() {
         <h1 className="hidden md:block text-[18px] font-bold text-[#0E162F] mb-2 text-center mt-8">Configurador de Cotizador con IA</h1>
         <p className="hidden md:block text-[16px] text-[#3B3D45] mb-3 text-center">Configura estas opciones para automatizar tus cotizaciones.</p>
         {/* Navegación con estilo del sistema maestro */}
-        <div className="w-full flex justify-center mb-2">
-          <nav className="flex gap-0 bg-white rounded-xl shadow-sm overflow-x-auto border border-gray-200">
+        <div className="w-full flex justify-center mb-6">
+          <nav className="flex gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-gray-200 overflow-x-auto mx-auto max-w-4xl">
             {[
               { label: 'Perfil', Icon: UserIcon },
               { label: 'Servicios', Icon: HomeIcon },
@@ -319,13 +320,13 @@ export default function Home() {
               <button
                 key={label}
                 onClick={() => setSelectedTab(label)}
-                className={`px-5 py-4 text-sm font-medium transition-all border-b-2 flex items-center gap-2
+                className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap
                   ${selectedTab === label
-                    ? 'text-[#3B82F6] border-[#3B82F6] font-semibold'
-                    : 'text-[#6B7280] border-transparent hover:text-[#374151] hover:border-gray-200'}
+                    ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}
                 `}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className={`w-4 h-4 ${selectedTab === label ? 'text-blue-500' : 'text-gray-400'}`} />
                 <span>{label}</span>
               </button>
             ))}
@@ -333,7 +334,7 @@ export default function Home() {
         </div>
 
         {/* Contenido principal */}
-        <div className="w-full py-12 px-2 sm:px-4">
+        <div className="w-full max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
           {selectedTab === 'Perfil' ? (
             <ProfileTab
               userId={user?.uid || ''}
@@ -371,7 +372,8 @@ export default function Home() {
               <p className="text-[16px] text-[#3B3D45] mb-6">
                 Muestra tu mejor trabajo. Recibe retroalimentación y sé parte de una comunidad en crecimiento.
               </p>
-              <button className="px-6 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
+              <button className="px-8 py-3 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4)] transition-all hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+                <PlusIcon className="w-5 h-5" />
                 Subir primer proyecto
               </button>
             </div>

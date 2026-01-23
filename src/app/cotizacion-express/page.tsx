@@ -17,7 +17,7 @@ export default function CotizacionExpress() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-[#F5F6F8]">
       <main className="flex-1">
         <CotizacionForm initialService={initialService} />
       </main>

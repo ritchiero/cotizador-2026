@@ -23,7 +23,7 @@ const InputGroup = ({
 }: InputGroupProps) => {
     const isFilled = Boolean((value ?? defaultValue)?.toString().trim());
     return (
-        <div className="group bg-white rounded-lg border border-gray-200 shadow-sm hover:border-blue-200 transition-all duration-200 focus-within:shadow-[0_0_16px_0_rgba(66,153,225,0.15)] hover:shadow-md">
+        <div className="group bg-white rounded-2xl border border-gray-200 shadow-sm hover:border-blue-200 transition-all duration-300 hover:shadow-md">
             <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">

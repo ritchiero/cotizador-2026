@@ -247,7 +247,8 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
       </div>
 
       {/* Formulario */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Formulario */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60">
 
         <form onSubmit={handleSave} className="p-8">
           {/* Sección de Foto */}
@@ -282,14 +283,14 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingPhoto}
-                  className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium rounded-full hover:from-[#2563EB] hover:to-[#1D4ED8] shadow-sm hover:shadow-md transition-all disabled:opacity-50"
                 >
                   Subir Nueva Foto
                 </button>
                 <button
                   type="button"
                   onClick={handleRemovePhoto}
-                  className="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 transition-all"
                 >
                   Eliminar Foto
                 </button>
@@ -309,7 +310,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="displayName"
                 value={formData.displayName}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="Juan Pérez García"
               />
             </div>
@@ -323,7 +324,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 type="email"
                 value={formData.email}
                 disabled
-                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+                className="w-full px-5 py-3 border border-gray-200 rounded-full text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
               />
             </div>
 
@@ -337,7 +338,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="nombreDespacho"
                 value={formData.nombreDespacho}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="Pérez & Asociados S.C."
               />
             </div>
@@ -353,7 +354,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 value={formData.rfc}
                 onChange={handleInputChange}
                 maxLength={13}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] uppercase"
                 placeholder="PEGJ850101ABC"
               />
             </div>
@@ -368,7 +369,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="cargo"
                 value={formData.cargo}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="Abogado Senior, Socio, Asociado"
               />
             </div>
@@ -383,7 +384,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="especialidad"
                 value={formData.especialidad}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="Derecho Corporativo, Propiedad Intelectual"
               />
             </div>
@@ -397,7 +398,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 type="url"
                 value={sitioWeb}
                 onChange={(e) => setSitioWeb(e.target.value)}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="https://www.tudespacho.com"
               />
             </div>
@@ -412,7 +413,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="anoExperiencia"
                 value={formData.anoExperiencia}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                 placeholder="10"
                 min="0"
                 max="60"
@@ -425,7 +426,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 Teléfono
               </label>
               <div className="flex gap-2">
-                <select className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white">
+                <select className="w-28 px-3 py-3 border border-[#E5E7EB] rounded-full text-sm bg-white text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none cursor-pointer text-center">
                   <option>🇲🇽 +52</option>
                 </select>
                 <input
@@ -434,7 +435,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                   value={formData.telefono}
                   onChange={handleInputChange}
                   maxLength={10}
-                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                   placeholder="5512345678"
                 />
               </div>
@@ -456,7 +457,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                     min="500"
                     max="50000"
                     step="100"
-                    className="w-full pl-8 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-8 pr-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB]"
                     placeholder="1500"
                   />
                 </div>
@@ -472,7 +473,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                   name="monedaPreferida"
                   value={formData.monedaPreferida}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white cursor-pointer"
                 >
                   <option value="MXN">MXN (Pesos Mexicanos)</option>
                   <option value="USD">USD (Dólares)</option>
@@ -492,7 +493,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] bg-white focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none cursor-pointer"
               >
                 <option value="">Selecciona un estado</option>
                 {estados.map(estado => (
@@ -512,7 +513,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                 onChange={handleInputChange}
                 rows={4}
                 maxLength={500}
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-5 py-4 border border-[#E5E7EB] rounded-2xl text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] resize-none"
                 placeholder="Describe tu experiencia profesional, áreas de práctica, logros destacados..."
               />
               <p className="mt-1 text-xs text-gray-500 text-right">
@@ -526,11 +527,10 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className={`px-6 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                isSaving
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
+              className={`px-8 py-3 rounded-full font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${isSaving
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed transform-none'
+                  : 'bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white hover:from-[#2563EB] hover:to-[#1D4ED8]'
+                }`}
             >
               {isSaving ? (
                 <span className="flex items-center">

@@ -9,6 +9,7 @@ export interface BillingData {
     codigoPostal: string;
     municipio: string;
     estado: string;
+    pais?: string;
   };
   email: string;
   telefono: string;
@@ -26,4 +27,5 @@ export interface BrandingData {
   };
   logoURL?: string;
   signatureBlock?: string;
+  signatureURL?: string; // Digital signature image (autograph)
 }
