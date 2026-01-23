@@ -283,7 +283,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
         m.id === updatedMethod.id ? updatedMethod : m
       );
       onPaymentUpdate(updatedMethods);
-      
+
       setShowModal(false);
       setIsEditing(false);
       setMethodToEdit(null);
@@ -421,7 +421,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setShowModal(true)}
-                  className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+                  className="inline-flex items-center px-6 py-2.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -443,23 +443,23 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
               {paymentMethods.filter(m => showInactive || m.isActive).map((method) => (
                 <div
                   key={method.id}
-                  className="bg-gray-50 rounded-lg p-4 flex items-center justify-between group hover:bg-gray-100 transition-colors"
+                  className="bg-white rounded-xl p-5 flex items-center justify-between group hover:border-blue-400 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
                       <span className="text-2xl">{
                         method.type === 'bank_transfer' ? '🏦' :
-                        method.type === 'bank_account' ? '🏛️' :
-                        method.type === 'card' ? '💳' :
-                        method.type === 'paypal' ? '📱' : '💰'
+                          method.type === 'bank_account' ? '🏛️' :
+                            method.type === 'card' ? '💳' :
+                              method.type === 'paypal' ? '📱' : '💰'
                       }</span>
                     </div>
                     <div>
                       <p className="font-medium text-gray-900 flex items-center">{
                         method.type === 'bank_transfer' ? `${method.details.beneficiary}` :
-                        method.type === 'card' ? `•••• ${String(method.details.cardNumber || '').slice(-4)}` :
-                        method.type === 'paypal' ? method.details.paypalEmail :
-                        method.type === 'stripe' ? 'Cuenta Stripe' : method.details.bank
+                          method.type === 'card' ? `•••• ${String(method.details.cardNumber || '').slice(-4)}` :
+                            method.type === 'paypal' ? method.details.paypalEmail :
+                              method.type === 'stripe' ? 'Cuenta Stripe' : method.details.bank
                       }
                         {method.isDefault && (
                           <span className="ml-2 text-xs text-blue-600">{t('default')}</span>
@@ -467,8 +467,8 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                       </p>
                       <p className="text-sm text-gray-500">{
                         method.type === 'bank_transfer' ? method.details.bank :
-                        method.type === 'card' ? method.details.cardHolder :
-                        method.type === 'paypal' ? 'PayPal' : 'Stripe'
+                          method.type === 'card' ? method.details.cardHolder :
+                            method.type === 'paypal' ? 'PayPal' : 'Stripe'
                       }</p>
                       {method.type === 'bank_transfer' && (
                         <p className="text-xs text-gray-400 mt-1">
@@ -527,9 +527,9 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
               </p>
               <button
                 onClick={() => setShowModal(true)}
-                className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+                className="inline-flex items-center px-6 py-3 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
                 {t('addPayment')}
@@ -547,7 +547,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-800">
                   {!selectedMethod ? 'Selecciona un Método de Pago' :
-                   isEditing ? t('edit') : t('addPayment')}
+                    isEditing ? t('edit') : t('addPayment')}
                 </h3>
                 <button
                   onClick={() => {
@@ -570,7 +570,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                     <button
                       key={option.id}
                       onClick={() => setSelectedMethod(option.id)}
-                      className="flex flex-col items-center justify-center p-6 border rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                      className="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 hover:bg-blue-50 hover:shadow-sm transition-all group"
                     >
                       <span className="text-3xl mb-3 group-hover:scale-110 transition-transform">
                         {option.icon}
@@ -593,8 +593,8 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                         <input
                           type="text"
                           value={formData.beneficiary || ''}
-                          onChange={(e) => setFormData({...formData, beneficiary: e.target.value})}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          onChange={(e) => setFormData({ ...formData, beneficiary: e.target.value })}
+                          className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                           placeholder="Nombre completo del beneficiario"
                           required
                         />
@@ -607,8 +607,8 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                           list="banks"
                           type="text"
                           value={formData.bank || ''}
-                          onChange={(e) => setFormData({...formData, bank: e.target.value})}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          onChange={(e) => setFormData({ ...formData, bank: e.target.value })}
+                          className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                           placeholder="ej: BBVA, Santander, etc."
                           required
                         />
@@ -628,10 +628,10 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                           onChange={(e) => {
                             const value = e.target.value.replace(/\D/g, ''); // Solo números
                             if (value.length <= 18) {
-                              setFormData({...formData, clabe: value});
+                              setFormData({ ...formData, clabe: value });
                             }
                           }}
-                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                          className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                           placeholder="18 dígitos"
                           maxLength={18}
                           required
@@ -654,7 +654,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                         <input
                           type="text"
                           value={formData.cardNumber || ''}
-                          onChange={(e) => setFormData({...formData, cardNumber: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, cardNumber: e.target.value })}
                           className="w-full px-3 py-2 border rounded-lg text-gray-900"
                           maxLength={16}
                           required
@@ -667,7 +667,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                         <input
                           type="text"
                           value={formData.cardHolder || ''}
-                          onChange={(e) => setFormData({...formData, cardHolder: e.target.value})}
+                          onChange={(e) => setFormData({ ...formData, cardHolder: e.target.value })}
                           className="w-full px-3 py-2 border rounded-lg text-gray-900"
                           required
                         />
@@ -683,7 +683,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                       <input
                         type="email"
                         value={formData.paypalEmail || ''}
-                        onChange={(e) => setFormData({...formData, paypalEmail: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, paypalEmail: e.target.value })}
                         className="w-full px-3 py-2 border rounded-lg text-gray-900"
                         required
                       />
@@ -698,7 +698,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                       <input
                         type="text"
                         value={formData.stripeAccount || ''}
-                        onChange={(e) => setFormData({...formData, stripeAccount: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, stripeAccount: e.target.value })}
                         className="w-full px-3 py-2 border rounded-lg text-gray-900"
                         required
                       />
@@ -716,7 +716,7 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                     />
                   </div>
 
-                  <div className="flex justify-end gap-4 pt-4">
+                  <div className="flex justify-end gap-3 pt-6 border-t border-gray-100">
                     <button
                       type="button"
                       onClick={() => {
@@ -724,13 +724,13 @@ export default function PaymentTab({ userId, paymentMethods, onPaymentUpdate, on
                         setIsEditing(false);
                         setMethodToEdit(null);
                       }}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                      className="px-6 py-2.5 rounded-full border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
                     >
                       {t('back')}
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                      className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full font-medium hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Guardando...' : isEditing ? t('save') : t('addPayment')}
