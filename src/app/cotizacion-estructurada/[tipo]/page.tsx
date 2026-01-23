@@ -36,7 +36,14 @@ import {
   CalendarIcon,
   ShieldCheckIcon,
   BanknotesIcon,
-  ReceiptPercentIcon
+  ReceiptPercentIcon,
+  DocumentIcon,
+  BookOpenIcon,
+  FaceSmileIcon,
+  BriefcaseIcon,
+  ChatBubbleLeftEllipsisIcon,
+  GlobeAltIcon,
+  LanguageIcon
 } from "@heroicons/react/24/outline";
 import { Calendar } from "@/app/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
@@ -148,15 +155,20 @@ export default function CotizacionEstructuradaForm() {
   const [brandingData, setBrandingData] = useState<any>(null); // Store branding info
   const [signatureMode, setSignatureMode] = useState<'upload' | 'draw'>('upload');
 
-  // States for inline bank account adding
-  const [isAddingBank, setIsAddingBank] = useState(false);
-  const [newBankData, setNewBankData] = useState({
-    bankName: '',
-    accountNumber: '',
-    accountHolder: '',
-    clabe: ''
+  // States for Payment Method Creation
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethodType, setSelectedPaymentMethodType] = useState<string>('');
+  const [paymentFormData, setPaymentFormData] = useState({
+    bank: '',
+    clabe: '',
+    beneficiary: '',
+    cardNumber: '',
+    cardHolder: '',
+    paypalEmail: '',
+    stripeAccount: ''
   });
-  const [savingBank, setSavingBank] = useState(false);
+  const [savingPaymentMethod, setSavingPaymentMethod] = useState(false);
+
 
   // States for inline template creation
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
@@ -199,7 +211,20 @@ export default function CotizacionEstructuradaForm() {
     attachments: [] as File[] // Store actual files
   });
 
+  // Format & Tone State
+  const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large'>('one-pager'); // A, B, C
+  const [toneType, setToneType] = useState<'friendly' | 'formal'>('friendly'); // A, B
+  const [languageType, setLanguageType] = useState<'es' | 'en' | 'es-en'>('es'); // A, B, C
+
   const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Stepper Configuration
+  const processSteps = [
+    { id: 0, title: 'Tipo de Cobro', status: 'completed' },
+    { id: 1, title: 'Detalles del Proyecto', status: step === 1 ? 'current' : 'completed' },
+    { id: 2, title: 'Opciones Adicionales', status: step === 2 ? 'current' : (step > 2 ? 'completed' : 'pending') },
+    { id: 3, title: 'Formato y Tono', status: step === 3 ? 'current' : 'pending' }
+  ];
 
   // Update contact info when user loads
   useEffect(() => {
@@ -217,6 +242,23 @@ export default function CotizacionEstructuradaForm() {
           setBrandingData(docSnap.data());
         }
       });
+
+      // Fetch User Profile for language preference
+      const loadUserLanguage = async () => {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const idioma = userData.idiomaPreferido || 'es';
+            setLanguageType(idioma);
+          }
+        } catch (error) {
+          console.error('Error loading user language:', error);
+        }
+      };
+
+      loadUserLanguage();
 
       return () => unsubscribeBranding();
     }
@@ -423,41 +465,48 @@ export default function CotizacionEstructuradaForm() {
     }
   };
 
-  const handleSaveBankAccount = async () => {
-    // Validación
-    if (!newBankData.bankName || !newBankData.accountNumber || !newBankData.accountHolder) {
-      toast.error('Por favor completa todos los campos obligatorios');
-      return;
-    }
-
+  const handleSavePaymentMethod = async () => {
     if (!user?.uid) {
       toast.error('Usuario no autenticado');
       return;
     }
 
+    // Validations based on type
+    if (selectedPaymentMethodType === 'bank_transfer' || selectedPaymentMethodType === 'bank_account') {
+      if (!paymentFormData.beneficiary || !paymentFormData.bank) {
+        toast.error('Beneficiario y Banco son obligatorios');
+        return;
+      }
+    }
+    if (selectedPaymentMethodType === 'card') {
+      if (!paymentFormData.cardNumber || !paymentFormData.cardHolder) {
+        toast.error('Número de tarjeta y titular son obligatorios');
+        return;
+      }
+    }
+    if (selectedPaymentMethodType === 'paypal' && !paymentFormData.paypalEmail) {
+      toast.error('Correo de PayPal obligatorio');
+      return;
+    }
+    if (selectedPaymentMethodType === 'stripe' && !paymentFormData.stripeAccount) {
+      toast.error('Cuenta de Stripe obligatoria');
+      return;
+    }
+
     try {
-      setSavingBank(true);
+      setSavingPaymentMethod(true);
+      const id = crypto.randomUUID();
 
-      // Generar ID único
-      const id = Date.now().toString();
-
-      // Structure matches PaymentMethod interface expected by PaymentTab
       const newMethod = {
         id,
-        type: 'bank_account',
-        details: {
-          bank: newBankData.bankName,
-          accountNumber: newBankData.accountNumber,
-          beneficiary: newBankData.accountHolder, // Mapping Account Holder to Beneficiary
-          clabe: newBankData.clabe
-        },
+        type: selectedPaymentMethodType,
+        details: { ...paymentFormData },
         isActive: true,
-        isDefault: paymentMethods.length === 0, // First one is default
+        isDefault: paymentMethods.length === 0,
         createdAt: new Date(),
         updatedAt: new Date()
       };
 
-      // Guardar en Firestore
       const paymentRef = doc(db, 'paymentInfo', user.uid);
       await setDoc(paymentRef, {
         methods: {
@@ -465,27 +514,38 @@ export default function CotizacionEstructuradaForm() {
         }
       }, { merge: true });
 
-      // Actualizar estado local
       setPaymentMethods(prev => [...prev, newMethod]);
       setSelectedBankAccount(JSON.stringify(newMethod));
 
-      // Reset y cerrar formulario
-      setNewBankData({
-        bankName: '',
-        accountNumber: '',
-        accountHolder: '',
-        clabe: ''
+      // Reset
+      setShowPaymentModal(false);
+      setSelectedPaymentMethodType('');
+      setPaymentFormData({
+        bank: '',
+        clabe: '',
+        beneficiary: '',
+        cardNumber: '',
+        cardHolder: '',
+        paypalEmail: '',
+        stripeAccount: ''
       });
-      setIsAddingBank(false);
 
-      toast.success('Cuenta bancaria agregada exitosamente');
+      toast.success('Método de pago agregado exitosamente');
     } catch (error) {
-      console.error('Error al guardar cuenta bancaria:', error);
-      toast.error('Error al guardar la cuenta bancaria');
+      console.error('Error al guardar método:', error);
+      toast.error('Error al guardar el método de pago');
     } finally {
-      setSavingBank(false);
+      setSavingPaymentMethod(false);
     }
   };
+
+  const availablePaymentMethodTypes = [
+    { id: 'bank_transfer', name: 'Transferencia Bancaria', icon: '🏦' },
+    { id: 'bank_account', name: 'Cuenta de Banco', icon: '💳' },
+    { id: 'card', name: 'Depósito en Tarjeta', icon: '💳' },
+    { id: 'paypal', name: 'PayPal', icon: '📱' },
+    { id: 'stripe', name: 'Stripe', icon: '💰' }
+  ];
 
   const handleAddOnToggle = (addOnId: string) => {
     const isSelected = selectedAddOns.has(addOnId);
@@ -680,7 +740,7 @@ export default function CotizacionEstructuradaForm() {
 
               {loadingTerms ? (
                 <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 </div>
               ) : isCreatingTemplate ? (
                 <div className="bg-white p-6 rounded-xl border border-blue-200 shadow-sm space-y-4">
@@ -700,7 +760,7 @@ export default function CotizacionEstructuradaForm() {
                         type="text"
                         value={newTemplateData.name}
                         onChange={(e) => setNewTemplateData(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                        className="w-full h-12 px-5 py-3.5 border border-gray-200 rounded-full focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 transition-all"
                         placeholder="Ej. Cláusula Estándar"
                       />
                     </div>
@@ -709,7 +769,7 @@ export default function CotizacionEstructuradaForm() {
                       <textarea
                         value={newTemplateData.content}
                         onChange={(e) => setNewTemplateData(prev => ({ ...prev, content: e.target.value }))}
-                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm h-32"
+                        className="w-full px-5 py-4 border border-gray-200 rounded-2xl focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 outline-none text-sm text-gray-900 resize-y transition-all h-32"
                         placeholder="Escribe el contenido legal aquí..."
                       />
                     </div>
@@ -717,7 +777,7 @@ export default function CotizacionEstructuradaForm() {
                       <button
                         onClick={handleSaveTemplate}
                         disabled={savingTemplate}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                        className="px-4 py-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full text-sm font-medium hover:from-[#2563EB] hover:to-[#1D4ED8] hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50"
                       >
                         {savingTemplate ? 'Guardando...' : 'Guardar Plantilla'}
                       </button>
@@ -733,16 +793,16 @@ export default function CotizacionEstructuradaForm() {
                       className={`
                         cursor-pointer p-4 rounded-lg border transition-all
                         ${selectedTermId === template.id
-                          ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                          : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
+                          ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}
                       `}
                     >
                       <div className="flex items-center justify-between">
-                        <span className={`font-medium ${selectedTermId === template.id ? 'text-indigo-900' : 'text-gray-900'}`}>
+                        <span className={`font-medium ${selectedTermId === template.id ? 'text-blue-900' : 'text-gray-900'}`}>
                           {template.name}
                         </span>
                         {selectedTermId === template.id && (
-                          <div className="h-4 w-4 rounded-full bg-indigo-600 flex items-center justify-center">
+                          <div className="h-4 w-4 rounded-full bg-blue-600 flex items-center justify-center">
                             <div className="h-1.5 w-1.5 rounded-full bg-white" />
                           </div>
                         )}
@@ -752,7 +812,7 @@ export default function CotizacionEstructuradaForm() {
 
                   <div className="pt-4 mt-4 border-t border-gray-100">
                     <button
-                      className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-2"
+                      className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-2"
                       onClick={() => {
                         setIsCreatingTemplate(true);
                         setNewTemplateData({ name: '', content: '' });
@@ -768,7 +828,7 @@ export default function CotizacionEstructuradaForm() {
                     No tienes plantillas guardadas para esta sección.
                   </p>
                   <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-pill transition-colors shadow-sm rounded-full"
+                    className="px-4 py-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium rounded-full hover:from-[#2563EB] hover:to-[#1D4ED8] hover:shadow-md hover:-translate-y-0.5 transition-all shadow-sm"
                     onClick={() => {
                       setIsCreatingTemplate(true);
                       setNewTemplateData({ name: '', content: '' });
@@ -786,167 +846,85 @@ export default function CotizacionEstructuradaForm() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Cuenta Bancaria</h3>
-              <p className="text-sm text-gray-600">Selecciona la cuenta donde deseas recibir el pago.</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Métodos de Pago</h3>
+              <p className="text-sm text-gray-600">Selecciona el método de pago para recibir pagos de tus clientes.</p>
             </div>
 
-            {/* Formulario Inline para Agregar Cuenta */}
-            {isAddingBank ? (
-              <div className="bg-white p-6 rounded-xl border-2 border-blue-200 shadow-sm space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-sm font-semibold text-gray-900">Nueva Cuenta Bancaria</h4>
-                  <button
-                    onClick={() => {
-                      setIsAddingBank(false);
-                      setNewBankData({ bankName: '', accountNumber: '', accountHolder: '', clabe: '' });
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+            {loadingPaymentMethods ? (
+              <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : paymentMethods.length > 0 ? (
+              <div className="space-y-3">
+                {paymentMethods.map((method, index) => (
+                  <div
+                    key={index}
+                    onClick={() => setSelectedBankAccount(JSON.stringify(method))}
+                    className={`
+                            cursor-pointer p-4 rounded-lg border transition-all
+                            ${selectedBankAccount === JSON.stringify(method)
+                        ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+                        : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}
+                          `}
                   >
-                    Cancelar
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      Banco <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newBankData.bankName}
-                      onChange={(e) => setNewBankData(prev => ({ ...prev, bankName: e.target.value }))}
-                      placeholder="Ej. BBVA, Santander, Banorte"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
-                    />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200 text-lg">
+                          {
+                            method.type === 'bank_transfer' || method.type === 'bank_account' ? '🏛️' :
+                              method.type === 'card' ? '💳' :
+                                method.type === 'paypal' ? '📱' : '💰'
+                          }
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {
+                              method.details?.beneficiary ||
+                              method.details?.cardHolder ||
+                              method.details?.bank ||
+                              method.details?.name ||
+                              'Método de Pago'
+                            }
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {
+                              method.type === 'card' ? `•••• ${String(method.details?.cardNumber || '').slice(-4)}` :
+                                method.type === 'paypal' ? method.details?.paypalEmail :
+                                  method.details?.bank ? `${method.details.bank} ••••${String(method.details.accountNumber || method.details.clabe || '').slice(-4)}` :
+                                    method.details?.clabe || 'Detalles'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      {selectedBankAccount === JSON.stringify(method) && (
+                        <div className="h-5 w-5 rounded-full bg-blue-600 flex items-center justify-center">
+                          <div className="h-2 w-2 rounded-full bg-white" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      Número de Cuenta <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newBankData.accountNumber}
-                      onChange={(e) => setNewBankData(prev => ({ ...prev, accountNumber: e.target.value }))}
-                      placeholder="Ej. 1234567890"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      CLABE Interbancaria
-                    </label>
-                    <input
-                      type="text"
-                      value={newBankData.clabe}
-                      onChange={(e) => setNewBankData(prev => ({ ...prev, clabe: e.target.value }))}
-                      placeholder="18 dígitos (opcional)"
-                      maxLength={18}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-                      Titular de la Cuenta <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newBankData.accountHolder}
-                      onChange={(e) => setNewBankData(prev => ({ ...prev, accountHolder: e.target.value }))}
-                      placeholder="Nombre completo o razón social"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t border-gray-100">
+                ))}
+                <div className="pt-4 mt-4 border-t border-gray-100">
                   <button
-                    onClick={() => {
-                      setIsAddingBank(false);
-                      setNewBankData({ bankName: '', accountNumber: '', accountHolder: '', clabe: '' });
-                    }}
-                    className="flex-1 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all"
+                    className="text-sm text-blue-600 font-medium hover:text-blue-800 flex items-center gap-2"
+                    onClick={() => setShowPaymentModal(true)}
                   >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSaveBankAccount}
-                    disabled={savingBank}
-                    className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full text-sm font-medium hover:from-blue-600 hover:to-blue-700 shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {savingBank ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Guardando...
-                      </>
-                    ) : (
-                      'Guardar Cuenta'
-                    )}
+                    <span className="text-lg">+</span> Agregar método de pago
                   </button>
                 </div>
               </div>
             ) : (
-              <>
-                {loadingPaymentMethods ? (
-                  <div className="flex items-center justify-center p-8 bg-gray-50 rounded-lg">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                  </div>
-                ) : paymentMethods.length > 0 ? (
-                  <div className="space-y-3">
-                    {paymentMethods.map((method, index) => (
-                      <div
-                        key={index}
-                        onClick={() => setSelectedBankAccount(JSON.stringify(method))}
-                        className={`
-                            cursor-pointer p-4 rounded-lg border transition-all
-                            ${selectedBankAccount === JSON.stringify(method)
-                            ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                            : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
-                          `}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {method.details?.bank || method.details?.name || 'Banco desconocido'}
-                            </p>
-                            <p className="text-sm text-gray-500">
-                              {method.details?.accountNumber || method.details?.clabe || 'Sin número'}
-                              {method.details?.beneficiary ? ` - ${method.details.beneficiary}` : ''}
-                            </p>
-                          </div>
-                          {selectedBankAccount === JSON.stringify(method) && (
-                            <div className="h-4 w-4 rounded-full bg-indigo-600 flex items-center justify-center">
-                              <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                    <div className="pt-4 mt-4 border-t border-gray-100">
-                      <button
-                        className="text-sm text-indigo-600 font-medium hover:text-indigo-800 flex items-center gap-2"
-                        onClick={() => setIsAddingBank(true)}
-                      >
-                        <span className="text-lg">+</span> Agregar otra cuenta
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 flex flex-col items-center text-center">
-                    <p className="text-sm mb-3">
-                      No tienes cuentas bancarias guardadas.
-                    </p>
-                    <button
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors shadow-sm"
-                      onClick={() => setIsAddingBank(true)}
-                    >
-                      Agregar cuenta bancaria
-                    </button>
-                  </div>
-                )}
-              </>
+              <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 flex flex-col items-center text-center">
+                <p className="text-sm mb-3">
+                  No tienes métodos de pago guardados.
+                </p>
+                <button
+                  className="px-4 py-2 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white text-sm font-medium rounded-full hover:from-[#2563EB] hover:to-[#1D4ED8] hover:shadow-md hover:-translate-y-0.5 transition-all shadow-sm"
+                  onClick={() => setShowPaymentModal(true)}
+                >
+                  Agregar método de pago
+                </button>
+              </div>
             )}
           </div>
         );
@@ -964,8 +942,8 @@ export default function CotizacionEstructuradaForm() {
                 className={`
                     cursor-pointer p-4 rounded-lg border transition-all flex items-center justify-between
                     ${billingRequestEnabled
-                    ? 'border-indigo-600 bg-indigo-50 ring-1 ring-indigo-600'
-                    : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'}
+                    ? 'border-blue-600 bg-blue-50 ring-1 ring-blue-600'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'}
                   `}
               >
                 <div>
@@ -974,7 +952,7 @@ export default function CotizacionEstructuradaForm() {
                 </div>
                 <div className={`
                     w-6 h-6 rounded border flex items-center justify-center transition-colors
-                    ${billingRequestEnabled ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}
+                    ${billingRequestEnabled ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'}
                   `}>
                   {billingRequestEnabled && <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg>}
                 </div>
@@ -988,7 +966,7 @@ export default function CotizacionEstructuradaForm() {
                     <p><span className="font-semibold">RFC:</span> {userBilling.rfc || 'No definido'}</p>
                   </div>
                   <button
-                    className="mt-2 text-sm text-indigo-600 font-medium hover:text-indigo-800"
+                    className="mt-2 text-sm text-blue-600 font-medium hover:text-blue-800"
                     onClick={() => window.open('/settings/profile', '_blank')}
                   >
                     Editar mis datos fiscales
@@ -1012,7 +990,7 @@ export default function CotizacionEstructuradaForm() {
                 onChange={(e) => handleInputChange('notes', e.target.value)}
                 placeholder="Escribe aquí cualquier aclaración importante, condiciones especiales o mensajes personalizados para tu cliente..."
                 rows={8}
-                className="w-full px-4 py-4 bg-white rounded-b-xl border-none focus:ring-0 text-gray-700 placeholder:text-gray-400 resize-none text-base leading-relaxed"
+                className="w-full px-5 py-4 bg-white rounded-b-2xl border-none focus:ring-0 text-gray-700 placeholder:text-gray-400 resize-none text-base leading-relaxed"
               />
             </div>
 
@@ -1078,7 +1056,7 @@ export default function CotizacionEstructuradaForm() {
                       type="text"
                       value={formData.contactName || ''}
                       onChange={(e) => handleInputChange('contactName', e.target.value)}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
                       placeholder="Ej. Juan Pérez"
                     />
                   </div>
@@ -1089,7 +1067,7 @@ export default function CotizacionEstructuradaForm() {
                       type="email"
                       value={formData.contactEmail || ''}
                       onChange={(e) => handleInputChange('contactEmail', e.target.value)}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
                       placeholder="juan@empresa.com"
                     />
                   </div>
@@ -1100,7 +1078,7 @@ export default function CotizacionEstructuradaForm() {
                       type="tel"
                       value={formData.contactPhone || ''}
                       onChange={(e) => handleInputChange('contactPhone', e.target.value)}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all outline-none text-sm font-medium"
+                      className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
                       placeholder="+52 55 1234 5678"
                     />
                   </div>
@@ -1519,13 +1497,17 @@ export default function CotizacionEstructuradaForm() {
   };
 
   const handleNextStep = () => {
-    setStep(2);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (step < 3) {
+      setStep(step + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleBackStep = () => {
-    setStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (step > 1) {
+      setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const tiposTitulos: Record<string, string> = {
@@ -1544,9 +1526,45 @@ export default function CotizacionEstructuradaForm() {
     }));
   };
 
+
+
   return (
     <div className="min-h-screen bg-gray-50/50 pl-16">
       <div className="w-full px-4 md:px-8 max-w-6xl mx-auto py-8">
+
+        {/* Visual Stepper - Premium Design */}
+        <div className="mb-12">
+          <div className="relative after:absolute after:inset-x-0 after:top-1/2 after:block after:h-0.5 after:-translate-y-1/2 after:rounded-lg after:bg-gray-100">
+            <ol className="relative z-10 flex justify-between text-sm font-medium text-gray-500">
+              {processSteps.map((stepItem, stepIdx) => {
+                const isCompleted = stepItem.status === 'completed';
+                const isCurrent = stepItem.status === 'current';
+
+                return (
+                  <li key={stepItem.id} className="flex items-center gap-2 bg-gray-50/50 p-2">
+                    <span className={`h-8 w-8 rounded-full border-2 text-center text-[10px]/6 font-bold flex items-center justify-center transition-all duration-200
+                                    ${isCompleted ? 'border-blue-600 bg-blue-600 text-white' :
+                        isCurrent ? 'border-blue-600 bg-white text-blue-600 shadow-md shadow-blue-500/20' :
+                          'border-gray-200 bg-white text-gray-500'}
+                                `}>
+                      {isCompleted ? (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        stepItem.id + 1
+                      )}
+                    </span>
+                    <span className={`hidden sm:block ${isCurrent ? 'text-blue-700 font-bold' : isCompleted ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                      {stepItem.title}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
@@ -1564,12 +1582,13 @@ export default function CotizacionEstructuradaForm() {
         </div>
 
         {/* Formulario en cuadrícula 3 columnas */}
-        {step === 1 ? (
+        {/* Formulario en cuadrícula 3 columnas */}
+        {step === 1 && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
 
               {/* Proyecto (Custom Card) */}
-              <div className="col-span-1 group bg-white rounded-lg border border-gray-200 shadow-sm hover:border-blue-200 transition-all duration-200 focus-within:shadow-[0_0_16px_0_rgba(66,153,225,0.15)] hover:shadow-md h-full">
+              <div className="col-span-1 group bg-white rounded-[16px] border border-gray-200 shadow-sm hover:border-blue-200 transition-all duration-200 focus-within:shadow-[0_0_16px_0_rgba(66,153,225,0.15)] hover:shadow-md h-full">
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -1740,7 +1759,9 @@ export default function CotizacionEstructuradaForm() {
                   value={formData.payments}
                   onChange={(e) => handleInputChange('payments', e)}
                   icon={<CreditCardIcon className="w-5 h-5" />}
-                />
+                >
+                  <div className="h-[38px]" />
+                </InputGroup>
               </div>
 
               {/* Método de Pago */}
@@ -1900,25 +1921,28 @@ export default function CotizacionEstructuradaForm() {
             {/* Sticky Footer for Actions */}
             <div className="sticky bottom-0 bg-white/100 backdrop-blur-md border-t border-gray-200 -mx-4 md:-mx-8 px-4 md:px-8 py-4 mt-auto">
               <div className="max-w-6xl mx-auto flex justify-end gap-4">
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => router.push('/cotizacion-estructurada')}
-                  className="px-6 py-2.5 text-sm font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all shadow-sm active:scale-95"
+                  className="px-6 py-2.5 text-sm font-semibold rounded-full transition-all shadow-sm active:scale-95"
                 >
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleNextStep}
-                  className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2"
+                  className="px-6 py-2.5 text-sm font-semibold rounded-full shadow-lg shadow-blue-500/20 hover:shadow-blue-600/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2"
                 >
                   <span>Siguiente paso</span>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
-                </button>
+                </Button>
               </div>
             </div>
           </>
-        ) : (
+        )}
+
+        {step === 2 && (
           /* STEP 2: Add Ons */
           <div className="animate-in fade-in slide-in-from-right-8 duration-500">
             <AddOnsSelector
@@ -1976,7 +2000,7 @@ export default function CotizacionEstructuradaForm() {
             <div className="flex justify-between items-center mt-8 pb-12 max-w-2xl mx-auto">
               <button
                 onClick={handleBackStep}
-                className="px-6 py-3 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:text-gray-900 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+                className="px-6 py-3 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-[#F9FAFB] hover:border-[#9CA3AF] hover:text-gray-900 transition-all shadow-sm active:scale-95 flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1984,22 +2008,180 @@ export default function CotizacionEstructuradaForm() {
                 <span>Atrás</span>
               </button>
 
-              <button
+              <Button
+                onClick={handleNextStep}
+                className="px-6 py-2.5 text-sm font-bold rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2"
+              >
+                <span>Siguiente Paso</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          /* STEP 3: Format & Tone */
+          <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-3xl mx-auto">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+              <div className="mb-8">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Formato de Entrega</h2>
+                <p className="text-sm text-gray-500">Selecciona la extensión y estructura del documento final.</p>
+              </div>
+
+              <div className="space-y-4 mb-10">
+                <div
+                  onClick={() => setFormatType('one-pager')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'one-pager' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'one-pager' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <DocumentIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${formatType === 'one-pager' ? 'text-blue-900' : 'text-gray-900'}`}>One Pager</h3>
+                    <p className="text-sm text-gray-500 mt-1">Un resumen ejecutivo de una sola página. Conciso y directo al punto.</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setFormatType('short')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'short' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'short' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <DocumentTextIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${formatType === 'short' ? 'text-blue-900' : 'text-gray-900'}`}>Formato Corto (menos de 300 palabras)</h3>
+                    <p className="text-sm text-gray-500 mt-1">Breve descripción de servicios y costos, ideal para clientes que ya conocen tu trabajo.</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setFormatType('large')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${formatType === 'large' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${formatType === 'large' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <BookOpenIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${formatType === 'large' ? 'text-blue-900' : 'text-gray-900'}`}>Formato Largo y Detallado (+500 palabras)</h3>
+                    <p className="text-sm text-gray-500 mt-1">Propuesta exhaustiva con metodología, cronograma detallado y desglose completo.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8 pt-8 border-t border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Tono de Comunicación</h2>
+                <p className="text-sm text-gray-500">Define cómo nos dirigimos al cliente en el documento.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div
+                  onClick={() => setToneType('friendly')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${toneType === 'friendly' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${toneType === 'friendly' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <FaceSmileIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${toneType === 'friendly' ? 'text-blue-900' : 'text-gray-900'}`}>Amigable y Cercano</h3>
+                    <p className="text-sm text-gray-500 mt-1">Lenguaje accesible, cálido y empático. Ideal para startups o clientes recurrentes.</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setToneType('formal')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${toneType === 'formal' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${toneType === 'formal' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <BriefcaseIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${toneType === 'formal' ? 'text-blue-900' : 'text-gray-900'}`}>Formal y Corporativo</h3>
+                    <p className="text-sm text-gray-500 mt-1">Lenguaje técnico, preciso y serio. Recomendado para corporativos, licitaciones o temas sensibles.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8 pt-8 border-t border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Idioma del Documento</h2>
+                <p className="text-sm text-gray-500">Selecciona el idioma en el que se generará la cotización.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div
+                  onClick={() => setLanguageType('es')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'es' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'es' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${languageType === 'es' ? 'text-blue-900' : 'text-gray-900'}`}>Español</h3>
+                    <p className="text-sm text-gray-500 mt-1">Documento completamente en español. Ideal para clientes hispanohablantes.</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setLanguageType('en')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'en' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'en' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <GlobeAltIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${languageType === 'en' ? 'text-blue-900' : 'text-gray-900'}`}>Inglés</h3>
+                    <p className="text-sm text-gray-500 mt-1">Documento completamente en inglés. Perfecto para clientes internacionales.</p>
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setLanguageType('es-en')}
+                  className={`cursor-pointer p-4 rounded-xl border transition-all flex items-start gap-4 group ${languageType === 'es-en' ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md' : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all duration-300 ${languageType === 'es-en' ? 'bg-blue-600 text-white border-blue-600 shadow-md scale-110' : 'bg-white text-gray-400 border-gray-200 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'}`}>
+                    <LanguageIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-semibold ${languageType === 'es-en' ? 'text-blue-900' : 'text-gray-900'}`}>Bilingüe (Español/Inglés)</h3>
+                    <p className="text-sm text-gray-500 mt-1">Secciones clave en ambos idiomas. Excelente para empresas multinacionales.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Action Buttons Step 3 */}
+            <div className="flex justify-between items-center mt-8 pb-12">
+              <Button
+                variant="outline"
+                onClick={handleBackStep}
+                className="px-6 py-2.5 text-sm font-bold rounded-full transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Atrás</span>
+              </Button>
+
+              <Button
                 onClick={handleGenerateQuote}
-                className="px-8 py-3 text-sm font-bold text-white bg-green-600 rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-500/30 hover:shadow-green-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2"
+                className="px-6 py-2.5 text-sm font-bold rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 flex items-center gap-2"
               >
                 <span>Generar Cotización</span>
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
-              </button>
+              </Button>
             </div>
           </div>
-        )}
-      </div>
+        )
+        }
+      </div >
 
       {/* Modals */}
-      <RequirementsAIModal
+      < RequirementsAIModal
         isOpen={aiModalOpen}
         loading={aiLoading}
         options={aiOptions}
@@ -2037,6 +2219,169 @@ export default function CotizacionEstructuradaForm() {
         onSelect={handleSelectNotes}
         customTitle="Sugerencias de Notas Adicionales"
       />
-    </div>
+
+      {/* Modal de Selección y Creación de Método de Pago */}
+      {
+        showPaymentModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] animate-in fade-in duration-200 p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+              <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-white">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {!selectedPaymentMethodType ? 'Selecciona un Método de Pago' : 'Nuevo Método de Pago'}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {!selectedPaymentMethodType ? 'Elige la opción que deseas configurar' : 'Ingresa los detalles correspondientes'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setSelectedPaymentMethodType('');
+                  }}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-8 bg-gray-50/50">
+                {!selectedPaymentMethodType ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                    {availablePaymentMethodTypes.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setSelectedPaymentMethodType(option.id)}
+                        className="flex flex-col items-center justify-center p-6 bg-white border border-gray-100 rounded-2xl hover:border-blue-600 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-200 group aspect-square"
+                      >
+                        <span className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-200 filter drop-shadow-sm">
+                          {option.icon}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-700 text-center leading-tight">
+                          {option.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-right-4 duration-200">
+                    <div className="space-y-6">
+                      {(selectedPaymentMethodType === 'bank_transfer' || selectedPaymentMethodType === 'bank_account') && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Beneficiario <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={paymentFormData.beneficiary}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, beneficiary: e.target.value })}
+                              className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                              placeholder="Nombre completo o Razón Social"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Banco <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={paymentFormData.bank}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, bank: e.target.value })}
+                              className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                              placeholder="Ej. BBVA, Santander"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">CLABE / Número de Cuenta</label>
+                            <input
+                              type="text"
+                              value={paymentFormData.clabe}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, clabe: e.target.value })}
+                              className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                              placeholder="18 dígitos (opcional)"
+                              maxLength={18}
+                            />
+                          </div>
+                        </>
+                      )}
+                      {selectedPaymentMethodType === 'card' && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Titular de la Tarjeta <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={paymentFormData.cardHolder}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cardHolder: e.target.value })}
+                              className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                              placeholder="Nombre como aparece en la tarjeta"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Número de Tarjeta <span className="text-red-500">*</span></label>
+                            <input
+                              type="text"
+                              value={paymentFormData.cardNumber}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, cardNumber: e.target.value })}
+                              className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                              placeholder="16 dígitos"
+                              maxLength={16}
+                            />
+                          </div>
+                        </>
+                      )}
+                      {selectedPaymentMethodType === 'paypal' && (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">Correo de PayPal <span className="text-red-500">*</span></label>
+                          <input
+                            type="email"
+                            value={paymentFormData.paypalEmail}
+                            onChange={(e) => setPaymentFormData({ ...paymentFormData, paypalEmail: e.target.value })}
+                            className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                            placeholder="correo@ejemplo.com"
+                          />
+                        </div>
+                      )}
+                      {selectedPaymentMethodType === 'stripe' && (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">ID de Cuenta Stripe <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={paymentFormData.stripeAccount}
+                            onChange={(e) => setPaymentFormData({ ...paymentFormData, stripeAccount: e.target.value })}
+                            className="w-full h-12 px-5 py-3.5 bg-gray-50 border border-gray-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-gray-300 transition-all outline-none text-sm font-medium text-gray-900"
+                            placeholder="acct_..."
+                          />
+                        </div>
+                      )}
+
+                      <div className="flex gap-4 pt-4 mt-4">
+                        <button
+                          onClick={() => setSelectedPaymentMethodType('')}
+                          className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-gray-700 hover:bg-[#F9FAFB] hover:border-[#9CA3AF] transition-all text-sm font-bold active:scale-95"
+                        >
+                          Atrás
+                        </button>
+                        <button
+                          onClick={handleSavePaymentMethod}
+                          disabled={savingPaymentMethod}
+                          className="flex-1 px-4 py-2.5 bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white rounded-full hover:from-[#2563EB] hover:to-[#1D4ED8] transition-all text-sm font-bold shadow-lg shadow-blue-500/30 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:shadow-none flex items-center justify-center gap-2"
+                        >
+                          {savingPaymentMethod ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Guardando...
+                            </>
+                          ) : 'Guardar Método'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+    </div >
   );
 }
