@@ -2106,42 +2106,58 @@ export default function CotizacionEstructuradaForm() {
               {/* Idioma - Pills Compactos (3 opciones) */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Idioma del Documento</h2>
-                <div className="flex items-center justify-center gap-3">
-                  <button
-                    onClick={() => setLanguageType('es')}
-                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                      languageType === 'es'
-                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                    }`}
-                  >
-                    <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Español</span>
-                  </button>
+                <div className="flex flex-col items-center gap-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => setLanguageType('es')}
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                        languageType === 'es'
+                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">Español</span>
+                    </button>
 
-                  <button
-                    onClick={() => setLanguageType('en')}
-                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                      languageType === 'en'
-                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                    }`}
-                  >
-                    <GlobeAltIcon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Inglés</span>
-                  </button>
+                    <button
+                      onClick={() => setLanguageType('en')}
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                        languageType === 'en'
+                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <GlobeAltIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">Inglés</span>
+                    </button>
 
-                  <button
-                    onClick={() => setLanguageType('other')}
-                    className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                      languageType === 'other'
-                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                    }`}
-                  >
-                    <LanguageIcon className="w-5 h-5" />
-                    <span className="text-sm font-medium">Otro</span>
-                  </button>
+                    <button
+                      onClick={() => setLanguageType('other')}
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                        languageType === 'other'
+                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                    >
+                      <LanguageIcon className="w-5 h-5" />
+                      <span className="text-sm font-medium">Otro</span>
+                    </button>
+                  </div>
+
+                  {/* Input para idioma personalizado */}
+                  {languageType === 'other' && (
+                    <div className="w-full max-w-md animate-in fade-in slide-in-from-top-2 duration-300">
+                      <input
+                        type="text"
+                        value={formData.customLanguage || ''}
+                        onChange={(e) => handleInputChange('customLanguage', e.target.value)}
+                        placeholder="Especifica el idioma (ej: Francés, Portugués, Alemán...)"
+                        className="w-full h-12 px-5 py-3.5 bg-gray-50 border-2 border-blue-200 rounded-full focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-100 hover:border-blue-300 transition-all outline-none text-sm font-medium text-gray-900"
+                        autoFocus
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
