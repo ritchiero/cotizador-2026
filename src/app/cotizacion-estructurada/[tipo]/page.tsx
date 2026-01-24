@@ -43,7 +43,14 @@ import {
   BriefcaseIcon,
   ChatBubbleLeftEllipsisIcon,
   GlobeAltIcon,
-  LanguageIcon
+  LanguageIcon,
+  BuildingOffice2Icon,
+  RocketLaunchIcon,
+  ScaleIcon,
+  CogIcon,
+  BuildingStorefrontIcon,
+  StarIcon,
+  ClipboardDocumentListIcon
 } from "@heroicons/react/24/outline";
 import { Calendar } from "@/app/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
@@ -215,6 +222,8 @@ export default function CotizacionEstructuradaForm() {
   const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large' | 'custom'>('one-pager');
   const [toneType, setToneType] = useState<'friendly' | 'formal'>('friendly');
   const [languageType, setLanguageType] = useState<'es' | 'en' | 'other'>('es');
+  const [styleType, setStyleType] = useState<'ny-biglaw' | 'silicon-valley' | 'uk-magic-circle' | 'german-engineering' | 'french-cabinet' | 'spanish-boutique' | 'japanese-keigo' | 'swiss-financial' | 'legal-ops' | 'luxury-boutique'>('spanish-boutique');
+  const [previewStyleType, setPreviewStyleType] = useState<string | null>(null);
 
   // Estados para configuración customizada
   interface CustomBlock {
@@ -1452,6 +1461,22 @@ export default function CotizacionEstructuradaForm() {
     setNotesModalOpen(false);
   };
 
+  // Upload attachments to Firebase Storage
+  const uploadAttachments = async (files: File[]): Promise<string[]> => {
+    if (!user?.uid || !files.length) return [];
+
+    const uploadPromises = files.map(async (file) => {
+      const storageRef = ref(
+        storage,
+        `quotations/${user.uid}/attachments/${Date.now()}_${file.name}`
+      );
+      await uploadBytes(storageRef, file);
+      return await getDownloadURL(storageRef);
+    });
+
+    return await Promise.all(uploadPromises);
+  };
+
   const handleGenerateQuote = async () => {
     // 1. Basic Validation
     if (!formData.client || !formData.pricing) {
@@ -1496,18 +1521,100 @@ export default function CotizacionEstructuradaForm() {
     const toastId = toast.loading('Generando cotización...');
 
     try {
-      // 2. Simulate PDF Generation Delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 1. Upload attachments first if any
+      let attachmentURLs: string[] = [];
+      if (selectedAddOns.has('attachments') && formData.attachments?.length) {
+        toast.loading('Subiendo archivos adjuntos...', { id: toastId });
+        attachmentURLs = await uploadAttachments(formData.attachments);
+      }
 
-      // 3. Success Feedback
+      // 2. Prepare complete payload
+      const payload = {
+        // Client info
+        clienteNombre: formData.client,
+        remitente: formData.client,
+
+        // Service details
+        descripcion: formData.contextDescription || formData.quotationName,
+        necesidad: formData.clientNeed,
+        tiempo: formData.times,
+        precio: formData.pricing,
+        formaPago: formData.payment,
+        detalles: formData.details,
+        ubicacion: formData.location,
+        requerimientos: formData.requirements,
+
+        // Format configuration (NEW)
+        formatType: formatType,
+        toneType: toneType,
+        languageType: languageType,
+        styleType: styleType, // ADDED: Style for deep generation
+        customLanguage: formData.customLanguage,
+        customBlocks: formatType === 'custom' ? customBlocks : null,
+
+        // User context
+        userInfo: {
+          email: user?.email,
+          displayName: user?.displayName,
+          uid: user?.uid
+        },
+
+        // Branding
+        despachoInfo: brandingData || {},
+
+        // Add-Ons
+        addOns: {
+          notes: selectedAddOns.has('notes') ? formData.notes : null,
+          expirationDate: selectedAddOns.has('expiration_date') ? formData.expirationDate : null,
+          contactDetails: selectedAddOns.has('contact_details') ? {
+            name: formData.contactName,
+            email: formData.contactEmail,
+            phone: formData.contactPhone
+          } : null,
+          signature: selectedAddOns.has('signature'),
+          attachments: attachmentURLs,
+          bankAccount: selectedAddOns.has('bank_account') ? selectedBankAccount : null,
+          termsTemplateId: selectedTermId,
+          requestBilling: selectedAddOns.has('invoicing_info')
+        }
+      };
+
+      // 3. Call backend API
+      toast.loading('Generando documento con IA...', { id: toastId });
+
+      const response = await fetch('/api/cotizacion/generar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error del servidor al generar cotización');
+      }
+
+      const data = await response.json();
+
+      // 4. Save to Firestore
+      const quotationRef = await addDoc(collection(db, 'quotations'), {
+        userId: user?.uid,
+        folio: `COT-${Date.now()}`,
+        clientName: formData.client,
+        quotationType: tipo,
+        formatType,
+        toneType,
+        languageType,
+        styleType, // ADDED: Persist style
+        status: 'generated',
+        content: data.contenido,
+        selectedAddOns: Array.from(selectedAddOns),
+        formDataSnapshot: { ...formData },
+        createdAt: serverTimestamp()
+      });
+
       toast.success('¡Cotización generada exitosamente!', { id: toastId });
 
-      // 4. Redirect or Show Result (Mock implementation)
-      // In a real app, this would send data to backend or generate PDF blob
-      console.log('Quote Data:', { ...formData, selectedAddOns: Array.from(selectedAddOns), selectedTermId, selectedBankAccount });
-
-      // Optionally redirect to a success page or dashboard
-      // router.push('/dashboard'); 
+      // 5. Redirect to result page
+      router.push(`/cotizacion-estructurada/resultado/${quotationRef.id}`);
 
     } catch (error) {
       console.error("Error generating quote:", error);
@@ -2097,7 +2204,7 @@ export default function CotizacionEstructuradaForm() {
                   >
                     <DocumentTextIcon className={`w-6 h-6 ${formatType === 'short' ? 'text-blue-600' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium text-center ${formatType === 'short' ? 'text-blue-900' : 'text-gray-700'}`}>
-                      Corto<br/>
+                      Corto<br />
                       <span className="text-xs opacity-75">(~500 palabras)</span>
                     </span>
                   </button>
@@ -2108,7 +2215,7 @@ export default function CotizacionEstructuradaForm() {
                   >
                     <BookOpenIcon className={`w-6 h-6 ${formatType === 'large' ? 'text-blue-600' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium text-center ${formatType === 'large' ? 'text-blue-900' : 'text-gray-700'}`}>
-                      Detallado<br/>
+                      Detallado<br />
                       <span className="text-xs opacity-75">(+1000 palabras)</span>
                     </span>
                   </button>
@@ -2142,11 +2249,10 @@ export default function CotizacionEstructuradaForm() {
                     {customBlocks.map((block, index) => (
                       <div
                         key={block.id}
-                        className={`bg-white rounded-xl p-4 border-2 transition-all ${
-                          block.enabled
+                        className={`bg-white rounded-xl p-4 border-2 transition-all ${block.enabled
                             ? 'border-gray-200 shadow-sm'
                             : 'border-gray-100 bg-gray-50 opacity-60'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
                           {/* Drag Handle & Checkbox */}
@@ -2193,31 +2299,28 @@ export default function CotizacionEstructuradaForm() {
                             <div className="flex items-center gap-1.5 bg-gray-100 rounded-lg p-0.5">
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'short')}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                                  block.detailLevel === 'short'
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'short'
                                     ? 'bg-white text-blue-600 shadow-sm'
                                     : 'text-gray-600 hover:text-gray-900'
-                                }`}
+                                  }`}
                               >
                                 Breve
                               </button>
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'medium')}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                                  block.detailLevel === 'medium'
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'medium'
                                     ? 'bg-white text-blue-600 shadow-sm'
                                     : 'text-gray-600 hover:text-gray-900'
-                                }`}
+                                  }`}
                               >
                                 Medio
                               </button>
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'long')}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                                  block.detailLevel === 'long'
+                                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'long'
                                     ? 'bg-white text-blue-600 shadow-sm'
                                     : 'text-gray-600 hover:text-gray-900'
-                                }`}
+                                  }`}
                               >
                                 Extenso
                               </button>
@@ -2243,22 +2346,20 @@ export default function CotizacionEstructuradaForm() {
                 <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1 max-w-md mx-auto">
                   <button
                     onClick={() => setToneType('friendly')}
-                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${
-                      toneType === 'friendly'
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${toneType === 'friendly'
                         ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     <FaceSmileIcon className="w-4 h-4" />
                     <span>Amigable</span>
                   </button>
                   <button
                     onClick={() => setToneType('formal')}
-                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${
-                      toneType === 'formal'
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${toneType === 'formal'
                         ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     <BriefcaseIcon className="w-4 h-4" />
                     <span>Formal</span>
@@ -2273,11 +2374,10 @@ export default function CotizacionEstructuradaForm() {
                   <div className="flex items-center justify-center gap-3">
                     <button
                       onClick={() => setLanguageType('es')}
-                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                        languageType === 'es'
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'es'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
                           : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
                       <span className="text-sm font-medium">Español</span>
@@ -2285,11 +2385,10 @@ export default function CotizacionEstructuradaForm() {
 
                     <button
                       onClick={() => setLanguageType('en')}
-                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                        languageType === 'en'
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'en'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
                           : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       <GlobeAltIcon className="w-5 h-5" />
                       <span className="text-sm font-medium">Inglés</span>
@@ -2297,11 +2396,10 @@ export default function CotizacionEstructuradaForm() {
 
                     <button
                       onClick={() => setLanguageType('other')}
-                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
-                        languageType === 'other'
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'other'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
                           : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
-                      }`}
+                        }`}
                     >
                       <LanguageIcon className="w-5 h-5" />
                       <span className="text-sm font-medium">Otro</span>
@@ -2322,6 +2420,361 @@ export default function CotizacionEstructuradaForm() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Estilo de Cotización - Grid de Cards */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Estilo de Cotización</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-4xl mx-auto">
+
+                  {/* NY BigLaw */}
+                  <div
+                    onClick={() => setStyleType('ny-biglaw')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'ny-biglaw'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('ny-biglaw');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'ny-biglaw' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <BuildingOffice2Icon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'ny-biglaw' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          NY BigLaw
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Seguridad, velocidad, contundencia. Minimalista y directo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Silicon Valley */}
+                  <div
+                    onClick={() => setStyleType('silicon-valley')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'silicon-valley'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('silicon-valley');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'silicon-valley' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <RocketLaunchIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'silicon-valley' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Silicon Valley
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Moderno, claro, foco en valor. Estilo product-led SaaS.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Británica */}
+                  <div
+                    onClick={() => setStyleType('uk-magic-circle')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'uk-magic-circle'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('uk-magic-circle');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'uk-magic-circle' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <ShieldCheckIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'uk-magic-circle' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Británica
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Formalidad elegante, precisión, calma corporativa.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Alemán / Ingeniería Contractual */}
+                  <div
+                    onClick={() => setStyleType('german-engineering')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'german-engineering'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('german-engineering');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'german-engineering' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <CogIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'german-engineering' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Ingeniería Contractual
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Rigor, completitud, cero ambigüedad. Estilo alemán.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Francés / Cabinet */}
+                  <div
+                    onClick={() => setStyleType('french-cabinet')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'french-cabinet'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('french-cabinet');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'french-cabinet' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <BookOpenIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'french-cabinet' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Cabinet Francés
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Refinamiento, narrativa, claridad conceptual elegante.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/*Español / Despacho Boutique */}
+                  <div
+                    onClick={() => setStyleType('spanish-boutique')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'spanish-boutique'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('spanish-boutique');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'spanish-boutique' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <BuildingStorefrontIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'spanish-boutique' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Despacho Boutique
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Cercanía profesional + autoridad técnica. Estilo Madrid.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/*Japonés / Keigo */}
+                  <div
+                    onClick={() => setStyleType('japanese-keigo')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'japanese-keigo'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('japanese-keigo');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'japanese-keigo' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <ClipboardDocumentCheckIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'japanese-keigo' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Keigo Japonés
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Respeto, cortesía, precisión. Estructura impecable.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/*Suizo / Financial-grade */}
+                  <div
+                    onClick={() => setStyleType('swiss-financial')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'swiss-financial'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('swiss-financial');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'swiss-financial' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <BanknotesIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'swiss-financial' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Financial-grade
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Control, seriedad financiera, orden premium suizo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/*Legal Ops */}
+                  <div
+                    onClick={() => setStyleType('legal-ops')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'legal-ops'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('legal-ops');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'legal-ops' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <ClipboardDocumentListIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'legal-ops' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Legal Ops
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Procurement-friendly, fácil de aprobar internamente.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/*Luxury / High-end */}
+                  <div
+                    onClick={() => setStyleType('luxury-boutique')}
+                    className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'luxury-boutique'
+                        ? 'border-blue-600 bg-blue-50 shadow-md'
+                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      }`}
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewStyleType('luxury-boutique');
+                      }}
+                      className="absolute top-2 right-2 px-2 py-1 text-[10px] font-medium text-gray-500 bg-white border border-gray-200 rounded-full hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                    >
+                      Ver ejemplo
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${styleType === 'luxury-boutique' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                        <SparklesIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'luxury-boutique' ? 'text-blue-900' : 'text-gray-900'
+                          }`}>
+                          Luxury Boutique
+                        </h3>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Exclusividad, atención premium, detalle impecable.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                <p className="text-xs text-gray-600 mt-4 text-center flex items-center justify-center gap-1.5">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Cada estilo define la estructura, tono y presentación visual de tu cotización
+                </p>
               </div>
 
             </div>
@@ -2393,6 +2846,2669 @@ export default function CotizacionEstructuradaForm() {
         onSelect={handleSelectNotes}
         customTitle="Sugerencias de Notas Adicionales"
       />
+
+      {/* Modal de Preview de Estilos */}
+      {previewStyleType && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] animate-in fade-in duration-200 p-4"
+          onClick={() => setPreviewStyleType(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-50 to-white">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Vista Previa del Estilo
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Ejemplo de cómo se verá tu cotización con este estilo
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                    {languageType === 'es' && 'Tu cotización se generará en Español'}
+                    {languageType === 'en' && 'Your quote will be generated in English'}
+                    {languageType === 'other' && `Tu cotización se generará en ${formData.customLanguage || 'el idioma especificado'}`}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewStyleType(null)}
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-8 bg-gray-50/50 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
+
+                {/* NY BigLaw Example */}
+                {previewStyleType === 'ny-biglaw' && (
+                  <div className="space-y-4 font-sans text-sm">
+                    {/* Header */}
+                    <div className="text-center pb-4 border-b border-gray-300">
+                      <h1 className="text-xl font-bold text-gray-900 tracking-tight">STERLING & ASSOCIATES LLP</h1>
+                      <p className="text-xs text-gray-700 mt-1">ATTORNEYS AT LAW</p>
+                      <p className="text-xs text-gray-600 mt-2">450 Park Avenue, 32nd Floor | New York, NY 10022</p>
+                      <p className="text-xs text-gray-600">Tel: (212) 555-4800 | Fax: (212) 555-4801 | www.sterlinglaw.com</p>
+                    </div>
+
+                    {/* Date & Address */}
+                    <div className="mt-6 space-y-3">
+                      <p className="text-sm text-gray-900">January 23, 2026</p>
+                      <div className="text-sm text-gray-900">
+                        <p>[Client Name]</p>
+                        <p>[Company Name]</p>
+                        <p>[Address]</p>
+                        <p>[City, State ZIP]</p>
+                      </div>
+                    </div>
+
+                    {/* Re: line */}
+                    <div className="mt-4">
+                      <p className="text-sm"><span className="font-bold">Re:</span> Engagement Letter – Corporate Legal Services</p>
+                    </div>
+
+                    {/* Salutation */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">Dear [Client Name]:</p>
+                    </div>
+
+                    {/* Intro paragraph */}
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Thank you for engaging Sterling & Associates LLP (the &quot;Firm&quot;) to provide legal services in connection with your corporate matters. This letter confirms the terms of our engagement.
+                      </p>
+                    </div>
+
+                    {/* Section 1 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">1. SCOPE OF ENGAGEMENT</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        The Firm will provide legal advisory services including contract review, corporate compliance matters, and general business consultation. Our review does not constitute an opinion on the enforceability of any agreements under applicable law.
+                      </p>
+                    </div>
+
+                    {/* Section 2 - Fees Table */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-3">2. PROFESSIONAL FEES</h3>
+                      <p className="text-sm text-gray-900 mb-3">For the services described above, the Firm will charge a flat fee as follows:</p>
+
+                      <table className="w-full border-collapse border border-gray-400 text-sm">
+                        <thead>
+                          <tr className="bg-white">
+                            <th className="border border-gray-400 px-4 py-2 text-left font-bold text-gray-900">Service Description</th>
+                            <th className="border border-gray-400 px-4 py-2 text-right font-bold text-gray-900">Fee (USD)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-4 py-2 text-gray-900">Corporate Legal Advisory Services</td>
+                            <td className="border border-gray-400 px-4 py-2 text-right text-gray-900">$15,000.00</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-4 py-2 text-gray-900">Contract Review and Drafting</td>
+                            <td className="border border-gray-400 px-4 py-2 text-right text-gray-900">Included</td>
+                          </tr>
+                          <tr className="bg-white">
+                            <td className="border border-gray-400 px-4 py-2 font-bold text-gray-900">TOTAL</td>
+                            <td className="border border-gray-400 px-4 py-2 text-right font-bold text-gray-900">$15,000.00</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-xs text-gray-700 mt-3 leading-relaxed">
+                        The flat fee is due upon execution of this engagement letter. Any work beyond the scope described herein will be billed at our standard hourly rates: Partner ($1,450/hour), Senior Associate ($950/hour), Associate ($650/hour).
+                      </p>
+                    </div>
+
+                    {/* Section 3 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">3. TERMS AND CONDITIONS</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        This engagement is subject to the Firm&apos;s standard terms and conditions, including: (a) conflicts clearance; (b) compliance with anti-money laundering regulations; (c) limitation of liability to fees paid; and (d) confidentiality obligations. The Firm reserves the right to withdraw from representation upon reasonable notice.
+                      </p>
+                    </div>
+
+                    {/* Section 4 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">4. DELIVERABLES AND TIMELINE</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Upon receipt of payment and necessary documents, the Firm will deliver the review memorandum within three (3) business days. Expedited turnaround (24 hours) is available for an additional fee of $750.
+                      </p>
+                    </div>
+
+                    {/* Section 5 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">5. ACCEPTANCE</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Please indicate your acceptance of the terms set forth herein by signing and returning a copy of this letter, along with your payment. This engagement letter shall be governed by the laws of the State of New York.
+                      </p>
+                    </div>
+
+                    {/* Closing */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">We appreciate the opportunity to be of service.</p>
+                    </div>
+
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-900">Very truly yours,</p>
+                    </div>
+
+                    {/* Signature */}
+                    <div className="mt-6">
+                      <p className="text-sm font-bold text-gray-900">STERLING & ASSOCIATES LLP</p>
+                      <div className="mt-8 border-b border-gray-400 w-64"></div>
+                      <p className="text-sm text-gray-900 mt-1">Jonathan R. Sterling</p>
+                      <p className="text-sm italic text-gray-700">Partner</p>
+                    </div>
+
+                    {/* Acceptance */}
+                    <div className="mt-8 pt-4">
+                      <p className="text-sm font-bold text-gray-900">ACKNOWLEDGED AND AGREED:</p>
+                      <div className="mt-6 border-b border-gray-400 w-64"></div>
+                      <p className="text-sm text-gray-900 mt-1">[Client Name]</p>
+                      <p className="text-sm text-gray-900 mt-3">Date: ______________</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Silicon Valley Example */}
+                {previewStyleType === 'silicon-valley' && (
+                  <div className="space-y-5 font-sans text-sm">
+                    {/* Header */}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900">
+                          BAXTER GROVE <span className="text-blue-600">LLP</span>
+                        </h1>
+                        <p className="text-xs text-gray-600 mt-1">Technology & Emerging Companies</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-600">
+                        <p>555 University Ave, Suite 300</p>
+                        <p>Palo Alto, CA 94301</p>
+                        <p className="text-blue-600 mt-1">hello@baxtergrove.com</p>
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="mt-6">
+                      <p className="text-sm text-gray-900">January 23, 2026</p>
+                    </div>
+
+                    {/* Address block */}
+                    <div className="text-sm text-gray-900">
+                      <p>[Founder Name]</p>
+                      <p>[Company Name]</p>
+                      <p>[Email]</p>
+                    </div>
+
+                    {/* Re: line */}
+                    <div className="mt-4">
+                      <p className="text-sm"><span className="font-bold">Re:</span> NDA Review — Fixed Fee Engagement</p>
+                    </div>
+
+                    {/* Greeting */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">Hi [First Name],</p>
+                    </div>
+
+                    {/* Intro */}
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Thanks for reaching out. We&apos;re happy to help with your NDA review. Below is our proposal — we&apos;ve kept it simple.
+                      </p>
+                    </div>
+
+                    {/* What's included section */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-3">What&apos;s included</h3>
+                      <div className="bg-blue-50 border border-blue-200 p-4 rounded space-y-2">
+                        <div className="flex items-start gap-2">
+                          <span className="text-blue-600 text-sm">→</span>
+                          <p className="text-sm text-gray-900">Full review of your NDA (~500 words)</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-blue-600 text-sm">→</span>
+                          <p className="text-sm text-gray-900">Risk assessment memo (plain English, no legalese)</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-blue-600 text-sm">→</span>
+                          <p className="text-sm text-gray-900">Redline with suggested edits</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-blue-600 text-sm">→</span>
+                          <p className="text-sm text-gray-900">15-min call to walk through findings (optional)</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pricing section */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-3">Pricing</h3>
+                      <table className="w-full text-sm border-collapse">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-300 px-3 py-2 text-gray-900">NDA Review (standard)</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right text-gray-900 font-semibold">$750 flat</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 px-3 py-2 text-gray-900">Rush delivery (24h turnaround)</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right text-gray-900">+$250</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-300 px-3 py-2 text-gray-900">Negotiation support (if counterparty pushes back)</td>
+                            <td className="border border-gray-300 px-3 py-2 text-right text-gray-900">$350/hr</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <div className="bg-blue-50 border border-blue-300 p-3 rounded mt-4">
+                        <p className="text-sm text-blue-900">
+                          <span className="font-bold">Early-stage discount:</span> Pre-seed or bootstrapped? We offer 20% off your first engagement. Just let us know.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-2">Timeline</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Standard turnaround is 2-3 business days from when we receive the document. Rush is next business day.
+                      </p>
+                    </div>
+
+                    {/* How we work */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-3">How we work</h3>
+                      <p className="text-sm text-gray-900 mb-2">We keep things founder-friendly:</p>
+                      <ul className="space-y-1 ml-4">
+                        <li className="text-sm text-gray-900">• No billable hour surprises — flat fee means flat fee</li>
+                        <li className="text-sm text-gray-900">• Plain English deliverables — you&apos;ll actually understand what we send</li>
+                        <li className="text-sm text-gray-900">• Slack/email preferred — skip the formal meetings unless you want them</li>
+                        <li className="text-sm text-gray-900">• We&apos;ve reviewed 500+ NDAs for tech companies — we know what matters</li>
+                      </ul>
+                    </div>
+
+                    {/* Next steps */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 mb-3">Next steps</h3>
+                      <ol className="space-y-1 ml-4">
+                        <li className="text-sm text-gray-900">1. Reply to this email with the NDA attached</li>
+                        <li className="text-sm text-gray-900">2. We&apos;ll send a short engagement letter + payment link</li>
+                        <li className="text-sm text-gray-900">3. You&apos;ll have your review in 2-3 days</li>
+                      </ol>
+                    </div>
+
+                    {/* Questions */}
+                    <div className="mt-5">
+                      <p className="text-sm text-gray-900">
+                        Questions? Just reply to this email or book 15 min: calendly.com/baxtergrove/intro
+                      </p>
+                    </div>
+
+                    {/* Closing */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">Best,</p>
+                    </div>
+
+                    {/* Signature */}
+                    <div className="mt-3">
+                      <p className="text-sm font-bold text-gray-900">Sarah Chen</p>
+                      <p className="text-sm text-gray-700">Partner, Baxter Grove LLP</p>
+                      <p className="text-sm text-gray-600">sarah@baxtergrove.com  •  (650) 555-0142</p>
+                    </div>
+
+                    {/* Disclaimer */}
+                    <div className="mt-8 pt-4 border-t border-gray-200">
+                      <p className="text-xs text-gray-500 italic leading-relaxed">
+                        This proposal is valid for 30 days. Full engagement terms provided upon acceptance. Baxter Grove LLP is licensed to practice law in California. This communication does not create an attorney-client relationship.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Británica Example */}
+                {previewStyleType === 'uk-magic-circle' && (
+                  <div className="space-y-4 font-serif text-sm">
+                    {/* Header */}
+                    <div className="flex justify-between items-start pb-4">
+                      <div>
+                        <h1 className="text-xl font-bold text-gray-900">ASHWORTH PEMBERTON</h1>
+                        <p className="text-xs text-gray-600 italic mt-1">Solicitors</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-700 leading-relaxed">
+                        <p>One Bishops Square</p>
+                        <p>London E1 6AD</p>
+                        <p>T: +44 (0)20 7946 0958</p>
+                        <p>enquiries@ashworthpemberton.com</p>
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div className="mt-6">
+                      <p className="text-sm text-gray-900">23 January 2026</p>
+                    </div>
+
+                    {/* Address block */}
+                    <div className="mt-4 text-sm text-gray-900">
+                      <p>[Client Name]</p>
+                      <p>[Company Name]</p>
+                      <p>[Address Line 1]</p>
+                      <p>[City, Postcode]</p>
+                    </div>
+
+                    {/* Reference */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-700">Our ref: AP/NDA/2026/0147</p>
+                    </div>
+
+                    {/* Salutation */}
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">Dear [Client Name]</p>
+                    </div>
+
+                    {/* Title */}
+                    <div className="mt-4">
+                      <p className="text-sm font-bold text-gray-900">Review of Non-Disclosure Agreement</p>
+                    </div>
+
+                    {/* Opening paragraph */}
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Thank you for instructing Ashworth Pemberton LLP in connection with the above matter. We are pleased to set out below the basis upon which we would propose to act on your behalf.
+                      </p>
+                    </div>
+
+                    {/* Section 1 */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">1. Background</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        We understand that you are considering entering into a non-disclosure agreement with a prospective counterparty in connection with preliminary commercial discussions. You have requested that we review the proposed agreement to identify any provisions which may be unusual, onerous, or otherwise merit your attention prior to execution.
+                      </p>
+                    </div>
+
+                    {/* Section 2 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">2. Our Understanding</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        The agreement comprises approximately 500 words and appears to be a standard mutual non-disclosure agreement. We have not been provided with any background materials concerning the proposed transaction, and accordingly our review will be limited to the four corners of the document itself. Should you wish us to consider the agreement in light of any specific commercial context, we would be grateful if you could provide such further information as you consider relevant.
+                      </p>
+                    </div>
+
+                    {/* Section 3 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">3. Scope of Work</h3>
+                      <p className="text-sm text-gray-900 mb-2">Subject to your instructions, we propose to undertake the following:</p>
+                      <div className="ml-5 space-y-2 text-sm text-gray-900">
+                        <p>(a) review the non-disclosure agreement and identify any provisions which depart from market standard terms or which may present commercial or legal risk;</p>
+                        <p>(b) prepare a memorandum summarising our observations and any recommended amendments; and</p>
+                        <p>(c) provide a marked-up version of the agreement reflecting suggested revisions.</p>
+                      </div>
+                      <p className="text-sm text-gray-900 mt-3 leading-relaxed">
+                        Our review will not extend to advice on the underlying transaction, tax implications, or the laws of any jurisdiction other than England and Wales. We shall not be advising on the enforceability of any provisions under foreign law.
+                      </p>
+                    </div>
+
+                    {/* Section 4 - Fees */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-3">4. Fees</h3>
+                      <p className="text-sm text-gray-900 mb-3">We propose to undertake the work described above on a fixed fee basis as follows:</p>
+
+                      <table className="w-full text-sm border-collapse mb-3">
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Review and memorandum</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">£950</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Marked-up agreement</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900 italic">Included</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">VAT (20%)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">£190</td>
+                          </tr>
+                          <tr className="font-bold">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Total</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">£1,140</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-xs text-gray-700 leading-relaxed">
+                        The above fee assumes a document of the length indicated and does not include any subsequent negotiations with the counterparty. Should you require assistance with negotiations or further correspondence, we would be pleased to discuss appropriate arrangements, which would ordinarily be charged on a time basis at our standard hourly rates (currently £475 per hour for a partner and £325 per hour for an associate).
+                      </p>
+                    </div>
+
+                    {/* Section 5 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">5. Timing</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Subject to counsel availability, we anticipate being in a position to deliver our memorandum within five working days of receipt of the executed engagement letter and the relevant documentation. Should your matter be time-sensitive, we would be pleased to discuss expedited arrangements.
+                      </p>
+                    </div>
+
+                    {/* Section 6 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">6. Terms of Engagement</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Our engagement would be subject to our standard terms of business, a copy of which is enclosed for your reference. In particular, we draw your attention to the provisions concerning limitation of liability, which reflect the requirements of our professional indemnity insurers.
+                      </p>
+                    </div>
+
+                    {/* Section 7 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">7. Regulatory Matters</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Ashworth Pemberton LLP is authorised and regulated by the Solicitors Regulation Authority (SRA number 123456). We are required to comply with the SRA Standards and Regulations, including rules concerning client identification. Accordingly, we may need to verify your identity before commencing work, and we should be grateful if you could provide such documentation as we may reasonably request.
+                      </p>
+                    </div>
+
+                    {/* Closing */}
+                    <div className="mt-5">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        We trust that the foregoing is acceptable. Should you wish to proceed on this basis, we would be grateful if you could confirm your instructions by signing and returning the enclosed copy of this letter. In the meantime, please do not hesitate to contact us should you have any queries.
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-900">Yours sincerely</p>
+                    </div>
+
+                    {/* Signature */}
+                    <div className="mt-6">
+                      <div className="border-b border-gray-400 w-64 mb-1"></div>
+                      <p className="text-sm font-bold text-gray-900">James Ashworth</p>
+                      <p className="text-sm italic text-gray-700">Partner</p>
+                      <p className="text-xs text-gray-700 mt-1">For and on behalf of Ashworth Pemberton LLP</p>
+                    </div>
+
+                    {/* Enclosure note */}
+                    <div className="mt-6 pt-4">
+                      <p className="text-xs italic text-gray-600">Enc: Standard Terms of Business</p>
+                    </div>
+
+                    {/* Confirmation box */}
+                    <div className="mt-8 border-2 border-gray-400 p-4">
+                      <p className="text-sm font-bold text-gray-900 mb-3">Confirmation of Instructions</p>
+                      <p className="text-xs text-gray-900 mb-4">
+                        I confirm that I wish to instruct Ashworth Pemberton LLP on the terms set out above and in the enclosed Standard Terms of Business.
+                      </p>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs text-gray-700">Signed: _______________________________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">Name: _______________________________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">Date: _______________________________</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* German Engineering Example */}
+                {previewStyleType === 'german-engineering' && (
+                  <div className="space-y-4 font-sans text-xs">
+                    {/* Header */}
+                    <div className="flex justify-between items-start pb-3 border-b border-gray-400">
+                      <div>
+                        <h1 className="text-base font-bold text-gray-900">WEGNER HARTMANN KRÖGER</h1>
+                        <p className="text-xs text-gray-700 mt-0.5">Abogados | Rechtsanwälte PartG mbB</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-700">
+                        <p>Bockenheimer Landstraße 51</p>
+                        <p>60325 Frankfurt am Main</p>
+                        <p>T: +49 69 7140 8860</p>
+                        <p>kanzlei@whk-recht.de</p>
+                      </div>
+                    </div>
+
+                    {/* Título principal */}
+                    <div className="border-2 border-gray-900 p-3 text-center mt-4">
+                      <h2 className="text-base font-bold text-gray-900">ACUERDO DE PRESTACIÓN DE SERVICIOS</h2>
+                      <p className="text-xs text-gray-600 mt-1 italic">Mandatsvereinbarung / Engagement Letter</p>
+                    </div>
+
+                    {/* Información del expediente */}
+                    <div className="mt-4 space-y-1">
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">N.° de Expediente:</span>
+                        <span className="font-medium text-gray-900">WHK/2026/NDA-0147</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">Fecha:</span>
+                        <span className="text-gray-900">23 de enero de 2026</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">Versión:</span>
+                        <span className="text-gray-900">1.0</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">Estado:</span>
+                        <span className="text-gray-900">Borrador para aprobación</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">Cliente:</span>
+                        <span className="text-gray-900">[Nombre del Cliente / Razón Social]</span>
+                      </div>
+                      <div className="flex text-xs">
+                        <span className="w-40 text-gray-700">Responsable WHK:</span>
+                        <span className="text-gray-900">Dr. Martin Wegner, LL.M. (Socio)</span>
+                      </div>
+                    </div>
+
+                    {/* Sección 1 - DEFINICIONES */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">1. DEFINICIONES</h3>
+                      <p className="text-xs text-gray-900 mb-2">Salvo indicación en contrario, los siguientes términos tendrán el significado que se les atribuye a continuación.</p>
+
+                      <table className="w-full text-xs border border-gray-400 mt-2">
+                        <tbody>
+                          <tr className="bg-gray-100">
+                            <td className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900 w-1/3">NDA</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Non-Disclosure Agreement (Acuerdo de Confidencialidad) conforme al Anexo 1</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900">Objeto de Revisión</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">El NDA proporcionado por el Cliente con una extensión aproximada de 500 palabras</td>
+                          </tr>
+                          <tr className="bg-gray-100">
+                            <td className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900">Informe de Revisión</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Documentación escrita de los resultados de la revisión conforme a la Sección 3.2</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 font-bold text-gray-900">Día Hábil</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Lunes a viernes, excluyendo días festivos oficiales en la jurisdicción aplicable</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 2 */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">2. OBJETO Y OBJETIVOS</h3>
+                      <p className="text-xs font-bold text-gray-900 mb-1">2.1 Objeto del Contrato</p>
+                      <p className="text-xs text-gray-900 leading-relaxed mb-2">
+                        El presente acuerdo tiene como objeto la revisión jurídica de un Acuerdo de Confidencialidad (NDA) para la identificación de riesgos, desviaciones respecto de estándares de mercado, así como la elaboración de propuestas de modificación.
+                      </p>
+
+                      <p className="text-xs font-bold text-gray-900 mb-1">2.2 Objetivos</p>
+                      <p className="text-xs text-gray-900 ml-3 space-y-0.5">
+                        (a) Identificación de riesgos legales y comerciales en el Objeto de Revisión;<br />
+                        (b) Evaluación de desviaciones respecto de condiciones contractuales estándar de mercado;<br />
+                        (c) Elaboración de recomendaciones concretas y propuestas de redacción alternativa.
+                      </p>
+
+                      <p className="text-xs font-bold text-gray-900 mb-1 mt-2">2.3 Limitaciones (Alcance Negativo)</p>
+                      <p className="text-xs text-gray-900 mb-1">Los siguientes servicios quedan expresamente excluidos del presente acuerdo:</p>
+                      <ul className="text-xs text-gray-900 ml-4 space-y-0.5 list-disc">
+                        <li>Asesoría sobre la transacción subyacente o el modelo de negocio;</li>
+                        <li>Análisis fiscal o tributario;</li>
+                        <li>Revisión conforme a derecho extranjero (salvo encargo específico);</li>
+                        <li>Conducción de negociaciones con la contraparte.</li>
+                      </ul>
+                    </div>
+
+                    {/* Sección 3 - ALCANCE DE SERVICIOS */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">3. ALCANCE DE SERVICIOS (LEISTUNGSUMFANG)</h3>
+                      <p className="text-xs font-bold text-gray-900 mb-2">3.1 Actividades de Revisión</p>
+
+                      <table className="w-full text-xs border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">N.°</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Servicio</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-32">Entregable</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">3.1.1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión formal del NDA: verificación de completitud de elementos esenciales</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Nota de revisión</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">3.1.2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis sustantivo de las obligaciones de confidencialidad y su alcance</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis de riesgos</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">3.1.3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión de excepciones (divulgación por autoridades, etc.)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Matriz de evaluación</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">3.1.4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis de cláusulas de responsabilidad y penas convencionales</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Evaluación de riesgo</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">3.1.5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión de disposiciones de vigencia y terminación</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Nota de revisión</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 4 - SUPUESTOS */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">4. SUPUESTOS Y PRERREQUISITOS</h3>
+                      <p className="text-xs text-gray-900 mb-2 leading-relaxed">
+                        La prestación de servicios se realiza bajo los siguientes supuestos. Cualquier desviación podrá resultar en ajustes al cronograma y honorarios:
+                      </p>
+
+                      <table className="w-full text-xs border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">ID</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Supuesto</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-24">Responsable</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">S-01</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">El Objeto de Revisión se encuentra disponible en idioma español o inglés</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Cliente</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">S-02</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">La extensión del NDA no excede de 500 palabras</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Cliente</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">S-03</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">La documentación completa será proporcionada dentro de los 2 Días Hábiles siguientes al encargo</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Cliente</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 5 - CRONOGRAMA */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">5. CRONOGRAMA E HITOS</h3>
+
+                      <table className="w-full text-xs border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-16">Fase</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Actividad</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-20">Plazo</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-0</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Formalización del encargo y recepción de documentos</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 0</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión formal y control de completitud</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 1</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis sustantivo y evaluación de riesgos</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 2-3</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Elaboración de Informe de Revisión y Markup</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 4</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Control de calidad (principio de cuatro ojos)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 5</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">H-5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Entrega de documentos al Cliente</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Día 5</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p className="text-xs italic text-gray-600 mt-2">
+                        Duración total: 5 Días Hábiles desde la recepción completa de documentos. Procesamiento express (2 Días Hábiles) disponible con cargo adicional.
+                      </p>
+                    </div>
+
+                    {/* Sección 7 - HONORARIOS */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">7. HONORARIOS</h3>
+                      <p className="text-xs font-bold text-gray-900 mb-2">7.1 Honorarios Fijos</p>
+
+                      <table className="w-full text-xs border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Concepto</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-right font-bold text-gray-900 w-32">Sin IVA (EUR)</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-right font-bold text-gray-900 w-32">Con IVA (EUR)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión de NDA incl. Informe (Secc. 3.1, 3.2)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">1.200,00</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">1.428,00</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Matriz de Riesgos (D-03)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900 italic">Incl.</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900 italic">Incl.</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Cargo por servicio express (opcional, 2 Días Hábiles)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">400,00</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">476,00</td>
+                          </tr>
+                          <tr className="bg-gray-100 font-bold">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">TOTAL (Estándar)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">1.200,00</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">1.428,00</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 10 - DISPOSICIONES FINALES */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">10. DISPOSICIONES FINALES</h3>
+                      <p className="text-xs text-gray-900 mb-1"><span className="font-bold">10.1</span> Este acuerdo se rige por el derecho alemán.</p>
+                      <p className="text-xs text-gray-900 mb-1"><span className="font-bold">10.2</span> Cualquier modificación o adición a este acuerdo deberá constar por escrito.</p>
+                      <p className="text-xs text-gray-900"><span className="font-bold">10.3</span> El presente acuerdo tiene vigencia hasta el 23 de febrero de 2026.</p>
+                    </div>
+
+                    {/* FIRMAS */}
+                    <div className="mt-6 border-2 border-gray-900 p-3">
+                      <p className="text-xs font-bold text-gray-900 mb-3">FIRMAS</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs font-bold text-gray-900 mb-2">Por el Despacho:</p>
+                          <div className="border-b border-gray-400 mb-1 pb-8"></div>
+                          <p className="text-xs text-gray-900">Dr. Martin Wegner</p>
+                          <p className="text-xs text-gray-700">Socio</p>
+                          <p className="text-xs text-gray-600 mt-2">Lugar, Fecha:_______________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-gray-900 mb-2">Por el Cliente:</p>
+                          <div className="border-b border-gray-400 mb-1 pb-8"></div>
+                          <p className="text-xs text-gray-900">[Nombre]</p>
+                          <p className="text-xs text-gray-700">[Cargo]</p>
+                          <p className="text-xs text-gray-600 mt-2">Lugar, Fecha:_______________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ANEXOS */}
+                    <div className="mt-4">
+                      <p className="text-xs font-bold text-gray-900 mb-1">ANEXOS</p>
+                      <p className="text-xs text-gray-900 ml-3">Anexo 1: Objeto de Revisión (NDA)</p>
+                      <p className="text-xs text-gray-900 ml-3">Anexo 2: Aviso de Privacidad conforme al Art. 13 RGPD</p>
+                      <p className="text-xs text-gray-900 ml-3">Anexo 3: Condiciones Generales de Contratación</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* French Cabinet Example */}
+                {previewStyleType === 'french-cabinet' && (
+                  <div className="space-y-4 font-serif text-sm">
+                    {/* Header elegante centrado */}
+                    <div className="text-center pb-4">
+                      <h1 className="text-xl font-bold text-gray-800 tracking-wide">BEAUMONT LEFÈVRE</h1>
+                      <p className="text-xs text-gray-500 italic mt-1">— AVOCATS —</p>
+                      <p className="text-xs text-gray-600 mt-2">12, avenue Montaigne · 75008 Paris</p>
+                    </div>
+
+                    {/* Líneas decorativas */}
+                    <div className="flex items-center justify-center gap-4 my-4">
+                      <div className="flex-1 border-t border-gray-400"></div>
+                      <span className="text-gray-400">✦</span>
+                      <div className="flex-1 border-t border-gray-400"></div>
+                    </div>
+
+                    {/* Fecha y referencia */}
+                    <div className="flex justify-end mb-6">
+                      <div className="text-right text-sm text-gray-700">
+                        <p>Paris, 23 de enero de 2026</p>
+                        <p className="text-xs text-gray-600 mt-1">Ref. BL/2026/C-0147</p>
+                      </div>
+                    </div>
+
+                    {/* Dirección del cliente */}
+                    <div className="mb-4 text-sm text-gray-900">
+                      <p>[Nombre del Cliente]</p>
+                      <p>[Empresa]</p>
+                      <p>[Dirección]</p>
+                    </div>
+
+                    {/* Asunto */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-semibold">Asunto:</span> <span className="italic">Propuesta de servicios — Revisión de Acuerdo de Confidencialidad</span>
+                      </p>
+                    </div>
+
+                    {/* Saludo */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-900">Estimado(a) [Nombre]:</p>
+                    </div>
+
+                    {/* Párrafo introductorio */}
+                    <div className="mb-5">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Agradecemos sinceramente la confianza que deposita en nuestro Cabinet al solicitarnos asistencia en la revisión del acuerdo de confidencialidad que tiene previsto suscribir. Es un placer presentarle nuestra propuesta de intervención.
+                      </p>
+                    </div>
+
+                    <div className="mb-5">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Hemos tomado debida nota de que el documento en cuestión —de aproximadamente quinientas palabras— tiene por objeto proteger el intercambio de información sensible en el marco de conversaciones preliminares con un potencial socio comercial. Comprendemos la importancia de contar con un análisis riguroso que le permita tomar decisiones informadas antes de comprometer su firma.
+                      </p>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="text-center my-4">
+                      <p className="text-gray-400">* * *</p>
+                    </div>
+
+                    {/* Sección I */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 text-center mb-4">I. NUESTRA PROPUESTA</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        Proponemos llevar a cabo un examen exhaustivo del acuerdo de confidencialidad, orientado a tres objetivos fundamentales:
+                      </p>
+
+                      <div className="ml-6 space-y-3">
+                        <p className="text-sm text-gray-900 leading-relaxed">
+                          <span className="italic text-gray-700">Primero</span>, identificar las cláusulas que pudieran presentar un riesgo jurídico o comercial para sus intereses, ya sea por su redacción, su alcance o su eventual interpretación.
+                        </p>
+
+                        <p className="text-sm text-gray-900 leading-relaxed">
+                          <span className="italic text-gray-700">Segundo</span>, evaluar la conformidad del documento con las prácticas habituales del mercado y los estándares aplicables en materia de confidencialidad empresarial.
+                        </p>
+
+                        <p className="text-sm text-gray-900 leading-relaxed">
+                          <span className="italic text-gray-700">Tercero</span>, formular propuestas concretas de modificación que fortalezcan su posición, acompañadas de la justificación correspondiente.
+                        </p>
+                      </div>
+
+                      <p className="text-sm text-gray-900 leading-relaxed mt-4">
+                        Al término de nuestra intervención, le remitiremos un informe de síntesis redactado en términos accesibles —sin tecnicismos innecesarios— junto con una versión anotada del documento que refleje nuestras observaciones y sugerencias.
+                      </p>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="text-center my-4">
+                      <p className="text-gray-400">* * *</p>
+                    </div>
+
+                    {/* Sección II */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 text-center mb-4">II. MODALIDADES DE INTERVENCIÓN</h3>
+
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 mb-1">Equipo asignado.</p>
+                          <p className="text-sm text-gray-900 leading-relaxed">
+                            El expediente será conducido personalmente por <span className="italic">Maître Élise Beaumont</span>, socia del Cabinet, con el apoyo de un colaborador senior especializado en derecho de los negocios. Esta configuración garantiza tanto la calidad del análisis como la disponibilidad de sus interlocutores.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 mb-1">Plazos.</p>
+                          <p className="text-sm text-gray-900 leading-relaxed">
+                            Nos comprometemos a entregarle el informe y el documento anotado en un plazo de <span className="italic">cinco días hábiles</span> contados a partir de la recepción del acuerdo de confidencialidad. En caso de urgencia justificada, podemos proponer una entrega acelerada en cuarenta y ocho horas, sujeta a disponibilidad y a un ajuste de honorarios.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 mb-1">Comunicación.</p>
+                          <p className="text-sm text-gray-900 leading-relaxed">
+                            Privilegiamos un diálogo fluido con nuestros clientes. Quedamos a su entera disposición para una conversación telefónica o videoconferencia de aproximadamente treinta minutos, sin cargo adicional, a fin de comentar nuestras conclusiones y responder sus interrogantes.
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 mb-1">Alcance.</p>
+                          <p className="text-sm text-gray-900 leading-relaxed">
+                            Conviene precisar que nuestra intervención se circunscribe al análisis del documento proporcionado. No comprende asesoramiento sobre la operación subyacente, consideraciones fiscales ni la revisión conforme a ordenamientos jurídicos distintos al aplicable según el propio acuerdo. Tampoco incluye la conducción de negociaciones con la contraparte, servicio que podríamos ofrecer bajo condiciones separadas si así lo desea.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="text-center my-4">
+                      <p className="text-gray-400">* * *</p>
+                    </div>
+
+                    {/* Sección III - Honorarios */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 text-center mb-4">III. HONORARIOS</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-4">
+                        Proponemos una remuneración forfaitaria que brinda a usted certeza sobre el coste de nuestra intervención:
+                      </p>
+
+                      {/* Box elegante para el precio */}
+                      <div className="border-2 border-gray-400 p-6 my-5">
+                        <p className="text-center text-xs text-gray-600 mb-2">Revisión del Acuerdo de Confidencialidad</p>
+                        <p className="text-center text-3xl font-bold text-gray-900 mb-2">1.100 €</p>
+                        <p className="text-center text-xs text-gray-500 italic">honorarios netos - IVA no aplicable (Art. 261 CGI)</p>
+                      </div>
+
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        Esta cantidad comprende el análisis integral del documento, la redacción del informe de síntesis, la preparación de la versión anotada y una consulta de seguimiento. El pago es exigible a la recepción de nuestra factura, emitida una vez formalizados los términos del encargo.
+                      </p>
+
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        En el supuesto de que usted requiriera asistencia adicional —por ejemplo, para acompañarle en las negociaciones o revisar versiones sucesivas del acuerdo— estaríamos encantados de convenir una modalidad de honorarios adaptada a la naturaleza y extensión del trabajo, ya sea sobre base horaria o mediante un nuevo forfait.
+                      </p>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="text-center my-4">
+                      <p className="text-gray-400">* * *</p>
+                    </div>
+
+                    {/* Sección IV */}
+                    <div className="mt-6">
+                      <h3 className="text-base font-bold text-gray-900 text-center mb-4">IV. CONDICIONES DE COLABORACIÓN</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        Nuestra relación profesional se regirá por las normas deontológicas aplicables a la profesión de abogado en Francia, en particular el secreto profesional absoluto que ampara toda comunicación entre usted y nuestro Cabinet.
+                      </p>
+
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        De conformidad con la normativa vigente, el Cabinet Beaumont Lefèvre cuenta con un seguro de responsabilidad civil profesional suscrito ante un asegurador de primer rango. Los términos completos de nuestras condiciones generales de prestación de servicios se adjuntan a la presente propuesta.
+                      </p>
+
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Esta propuesta mantiene su validez durante un plazo de treinta días naturales a contar desde la fecha indicada al inicio de este documento.
+                      </p>
+                    </div>
+
+                    {/* Separador */}
+                    <div className="text-center my-4">
+                      <p className="text-gray-400">* * *</p>
+                    </div>
+
+                    {/* Cierre */}
+                    <div className="mt-6">
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        Quedamos a su disposición para cualquier aclaración que pudiera resultar útil. Será un honor poder asistirle en este asunto.
+                      </p>
+
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Le rogamos acepte, estimado(a) [Nombre], la expresión de nuestra más distinguida consideración.
+                      </p>
+                    </div>
+
+                    {/* Firma */}
+                    <div className="mt-8 flex justify-end">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">Maître Élise Beaumont</p>
+                        <p className="text-sm italic text-gray-700">Avocate associée</p>
+                        <p className="text-xs text-gray-600 mt-1">Cabinet Beaumont Lefèvre</p>
+                      </div>
+                    </div>
+
+                    {/* Líneas decorativas */}
+                    <div className="flex items-center justify-center gap-4 my-6">
+                      <div className="flex-1 border-t border-gray-400"></div>
+                      <span className="text-gray-400">✦</span>
+                      <div className="flex-1 border-t border-gray-400"></div>
+                    </div>
+
+                    {/* Box de aceptación */}
+                    <div className="mt-8">
+                      <p className="text-center text-xs italic text-gray-600 mb-4">— Bon pour accord —</p>
+
+                      <div className="border-2 border-gray-400 p-4">
+                        <p className="text-xs text-gray-900 mb-4">
+                          El/La suscrito(a) declara aceptar los términos de la presente propuesta y encarga al Cabinet Beaumont Lefèvre la realización de los servicios descritos.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-gray-700">Nombre: ______________________</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-700">Fecha: ______________________</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-700">Cargo: ______________________</p>
+                        </div>
+
+                        <div className="mt-3">
+                          <p className="text-xs text-gray-700">Firma: ______________________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-8 pt-4 border-t border-gray-300">
+                      <p className="text-center text-xs text-gray-500 leading-relaxed">
+                        Cabinet Beaumont Lefèvre · Avocats à la Cour<br />
+                        12, avenue Montaigne · 75008 Paris · Tél. +33 1 42 56 78 90 · contact@beaumont-lefevre.fr<br />
+                        <span className="italic">Barreau de Paris · SELARL au capital de 150.000 € · RCS Paris 812 345 678</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Spanish Boutique Example */}
+                {previewStyleType === 'spanish-boutique' && (
+                  <div className="space-y-4 font-sans text-sm">
+                    {/* Header */}
+                    <div className="flex justify-between items-start pb-3 border-b border-gray-400">
+                      <div>
+                        <h1 className="text-lg font-bold text-red-900">ARÉVALO MONTERO</h1>
+                        <p className="text-xs text-gray-700 mt-0.5">ABOGADOS</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-700">
+                        <p>Calle Velázquez, 27 - 4° Dcha.</p>
+                        <p>28001 Madrid</p>
+                        <p>Tel. 91 435 67 89</p>
+                        <p>info@arevalomontero.es</p>
+                      </div>
+                    </div>
+
+                    {/* Título centrado */}
+                    <div className="text-center my-5">
+                      <h2 className="text-base font-bold text-red-900">PROPUESTA DE SERVICIOS PROFESIONALES</h2>
+                      <p className="text-xs text-gray-600 italic mt-1">Revisión de Acuerdo de Confidencialidad (NDA)</p>
+                    </div>
+
+                    {/* Referencia y fecha */}
+                    <div className="flex justify-between text-xs mb-4">
+                      <div>
+                        <p>Ref.: AM/2026/0147</p>
+                        <p>Cliente: [Nombre / Razón Social]</p>
+                      </div>
+                      <div className="text-right">
+                        <p>Madrid, 23 de enero de 2026</p>
+                      </div>
+                    </div>
+
+                    {/* Saludo */}
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-900">Estimado/a cliente:</p>
+                    </div>
+
+                    {/* Párrafo introductorio */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        En atención a la consulta que nos ha formulado, tenemos el agrado de remitirle la presente propuesta de servicios profesionales para la revisión del acuerdo de confidencialidad que tiene previsto suscribir. Agradecemos la confianza depositada en nuestro Despacho.
+                      </p>
+                    </div>
+
+                    {/* Sección I */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">I. ANTECEDENTES</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-2">
+                        Según nos ha indicado, su empresa se encuentra en conversaciones preliminares con un potencial socio comercial, habiéndose planteado la necesidad de formalizar un acuerdo de confidencialidad (NDA, por sus siglas en inglés) que proteja la información sensible que pueda intercambiarse durante dichas negociaciones.
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        La contraparte le ha remitido un borrador de NDA cuya extensión aproximada es de quinientas palabras, solicitando usted nuestro criterio profesional sobre el contenido del documento antes de proceder a su firma.
+                      </p>
+                    </div>
+
+                    {/* Sección II */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">II. ALCANCE DEL ENCARGO</h3>
+                      <p className="text-sm text-gray-900 mb-2">El presente encargo comprenderá las siguientes actuaciones:</p>
+                      <div className="ml-4 space-y-1.5 text-sm text-gray-900">
+                        <p><span className="font-semibold">a)</span> Revisión íntegra del documento, verificando su estructura, completitud y coherencia interna.</p>
+                        <p><span className="font-semibold">b)</span> Identificación de cláusulas que pudieran resultar desequilibradas, ambiguas o perjudiciales para sus intereses.</p>
+                        <p><span className="font-semibold">c)</span> Análisis comparativo con las prácticas habituales de mercado en este tipo de acuerdos.</p>
+                        <p><span className="font-semibold">d)</span> Elaboración de un informe con nuestras observaciones y recomendaciones.</p>
+                        <p><span className="font-semibold">e)</span> Preparación de una versión anotada del acuerdo con propuestas de modificación, en su caso.</p>
+                      </div>
+                      <p className="text-sm text-gray-900 mt-3 leading-relaxed">
+                        Sin perjuicio de lo anterior, <span className="font-semibold">quedan expresamente excluidos del presente encargo:</span> el asesoramiento sobre la operación comercial subyacente, el análisis de implicaciones fiscales, la revisión conforme a ordenamientos jurídicos distintos al español y la intervención directa en las negociaciones con la contraparte.
+                      </p>
+                    </div>
+
+                    {/* Sección III - Metodología */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">III. METODOLOGÍA DE TRABAJO</h3>
+                      <p className="text-sm text-gray-900 mb-3 leading-relaxed">
+                        Una vez formalizado el encargo y recibida la documentación correspondiente, procederemos del siguiente modo:
+                      </p>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <tbody>
+                          <tr className="bg-red-50">
+                            <td className="border border-gray-400 px-3 py-2 font-bold text-gray-900 w-20">Fase 1</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Estudio preliminar del documento y verificación de completitud (Día 1)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 font-bold text-gray-900">Fase 2</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Análisis sustantivo de las cláusulas e identificación de riesgos (Días 2-3)</td>
+                          </tr>
+                          <tr className="bg-red-50">
+                            <td className="border border-gray-400 px-3 py-2 font-bold text-gray-900">Fase 3</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Redacción del informe y preparación del documento anotado (Día 4)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 font-bold text-gray-900">Fase 4</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Revisión interna de calidad y entrega de documentación (Día 5)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-sm text-gray-900 mt-3 leading-relaxed">
+                        El plazo estimado de ejecución es, por tanto, de cinco días hábiles desde la recepción del documento. No obstante, en supuestos de especial urgencia, podemos ofrecer un servicio acelerado de cuarenta y ocho horas, sujeto a disponibilidad y al correspondiente ajuste de honorarios.
+                      </p>
+                    </div>
+
+                    {/* Sección IV */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">IV. EQUIPO RESPONSABLE</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        El encargo será supervisado por <span className="font-bold">D.ª Carmen Arévalo Díaz</span>, socia directora del Despacho y especialista en Derecho mercantil y de los negocios, con más de veinte años de experiencia en el asesoramiento a empresas. El trabajo de análisis será desarrollado por un abogado asociado del área de contratación mercantil, bajo la supervisión directa de la socia.
+                      </p>
+                    </div>
+
+                    {/* Sección V - Honorarios */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">V. HONORARIOS PROFESIONALES</h3>
+                      <p className="text-sm text-gray-900 mb-3 leading-relaxed">
+                        Para la prestación de los servicios descritos, proponemos una minuta fija que proporciona a usted certeza sobre el coste total del encargo:
+                      </p>
+
+                      <table className="w-full text-sm border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-3 py-2 text-left font-bold text-gray-900">Concepto</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold text-gray-900 w-28">Base</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold text-gray-900 w-28">Total*</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Revisión de NDA (informe + documento anotado)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">850,00 €</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">1.028,50 €</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Conferencia de seguimiento (hasta 30 min.)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900 italic">Incluido</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900 italic">Suplemento servicio urgente (48 h)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">+250,00 €</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">+302,50 €</td>
+                          </tr>
+                          <tr className="bg-red-900 text-white font-bold">
+                            <td className="border border-gray-400 px-3 py-2">TOTAL (servicio estándar)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center">850,00 €</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center">1.028,50 €</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-xs text-gray-600 mt-2 italic">* IVA incluido (21%)</p>
+
+                      <p className="text-sm text-gray-900 mt-3 leading-relaxed">
+                        En el supuesto de que, una vez emitido nuestro informe, requiriera asistencia adicional —ya sea para intervenir en las negociaciones con la contraparte o para revisar sucesivas versiones del documento—, los servicios complementarios se facturarían conforme a nuestras tarifas horarias habituales: 180 €/hora (socio) y 120 €/hora (abogado asociado), más el IVA correspondiente.
+                      </p>
+                    </div>
+
+                    {/* Sección VI */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">VI. FORMA DE PAGO</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-2">
+                        La provisión de fondos correspondiente al importe total de los honorarios (1.028,50 €, IVA incluido) deberá abonarse a la aceptación de la presente propuesta, mediante transferencia bancaria a la cuenta indicada en nuestra factura proforma. Los trabajos se iniciarán una vez confirmada la recepción del pago.
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Para clientes con relación continuada, contemplamos la posibilidad de establecer un sistema de facturación mensual a término vencido, previa formalización de las condiciones de crédito oportunas.
+                      </p>
+                    </div>
+
+                    {/* Sección VII */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">VII. CONFIDENCIALIDAD Y PROTECCIÓN DE DATOS</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        La información que nos proporcione será tratada con la más estricta confidencialidad, de conformidad con las obligaciones deontológicas inherentes a nuestra profesión y con lo dispuesto en el Reglamento General de Protección de Datos (RGPD) y la Ley Orgánica 3/2018 de Protección de Datos Personales. Nuestro Despacho cuenta con las medidas técnicas y organizativas adecuadas para garantizar la seguridad de sus datos.
+                      </p>
+                    </div>
+
+                    {/* Sección VIII */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-red-900 mb-2">VIII. VALIDEZ DE LA PROPUESTA</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-3">
+                        La presente propuesta mantiene su validez durante un período de treinta días naturales contados desde su fecha de emisión. Transcurrido dicho plazo sin que hayamos recibido su aceptación, entenderemos que ha decidido su interés, sin perjuicio de que pueda contactarnos en cualquier momento para actualizar las condiciones.
+                      </p>
+                      <p className="text-sm text-gray-900 leading-relaxed mb-2">
+                        Quedamos a su entera disposición para ampliar cualquier aspecto de esta propuesta o resolver las dudas que pudieran surgirle. Será un placer poder asistirle en este asunto.
+                      </p>
+                      <p className="text-sm text-gray-900">
+                        Reciba un cordial saludo,
+                      </p>
+                    </div>
+
+                    {/* Firma */}
+                    <div className="mt-6">
+                      <p className="text-sm font-bold text-gray-900">Carmen Arévalo Díaz</p>
+                      <p className="text-sm italic text-gray-700">Socia Directora</p>
+                      <p className="text-xs text-gray-600 mt-0.5">ARÉVALO MONTERO ABOGADOS</p>
+                    </div>
+
+                    {/* Box de aceptación */}
+                    <div className="mt-8 border-2 border-red-900 p-4">
+                      <p className="text-sm font-bold text-red-900 mb-3">ACEPTACIÓN DEL ENCARGO</p>
+                      <p className="text-xs text-gray-900 mb-4">
+                        El/La abajo firmante manifiesta su conformidad con los términos de la presente propuesta y encarga a ARÉVALO MONTERO ABOGADOS la prestación de los servicios descritos.
+                      </p>
+
+                      <div className="space-y-2">
+                        <div className="flex gap-4">
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-700">D./D.ª: ______________________</p>
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-700">Fecha: ______________________</p>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">En calidad de: ______________________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">Firma: ______________________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-3 border-t border-gray-300">
+                      <p className="text-center text-xs text-gray-500 leading-relaxed">
+                        ARÉVALO MONTERO ABOGADOS, S.L.P. · CIF: B-12345678 · ICAM n.º 12.345<br />
+                        Calle Velázquez, 27 - 4° Dcha. · 28001 Madrid · Tel. 91 435 67 89 · info@arevalomontero.es
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Japanese Keigo Example */}
+                {previewStyleType === 'japanese-keigo' && (
+                  <div className="space-y-4 font-sans text-sm">
+                    {/* Header minimalista derecho */}
+                    <div className="flex justify-between items-start">
+                      <div></div>
+                      <div className="text-right">
+                        <h1 className="text-base font-bold text-gray-900">NAKAMURA LEGAL PARTNERS</h1>
+                        <p className="text-xs text-gray-600 mt-0.5">Abogados</p>
+                        <p className="text-xs text-gray-700 mt-3">23 de enero de 2026</p>
+                        <p className="text-xs text-gray-600">N.° NLP-2026-0147</p>
+                      </div>
+                    </div>
+
+                    {/* Dirección del cliente */}
+                    <div className="mt-4 text-sm text-gray-900">
+                      <p>[Nombre de la Empresa]</p>
+                      <p>[Nombre del Representante]</p>
+                    </div>
+
+                    {/* Título centrado */}
+                    <div className="text-center my-5 border-t border-b border-gray-400 py-4">
+                      <h2 className="text-base font-bold text-gray-900">PROPUESTA DE SERVICIOS</h2>
+                      <p className="text-xs text-gray-600 italic mt-1">Revisión de Acuerdo de Confidencialidad</p>
+                    </div>
+
+                    {/* Introducción */}
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Agradecemos sinceramente su consulta. A continuación, presentamos nuestra propuesta para la revisión del acuerdo de confidencialidad solicitado.
+                      </p>
+                    </div>
+
+                    {/* Sección 1 - Resumen */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-3">1. Resumen del Servicio</h3>
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Servicio</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Revisión de Acuerdo de Confidencialidad (NDA)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Documento objeto</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">NDA proporcionado por el cliente (aprox. 500 palabras)</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Plazo de entrega</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">5 días hábiles desde la recepción del documento</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Responsable</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Lic. Kenji Nakamura, Socio Director</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Honorarios</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">¥120,000 (impuestos no incluidos)</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 2 - Alcance del Trabajo */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">2. Alcance del Trabajo</h3>
+                      <p className="text-xs text-gray-900 mb-2">El presente encargo comprende las siguientes actividades:</p>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">N.°</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Descripción</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-24">Entregable</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Verificación de estructura y completitud del documento</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis de cláusulas de confidencialidad y su alcance</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Informe</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión de excepciones y limitaciones</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Informe</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Evaluación de disposiciones de responsabilidad</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Informe</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis de vigencia y terminación</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Informe</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.6</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión de ley aplicable y jurisdicción</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Informe</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">2.7</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Elaboración de propuestas de modificación</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Documento anotado</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 3 - Exclusiones */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">3. Exclusiones</h3>
+                      <p className="text-xs text-gray-900 mb-2">Los siguientes conceptos no están incluidos en el presente presupuesto:</p>
+                      <ul className="text-xs text-gray-900 ml-4 space-y-0.5">
+                        <li>× Asesoramiento sobre la transacción comercial subyacente</li>
+                        <li>× Análisis de implicaciones fiscales</li>
+                        <li>× Revisión conforme a legislación extranjera</li>
+                        <li>× Participación en negociaciones con la contraparte</li>
+                        <li>× Traducciones del documento</li>
+                      </ul>
+                    </div>
+
+                    {/* Sección 4 - Entregables */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">4. Entregables</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">N.°</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Documento</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-24">Formato</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-28">Idioma</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Informe de revisión con observaciones y recomendaciones</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">PDF</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Español</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Documento anotado con propuestas de modificación</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Word</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Idioma original</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Tabla resumen de riesgos identificados</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Excel/PDF</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Español</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 5 - Cronograma */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">5. Cronograma</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-16">Día</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Actividad</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-20">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">0</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Recepción del documento y confirmación</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Inicio</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Revisión preliminar y verificación de completitud</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">2-3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis sustantivo de cláusulas</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Elaboración de informe y documento anotado</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Control de calidad y entrega</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Fin</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p className="text-xs italic text-gray-600 mt-2">
+                        Nota: Servicio express (48 horas) disponible con cargo adicional de ¥40,000.
+                      </p>
+                    </div>
+
+                    {/* Sección 6 - Honorarios */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">6. Honorarios</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-3 py-2 text-left font-bold text-gray-900">Concepto</th>
+                            <th className="border border-gray-400 px-3 py-2 text-right font-bold text-gray-900 w-28">Importe</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold text-gray-900 w-32">Observaciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Revisión de NDA (servicio estándar)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">¥120,000</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Impuesto al consumo (10%)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">¥12,000</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">—</td>
+                          </tr>
+                          <tr className="font-bold">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Total</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">¥132,000</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Impuestos incl.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-xs text-gray-900 mt-3 mb-2">Servicios adicionales (en caso de ser requeridos):</p>
+                      <div className="ml-4 text-xs text-gray-900 space-y-1">
+                        <div className="flex justify-between">
+                          <span>Apoyo en negociaciones (por hora)</span>
+                          <span>¥30,000/h</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Revisión de versiones subsecuentes</span>
+                          <span>¥50,000/revisión</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Servicio express (entrega en 48h)</span>
+                          <span>+¥40,000</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Conferencia telefónica adicional (por hora)</span>
+                          <span>¥15,000/h</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 7 - Puntos a Confirmar */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">7. Puntos a Confirmar</h3>
+                      <p className="text-xs text-gray-900 mb-2">Solicitamos amablemente la confirmación de los siguientes puntos antes del inicio del trabajo:</p>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">N.°</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">Punto de confirmación</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-24">Confirmado</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-24">Pendiente</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">C1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Idioma del documento (español / inglés / otro)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">C2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Extensión del documento (confirmar aprox. 500 palabras)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">C3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Jurisdicción aplicable según el NDA</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">C4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Nivel de urgencia (estándar / express)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">C5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Persona de contacto para consultas</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 8 - Condiciones */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">8. Condiciones</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Validez</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">30 días naturales desde la fecha de emisión</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Forma de pago</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Transferencia bancaria previa al inicio del trabajo</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Confidencialidad</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Toda información será tratada con estricta confidencialidad</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Cancelación</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Sin cargo si se notifica antes del inicio. 50% si ya iniciado</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Cierre */}
+                    <div className="mt-5">
+                      <p className="text-sm text-gray-900 leading-relaxed">
+                        Agradecemos nuevamente su confianza. Quedamos a su disposición para cualquier consulta.
+                      </p>
+                      <p className="text-sm text-gray-900 mt-2">Atentamente,</p>
+                    </div>
+
+                    {/* Firma */}
+                    <div className="mt-6 flex justify-end">
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">NAKAMURA LEGAL PARTNERS</p>
+                        <div className="border-b border-gray-400 w-48 mt-6 mb-1"></div>
+                        <p className="text-xs text-gray-900">Kenji Nakamura</p>
+                        <p className="text-xs italic text-gray-700">Socio Director</p>
+                      </div>
+                    </div>
+
+                    {/* Box de aceptación */}
+                    <div className="mt-8 border-2 border-gray-400 p-4">
+                      <p className="text-sm font-bold text-gray-900 mb-3">Aceptación</p>
+                      <p className="text-xs text-gray-900 mb-4">
+                        El abajo firmante acepta los términos de la presente propuesta y solicita el inicio del servicio.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-700">Empresa: ______________________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">Fecha: ______________________</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <div>
+                          <p className="text-xs text-gray-700">Nombre: ______________________</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-700">Firma/Sello: ______________________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-3 border-t border-gray-300">
+                      <p className="text-center text-xs text-gray-500 leading-relaxed">
+                        NAKAMURA LEGAL PARTNERS<br />
+                        Marunouchi Building 15F, 2-4-1 Marunouchi, Chiyoda-ku, Tokyo 100-6015<br />
+                        Tel: +81-3-1234-5678 · info@nakamura-legal.jp
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Swiss Financial Example */}
+                {previewStyleType === 'swiss-financial' && (
+                  <div className="space-y-4 font-sans text-xs">
+                    {/* Header ultra minimalista */}
+                    <div className="flex justify-between items-start pb-3 border-b border-gray-900">
+                      <div>
+                        <h1 className="text-sm font-bold text-gray-900">SCHREIBER WYSS</h1>
+                        <p className="text-xs text-gray-600">RECHTSANWÄLTE | AVOCATS</p>
+                      </div>
+                      <div className="text-right text-xs text-gray-700">
+                        <p>Bahnhofstrasse 42</p>
+                        <p>8001 Zürich, Suiza</p>
+                        <p>+41 44 123 45 67</p>
+                      </div>
+                    </div>
+
+                    {/* Metadata en tabla */}
+                    <div className="mt-4">
+                      <table className="w-full text-xs border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-100">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-700 font-medium w-32">DOCUMENTO</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Propuesta de Servicios</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-700 font-medium w-32">REFERENCIA</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 w-32">SW-2026-0147</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-700 font-medium w-24">FECHA</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 w-32">23.01.2026</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-700 font-medium w-24">VALIDEZ</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 w-20">30 días</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Cliente */}
+                    <div className="mt-4">
+                      <table className="w-full text-xs border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-100">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-700 font-medium w-32">CLIENTE</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">
+                              [Razón Social]<br />
+                              [Dirección]
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Servicio principal en caja destacada */}
+                    <div className="mt-5 border-2 border-gray-900 p-4">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-xs text-gray-700 uppercase mb-1">SERVICIO</p>
+                          <p className="text-sm font-bold text-gray-900">Revisión de Acuerdo de Confidencialidad (NDA)</p>
+                          <p className="text-xs text-gray-600 mt-1">Documento de aprox. 500 palabras · Plazo 5 días hábiles</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-700 uppercase mb-1">TOTAL</p>
+                          <p className="text-2xl font-bold text-gray-900">CHF 1&apos;450.00</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 1 - Desglose */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">1. DESGLOSE DE HONORARIOS</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900 w-12">N.°</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold text-gray-900">CONCEPTO</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-24">UNIDAD</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold text-gray-900 w-20">TARIFA</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-right font-bold text-gray-900 w-24">IMPORTE</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">1.1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Análisis jurídico del documento</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Forfait</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">950.00</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">1.2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Informe de riesgos y recomendaciones</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Incluido</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">—</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">1.3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Documento anotado (markup)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Incluido</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">—</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">1.4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Control de calidad (4 ojos)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Incluido</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">—</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">1.5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Consulta de seguimiento (hasta 30 min)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Incluido</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">—</td>
+                          </tr>
+                          <tr className="bg-gray-100">
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right font-medium text-gray-900">Subtotal</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right font-medium text-gray-900">CHF 950.00</td>
+                          </tr>
+                          <tr>
+                            <td colSpan={2} className="border border-gray-400 px-2 py-1.5 text-gray-900">Gastos administrativos</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Forfait</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">50.00</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right font-medium text-gray-900">Base imponible</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right font-medium text-gray-900">CHF 1&apos;000.00</td>
+                          </tr>
+                          <tr>
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">IVA (8.1%)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">CHF 81.00</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">Tasa administrativa cantonal</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">CHF 19.00</td>
+                          </tr>
+                          <tr>
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">Redondeo</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right text-gray-900">CHF 0.00</td>
+                          </tr>
+                          <tr className="bg-gray-900 text-white">
+                            <td colSpan={4} className="border border-gray-400 px-2 py-1.5 text-right font-bold text-sm">TOTAL A PAGAR</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-right font-bold text-base">CHF 1&apos;450.00</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 2 - Condiciones de pago */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">2. CONDICIONES DE PAGO</h3>
+
+                      <table className="w-full text-xs border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-100">
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-700 font-medium w-32">IMPORTE</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-700 font-medium w-32">PLAZO</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-700 font-medium">MÉTODO</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900 font-semibold">Franco Suizo (CHF)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">15 días neto</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Transferencia bancaria</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      {/* Datos bancarios */}
+                      <div className="mt-3 border border-gray-400 p-3 bg-gray-50">
+                        <p className="text-xs font-bold text-gray-900 mb-2">DATOS BANCARIOS</p>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex">
+                            <span className="w-24 text-gray-700">Beneficiario:</span>
+                            <span className="text-gray-900">Schreiber Wyss Rechtsanwälte AG</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-gray-700">Banco:</span>
+                            <span className="text-gray-900">Credit Suisse AG, Zürich</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-gray-700">IBAN:</span>
+                            <span className="text-gray-900">CH83 0483 5012 3456 7800 0</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-gray-700">BIC/SWIFT:</span>
+                            <span className="text-gray-900">CRESCHZZ80A</span>
+                          </div>
+                          <div className="flex">
+                            <span className="w-24 text-gray-700">Referencia:</span>
+                            <span className="text-gray-900">SW-2026-0147</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 3 - Supuestos */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">3. SUPUESTOS Y CONDICIONES</h3>
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-900 font-mono">☑</span>
+                          <p className="text-xs text-gray-900 flex-1">El documento no excede de 500 palabras</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-900 font-mono">☑</span>
+                          <p className="text-xs text-gray-900 flex-1">El documento está redactado en español, inglés, alemán o francés</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-900 font-mono">☑</span>
+                          <p className="text-xs text-gray-900 flex-1">No se requiere análisis conforme a legislación extranjera</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-900 font-mono">☑</span>
+                          <p className="text-xs text-gray-900 flex-1">El cliente proporcionará el documento dentro de 48h desde la aceptación</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-900 font-mono">☑</span>
+                          <p className="text-xs text-gray-900 flex-1">Los plazos se computan en días hábiles (lunes a viernes, excl. festivos ZH)</p>
+                        </div>
+                      </div>
+
+                      <p className="text-xs italic text-gray-600 mt-3">
+                        El incumplimiento de cualquier supuesto podrá resultar en ajuste de plazos y/o honorarios, previa comunicación.
+                      </p>
+                    </div>
+
+                    {/* Sección 4 - Exclusiones */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">4. EXCLUSIONES</h3>
+
+                      <div className="space-y-1">
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">—</span>
+                          <p className="text-xs text-gray-900 flex-1">Asesoramiento sobre la transacción subyacente</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">—</span>
+                          <p className="text-xs text-gray-900 flex-1">Análisis fiscal o tributario</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">—</span>
+                          <p className="text-xs text-gray-900 flex-1">Revisión conforme a derecho de terceros países</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">—</span>
+                          <p className="text-xs text-gray-900 flex-1">Negociación con contraparte</p>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500">—</span>
+                          <p className="text-xs text-gray-900 flex-1">Traducción de documentos</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 5 - Servicios opcionales */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">5. SERVICIOS OPCIONALES</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="border border-gray-400 px-3 py-2 text-left font-bold text-gray-900">ACTIVIDAD</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold text-gray-900 w-28">TARIFA</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold text-gray-900 w-24">UNIDAD</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Entrega express (48 horas)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">CHF 400.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Forfait</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Apoyo en negociación</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">CHF 450.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Por hora</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Revisión de versiones adicionales</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">CHF 350.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Por versión</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Conferencia adicional</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">CHF 250.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Por hora</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 6 - Términos generales */}
+                    <div className="mt-4">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">6. TÉRMINOS GENERALES</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Ley aplicable</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Derecho suizo</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Jurisdicción</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Tribunales de Zürich, Suiza</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Confidencialidad</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Secreto profesional conforme a art. 321 CP suizo</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Responsabilidad</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Limitada a CHF 2&apos;000&apos;000 por mandato</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Cancelación</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Sin cargo antes del inicio. 50% si ya iniciado</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Seguro RC</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Póliza vigente con [Aseguradora], n.° [XXXX]</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Firmas en tabla */}
+                    <div className="mt-6 border-t-2 border-gray-900 pt-4">
+                      <table className="w-full text-xs">
+                        <tbody>
+                          <tr>
+                            <td className="w-1/2 pr-4 align-top">
+                              <p className="text-xs font-bold text-gray-900 mb-2">POR EL DESPACHO</p>
+                              <p className="text-sm font-bold text-gray-900 mt-6">Schreiber Wyss Rechtsanwälte AG</p>
+                              <div className="border-b border-gray-400 w-48 mt-8 mb-1"></div>
+                              <p className="text-xs text-gray-900">Dr. Thomas Schreiber, Socio</p>
+                              <p className="text-xs text-gray-600 mt-2">Fecha: 23.01.2026</p>
+                            </td>
+                            <td className="w-1/2 pl-4 align-top border-l border-gray-400">
+                              <p className="text-xs font-bold text-gray-900 mb-2">POR EL CLIENTE</p>
+                              <p className="text-sm text-gray-900 mt-6">[Razón Social]</p>
+                              <div className="border-b border-gray-400 w-48 mt-8 mb-1"></div>
+                              <p className="text-xs text-gray-700">Nombre: ______________________</p>
+                              <p className="text-xs text-gray-700 mt-2">Fecha: ______________________</p>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-6 pt-3 border-t border-gray-400">
+                      <p className="text-xs text-gray-500 text-center leading-relaxed">
+                        Schreiber Wyss Rechtsanwälte AG<br />
+                        CHE-123.456.789<br />
+                        Registro Mercantil Zürich · UID: CHF 150&apos;000<br />
+                        IVA: CHE-123.456.789 MWST · www.schreiberwyss.ch
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Legal Ops Example */}
+                {previewStyleType === 'legal-ops' && (
+                  <div className="space-y-0 font-sans text-xs">
+                    {/* Header oscuro tipo formulario */}
+                    <div className="bg-gray-900 text-white p-3 -m-8 mb-0 flex justify-between items-center">
+                      <div>
+                        <h1 className="text-base font-bold">MERIDIAN LEGAL</h1>
+                        <p className="text-xs opacity-80">Enterprise Legal Services</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">SERVICE ORDER FORM</p>
+                      </div>
+                    </div>
+
+                    {/* Metadata grid */}
+                    <div className="mt-4 bg-gray-100 p-3 border border-gray-400">
+                      <div className="grid grid-cols-4 gap-4 text-xs">
+                        <div>
+                          <p className="text-gray-600 text-[10px] uppercase">Job Number</p>
+                          <p className="font-semibold text-gray-900">ML-2026-0147</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-[10px] uppercase">Issue Date</p>
+                          <p className="font-semibold text-gray-900">2026-01-23</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-[10px] uppercase">Valid Until</p>
+                          <p className="font-semibold text-gray-900">2026-02-22</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-[10px] uppercase">Version</p>
+                          <p className="font-semibold text-gray-900">1.0</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Provider y Client */}
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                      <div className="border border-gray-400 p-3 bg-white">
+                        <p className="text-[10px] text-gray-600 uppercase mb-1">SERVICE PROVIDER</p>
+                        <p className="text-xs font-bold text-gray-900">Meridian Legal Services, LLC</p>
+                        <p className="text-xs text-gray-700">100 Legal Center Drive, Suite 500</p>
+                        <p className="text-xs text-gray-700">Chicago, IL 60601, USA</p>
+                      </div>
+                      <div className="border border-gray-400 p-3 bg-white">
+                        <p className="text-[10px] text-gray-600 uppercase mb-1">CLIENT</p>
+                        <p className="text-xs font-bold text-gray-900">[Client Legal Entity Name]</p>
+                        <p className="text-xs text-gray-700">[Address]</p>
+                        <p className="text-xs text-gray-700">[City, State/Country, ZIP]</p>
+                      </div>
+                    </div>
+
+                    {/* Sección 1 - Service Summary */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">1. SERVICE SUMMARY</h3>
+
+                      <table className="w-full text-xs">
+                        <tbody>
+                          <tr className="border-b border-gray-300">
+                            <td className="py-2 text-gray-700 font-medium w-40">Service Name</td>
+                            <td className="py-2 text-gray-900">NDA Review Service</td>
+                          </tr>
+                          <tr className="border-b border-gray-300">
+                            <td className="py-2 text-gray-700 font-medium">Service Category</td>
+                            <td className="py-2 text-gray-900">Contract Review & Analysis</td>
+                          </tr>
+                          <tr className="border-b border-gray-300">
+                            <td className="py-2 text-gray-700 font-medium">Service Type</td>
+                            <td className="py-2 text-gray-900">Fixed Fee Engagement</td>
+                          </tr>
+                          <tr className="border-b border-gray-300">
+                            <td className="py-2 text-gray-700 font-medium">Document Scope</td>
+                            <td className="py-2 text-gray-900">Single NDA, approximately 500 words</td>
+                          </tr>
+                          <tr className="border-b border-gray-300">
+                            <td className="py-2 text-gray-700 font-medium">Delivery Timeline</td>
+                            <td className="py-2 text-gray-900">5 business days from document receipt</td>
+                          </tr>
+                          <tr>
+                            <td className="py-2 text-gray-700 font-medium">Service Term</td>
+                            <td className="py-2 text-gray-900">One-time engagement</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 2 - Scope Definition */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">2. SCOPE DEFINITION</h3>
+
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div className="bg-green-50 border border-green-300 p-3">
+                          <p className="text-xs font-bold text-green-800 mb-2">✓ INCLUDED IN SCOPE</p>
+                          <ul className="space-y-1 text-xs text-gray-900">
+                            <li>✓ Complete legal review of NDA</li>
+                            <li>✓ Risk assessment and classification</li>
+                            <li>✓ Deviation analysis vs. market standard</li>
+                            <li>✓ Written findings report (PDF)</li>
+                            <li>✓ Annotated document with markup (Word)</li>
+                            <li>✓ Risk matrix summary (Excel)</li>
+                            <li>✓ One 30-minute follow-up call</li>
+                            <li>✓ Quality assurance review</li>
+                          </ul>
+                        </div>
+                        <div className="bg-red-50 border border-red-300 p-3">
+                          <p className="text-xs font-bold text-red-800 mb-2">✗ NOT INCLUDED IN SCOPE</p>
+                          <ul className="space-y-1 text-xs text-gray-900">
+                            <li>✗ Advice on underlying transaction</li>
+                            <li>✗ Tax or regulatory analysis</li>
+                            <li>✗ Foreign law review</li>
+                            <li>✗ Negotiation with counterparty</li>
+                            <li>✗ Document translations</li>
+                            <li>✗ Litigation support</li>
+                            <li>✗ Subsequent version reviews</li>
+                            <li>✗ On-site meetings</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 3 - Deliverables */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">3. DELIVERABLES</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <thead className="bg-gray-900 text-white">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold w-12">ID</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold">DELIVERABLE</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold w-24">FORMAT</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold w-20">DELIVERY</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold w-40">ACCEPTANCE</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D-01</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Legal Review Report</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">PDF</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Day 5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Auto-accepted if no objection in 3 days</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D-02</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Annotated NDA (Redline)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">DOCX</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Day 5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Auto-accepted if no objection in 3 days</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">D-03</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Risk Assessment Matrix</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">XLSX</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">Day 5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Auto-accepted if no objection in 3 days</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 4 - Pricing */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">4. PRICING</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <thead className="bg-gray-900 text-white">
+                          <tr>
+                            <th className="border border-gray-400 px-3 py-2 text-left font-bold">ITEM</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold w-16">QTY</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold w-28">UNIT PRICE</th>
+                            <th className="border border-gray-400 px-3 py-2 text-right font-bold w-28">AMOUNT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">NDA Review Service (Standard)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">1</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">—</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">$1,200.00</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Deliverables (D-01, D-02, D-03)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">3</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Included</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">$0.00</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Follow-up Consultation (30 min)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">1</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Included</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">$0.00</td>
+                          </tr>
+                          <tr className="bg-gray-100">
+                            <td colSpan={3} className="border border-gray-400 px-3 py-2 text-right font-medium text-gray-900">Subtotal</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right font-medium text-gray-900">USD $1,200.00</td>
+                          </tr>
+                          <tr>
+                            <td colSpan={3} className="border border-gray-400 px-3 py-2 text-right text-gray-900">Sales Tax (if applicable)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-gray-900">$0.00*</td>
+                          </tr>
+                          <tr className="bg-blue-700 text-white font-bold">
+                            <td colSpan={3} className="border border-gray-400 px-3 py-2 text-right text-sm">TOTAL CONTRACT VALUE</td>
+                            <td className="border border-gray-400 px-3 py-2 text-right text-sm">USD $1,200.00</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-[10px] text-gray-600 mt-2 italic">
+                        * Tax exemption may apply for legal services. Client responsible for any applicable taxes based on jurisdiction.
+                      </p>
+                    </div>
+
+                    {/* Optional Add-On Services */}
+                    <div className="mt-4">
+                      <p className="text-xs font-bold text-gray-900 mb-2">Optional Add-On Services:</p>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400">
+                        <thead className="bg-gray-900 text-white">
+                          <tr>
+                            <th className="border border-gray-400 px-3 py-2 text-left font-bold">SERVICE</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold w-28">PRICE</th>
+                            <th className="border border-gray-400 px-3 py-2 text-center font-bold w-32">UNIT</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Express Delivery (48 hours)</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">$400.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Per engagement</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Negotiation Support</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">$350.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Per hour</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Additional Version Review</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">$600.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Per version</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Extended Consultation</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">$250.00</td>
+                            <td className="border border-gray-400 px-3 py-2 text-center text-gray-900">Per hour</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 5 - SLA */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">5. SERVICE LEVEL AGREEMENT</h3>
+
+                      <div className="grid grid-cols-3 gap-3 mt-3">
+                        <div className="border border-gray-400 p-2 bg-gray-50">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">RESPONSE TIME</p>
+                          <p className="text-xs text-gray-900 mb-1">Initial acknowledgment</p>
+                          <p className="text-sm font-bold text-gray-900">&lt; 4 business hours</p>
+                        </div>
+                        <div className="border border-gray-400 p-2 bg-gray-50">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">DELIVERY</p>
+                          <p className="text-xs text-gray-900 mb-1">Standard turnaround</p>
+                          <p className="text-sm font-bold text-gray-900">5 business days</p>
+                        </div>
+                        <div className="border border-gray-400 p-2 bg-gray-50">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">AVAILABILITY</p>
+                          <p className="text-xs text-gray-900 mb-1">Business hours coverage</p>
+                          <p className="text-sm font-bold text-gray-900">Mon-Fri 9AM-6PM CT</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 mt-2">
+                        <div className="border border-gray-400 p-2">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">QUALITY</p>
+                          <p className="text-xs text-gray-900 mb-1">Review accuracy target</p>
+                          <p className="text-sm font-bold text-gray-900">99%</p>
+                        </div>
+                        <div className="border border-gray-400 p-2">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">ESCALATION</p>
+                          <p className="text-xs text-gray-900 mb-1">Issue resolution</p>
+                          <p className="text-sm font-bold text-gray-900">&lt; 24 hours</p>
+                        </div>
+                        <div className="border border-gray-400 p-2">
+                          <p className="text-[10px] text-gray-600 uppercase mb-1">COMMUNICATION</p>
+                          <p className="text-xs text-gray-900 mb-1">Status updates</p>
+                          <p className="text-sm font-bold text-gray-900">Every 2 days</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 6 - Security & Compliance */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">6. SECURITY & COMPLIANCE</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Data Protection</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">GDPR compliant, CCPA compliant, Data Processing Agreement available</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Security Certifications</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">SOC 2 Type II certified, ISO 27001 aligned</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Encryption</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">AES-256 at rest, TLS 1.3 in transit</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Data Retention</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Documents retained for 7 years per regulatory requirements</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Access Controls</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Role-based access, MFA required, audit logging enabled</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Insurance</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Professional liability: $5M per occurrence / $10M aggregate</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 7 - Assumptions */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">7. ASSUMPTIONS & DEPENDENCIES</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <tbody>
+                          <tr className="bg-blue-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 w-12 text-center font-bold">A1</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Document provided in English, Spanish, French, or German</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 text-center font-bold">A2</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Document length does not exceed 500 words</td>
+                          </tr>
+                          <tr className="bg-blue-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 text-center font-bold">A3</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Document provided in editable format (Word or high-quality PDF)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 text-center font-bold">A4</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Client designates single point of contact for queries</td>
+                          </tr>
+                          <tr className="bg-blue-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 text-center font-bold">A5</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">No expedited timeline unless Express Delivery selected</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900 text-center font-bold">A6</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Client provides complete document within 48 hours of order confirmation</td>
+                          </tr>
+                        </tbody>
+                      </table>
+
+                      <p className="text-[10px] text-gray-600 mt-2 italic">
+                        Deviation from assumptions may result in timeline extension and/or pricing adjustment, subject to mutual agreement.
+                      </p>
+                    </div>
+
+                    {/* Sección 8 - Payment Terms */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">8. PAYMENT TERMS</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Payment Terms</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Net 30 from invoice date</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Invoice Timing</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Upon delivery of all deliverables</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Currency</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">USD (United States Dollars)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Payment Method</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">ACH, Wire Transfer, Credit Card (+3% processing fee)</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Late Payment</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">1.5% per month on overdue amounts</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Purchase Order</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">PO required: ☐ Yes ☐ No   PO#: ____________</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 9 - General Terms */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">9. GENERAL TERMS</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <tbody>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium w-40">Governing Law</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">State of Illinois, USA</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Dispute Resolution</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Binding arbitration per AAA Commercial Rules</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Confidentiality</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Mutual NDA incorporated by reference (Attachment A)</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Limitation of Liability</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Limited to fees paid under this SOF</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Cancellation</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Full refund if cancelled before work begins; 50% if in progress</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Force Majeure</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Standard force majeure provisions apply</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-3 py-2 text-gray-700 font-medium">Assignment</td>
+                            <td className="border border-gray-400 px-3 py-2 text-gray-900">Not assignable without prior written consent</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Sección 10 - Contacts */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">10. CONTACTS</h3>
+
+                      <div className="grid grid-cols-2 gap-4 mt-3">
+                        <div className="border border-gray-400 p-3 bg-gray-50">
+                          <p className="text-[10px] text-gray-600 uppercase font-bold mb-2">SERVICE PROVIDER CONTACTS</p>
+                          <p className="text-xs text-gray-700 mb-1">Engagement Lead:</p>
+                          <p className="text-xs font-bold text-gray-900">Sarah Mitchell, Senior Counsel</p>
+                          <p className="text-xs text-blue-600">sarah@meridianlegal.com</p>
+                          <p className="text-xs text-gray-700 mt-2 mb-1">Billing Contact:</p>
+                          <p className="text-xs text-blue-600">billing@meridianlegal.com</p>
+                        </div>
+                        <div className="border border-gray-400 p-3 bg-gray-50">
+                          <p className="text-[10px] text-gray-600 uppercase font-bold mb-2">CLIENT CONTACTS</p>
+                          <p className="text-xs text-gray-700 mb-1">Business Owner:</p>
+                          <p className="text-xs text-gray-900">Name: ______________________</p>
+                          <p className="text-xs text-gray-900">Email: ______________________</p>
+                          <p className="text-xs text-gray-700 mt-2 mb-1">Procurement Contact:</p>
+                          <p className="text-xs text-gray-900">Name: ______________________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección 11 - Attachments */}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-bold text-gray-900 mb-2 pb-1 border-b-2 border-gray-900">11. ATTACHMENTS</h3>
+
+                      <table className="w-full text-xs border-collapse border border-gray-400 mt-2">
+                        <thead className="bg-gray-900 text-white">
+                          <tr>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold w-24">REF</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-left font-bold">DOCUMENT</th>
+                            <th className="border border-gray-400 px-2 py-1.5 text-center font-bold w-48">STATUS</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Attachment A</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Mutual Non-Disclosure Agreement</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐ Attached ☐ Previously executed</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Attachment B</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Data Processing Agreement (DPA)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐ Attached ☐ Not required</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Attachment C</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Certificate of Insurance</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐ Attached ☐ Available upon request</td>
+                          </tr>
+                          <tr className="bg-gray-50">
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Attachment D</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">SOC 2 Type II Report</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐ Attached ☐ Available under NDA</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Attachment E</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-gray-900">Master Services Agreement (if applicable)</td>
+                            <td className="border border-gray-400 px-2 py-1.5 text-center text-gray-900">☐ Attached ☐ N/A</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Authorization Box */}
+                    <div className="mt-6 border-2 border-blue-600 p-4 bg-blue-50">
+                      <h3 className="text-center text-sm font-bold text-blue-900 mb-3">AUTHORIZATION</h3>
+                      <p className="text-xs text-center text-gray-900 mb-4">
+                        By signing below, both parties agree to the terms and conditions set forth in this Service Order Form.
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-6 bg-white p-4 border border-blue-300">
+                        <div>
+                          <p className="text-xs font-bold text-gray-900 mb-3">SERVICE PROVIDER</p>
+                          <p className="text-xs text-gray-700 mb-1">Signature: ______________________</p>
+                          <p className="text-xs text-gray-700 mb-1">Name: Sarah Mitchell</p>
+                          <p className="text-xs text-gray-700 mb-1">Title: Senior Counsel</p>
+                          <p className="text-xs text-gray-700">Date: ______________________</p>
+                        </div>
+                        <div className="border-l border-gray-300 pl-6">
+                          <p className="text-xs font-bold text-gray-900 mb-3">CLIENT (Authorized Signatory)</p>
+                          <p className="text-xs text-gray-700 mb-1">Signature: ______________________</p>
+                          <p className="text-xs text-gray-700 mb-1">Name: ______________________</p>
+                          <p className="text-xs text-gray-700 mb-1">Title: ______________________</p>
+                          <p className="text-xs text-gray-700">Date: ______________________</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-4 pt-3 border-t border-gray-400">
+                      <p className="text-center text-[10px] text-gray-500 leading-relaxed">
+                        Meridian Legal Services, LLC · EIN: 12-3456789 · Illinois Licensed · meridianlegal.com<br />
+                        This Service Order Form is subject to the Master Services Agreement (if executed) or Provider&apos;s Standard Terms of Service.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Luxury Boutique Example */}
+                {previewStyleType === 'luxury-boutique' && (
+                  <div className="space-y-8 font-serif text-sm max-w-xl mx-auto py-8">
+                    {/* Header ultra minimalista - solo el nombre */}
+                    <div className="mb-16">
+                      <h1 className="text-lg text-gray-900">Caldwell</h1>
+                    </div>
+
+                    {/* Fecha y cliente */}
+                    <div className="space-y-2 mb-12">
+                      <p className="text-sm text-gray-900">23 January 2026</p>
+                      <p className="text-sm text-gray-900">[Client Name]</p>
+                    </div>
+
+                    {/* Re: line */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900">
+                        <span className="font-medium">Re:</span> Review of Confidentiality Agreement
+                      </p>
+                    </div>
+
+                    {/* Primer párrafo */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        Thank you for your enquiry. I would be pleased to review the proposed non-disclosure agreement on your behalf.
+                      </p>
+                    </div>
+
+                    {/* Segundo párrafo - scope */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        The engagement would include a full analysis of the document, a written memorandum setting out my observations and recommendations, and an annotated version with proposed amendments. I will be available to discuss the findings with you at your convenience.
+                      </p>
+                    </div>
+
+                    {/* Párrafo de precio - muy directo */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        My fee for this work is $2,400, payable on engagement. I anticipate completing the review within five working days of receiving the document.
+                      </p>
+                    </div>
+
+                    {/* Opción express */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        Should you require an expedited review, I can accommodate a forty-eight hour turnaround for an additional $800.
+                      </p>
+                    </div>
+
+                    {/* Validez */}
+                    <div className="mb-8">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        This proposal remains open for thirty days. Please let me know if you would like to proceed, or if you have any questions.
+                      </p>
+                    </div>
+
+                    {/* Cierre simple */}
+                    <div className="mb-12">
+                      <p className="text-sm text-gray-900 leading-loose">
+                        I look forward to hearing from you.
+                      </p>
+                    </div>
+
+                    {/* Firma ultra minimalista - solo el nombre */}
+                    <div className="mt-16">
+                      <p className="text-sm text-gray-900">James Caldwell</p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Selección y Creación de Método de Pago */}
       {
