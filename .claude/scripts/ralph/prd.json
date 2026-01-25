@@ -1,0 +1,341 @@
+{
+    "project": "Lawgic Cotizaciones Express.",
+    "branchName": "feature/wysiwyg-editor",
+    "description": "Editor WYSIWYG para Cotizaciones - Permitir edición visual completa del documento generado con soporte para texto, formato, tablas y guardado automático",
+    "designSystem": "sistema-de-diseno.md",
+    "userStories": [
+      {
+        "id": "US-001",
+        "title": "Setup de Tiptap Editor y dependencias",
+        "description": "Como desarrollador, necesito configurar Tiptap como editor base para construir las funcionalidades de edición WYSIWYG.",
+        "acceptanceCriteria": [
+          "Instalar dependencias: @tiptap/react, @tiptap/starter-kit, @tiptap/extension-table, @tiptap/extension-table-row, @tiptap/extension-table-cell, @tiptap/extension-table-header, @tiptap/extension-text-align, @tiptap/extension-underline",
+          "Crear componente base TiptapEditor.tsx en /src/components/Editor/",
+          "Editor renderiza contenido HTML básico sin errores",
+          "Typecheck passes",
+          "Verify in browser: el editor carga sin errores de consola"
+        ],
+        "priority": 1,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-002",
+        "title": "Conversión Markdown a HTML para Tiptap",
+        "description": "Como sistema, necesito convertir el Markdown almacenado en Firestore a HTML para que Tiptap pueda editarlo.",
+        "acceptanceCriteria": [
+          "Crear función markdownToHtml() en /src/lib/utils/",
+          "Preserva estructura: headers (h1-h3), párrafos, listas, tablas, negrita, cursiva",
+          "Maneja edge cases: contenido vacío, caracteres especiales mexicanos (ñ, acentos)",
+          "Typecheck passes",
+          "Test manual: cargar cotización existente y verificar contenido aparece correctamente"
+        ],
+        "priority": 2,
+        "passes": false,
+        "notes": "Usar librería 'marked' o 'remark' para conversión"
+      },
+      {
+        "id": "US-003",
+        "title": "Reemplazar vista previa con editor editable",
+        "description": "Como usuario, quiero que la vista previa sea editable directamente sin cambiar de modo.",
+        "acceptanceCriteria": [
+          "El componente ReactMarkdown en /resultado/[id]/page.tsx se reemplaza por TiptapEditor",
+          "El editor ocupa el mismo espacio que la vista previa anterior dentro del card-container",
+          "El contenido de la cotización carga automáticamente en el editor",
+          "Usa bg-white border border-gray-200/50 rounded-[16px] shadow-sm (sistema de diseño)",
+          "Typecheck passes",
+          "Verify in browser: la página de resultado muestra editor editable en lugar de vista estática"
+        ],
+        "priority": 3,
+        "passes": false,
+        "notes": "Mantener el card-container existente, solo reemplazar el contenido interno"
+      },
+      {
+        "id": "US-004",
+        "title": "Toolbar de formato básico (Bold, Italic, Underline)",
+        "description": "Como usuario, quiero una barra de herramientas para aplicar formato al texto seleccionado.",
+        "acceptanceCriteria": [
+          "Crear componente Toolbar.tsx en /src/components/Editor/",
+          "Toolbar fija en la parte superior del editor con bg-white border-b border-gray-200",
+          "Botones: Negrita (B), Cursiva (I), Subrayado (U) usando Icon Buttons del sistema de diseño",
+          "Botones usan w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100",
+          "Botones muestran estado activo: bg-blue-50 border-blue-600 text-blue-600",
+          "Shortcuts funcionan: Cmd+B, Cmd+I, Cmd+U",
+          "Tooltips en cada botón describiendo la acción",
+          "Typecheck passes",
+          "Verify in browser: seleccionar texto y aplicar formato funciona visualmente"
+        ],
+        "priority": 4,
+        "passes": false,
+        "notes": "Usar Lucide React para iconos (Bold, Italic, Underline)"
+      },
+      {
+        "id": "US-005",
+        "title": "Selector de headers (H1, H2, H3, Párrafo)",
+        "description": "Como usuario, quiero cambiar el nivel de encabezado de un párrafo para estructurar el documento.",
+        "acceptanceCriteria": [
+          "Crear componente HeadingDropdown.tsx en /src/components/Editor/",
+          "Dropdown en toolbar con opciones: Párrafo, Título 1, Título 2, Título 3",
+          "Dropdown usa estilos del sistema: rounded-full, border-gray-200, hover:border-gray-300",
+          "Dropdown abierto usa shadow-2xl rounded-xl p-1.5 (select-dropdown del sistema)",
+          "Muestra el nivel actual del bloque donde está el cursor",
+          "Al seleccionar, convierte el bloque al nivel elegido",
+          "Los headers respetan tamaños del tema (text-xl, text-lg, text-base)",
+          "Typecheck passes",
+          "Verify in browser: cambiar entre niveles de header funciona y se ve el cambio"
+        ],
+        "priority": 5,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-006",
+        "title": "Listas con viñetas y numeradas",
+        "description": "Como usuario, quiero crear listas con viñetas o numeradas para organizar información.",
+        "acceptanceCriteria": [
+          "Botón de lista con viñetas (•) en toolbar",
+          "Botón de lista numerada (1.) en toolbar",
+          "Botones siguen estilo Icon Button del sistema de diseño",
+          "Tab indenta items, Shift+Tab desindenta",
+          "Enter crea nuevo item, Enter en item vacío sale de la lista",
+          "Listas usan text-sm text-gray-700 (tipografía del sistema)",
+          "Typecheck passes",
+          "Verify in browser: crear lista, agregar items, indentar funciona"
+        ],
+        "priority": 6,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-007",
+        "title": "Deshacer y Rehacer",
+        "description": "Como usuario, quiero poder deshacer y rehacer cambios para corregir errores.",
+        "acceptanceCriteria": [
+          "Botones ↶ (Undo) y ↷ (Redo) en toolbar",
+          "Botones siguen estilo Icon Button del sistema de diseño",
+          "Shortcuts: Cmd+Z (deshacer), Cmd+Shift+Z (rehacer)",
+          "Historial de al menos 100 acciones",
+          "Botones se deshabilitan (disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed) cuando no hay acciones",
+          "Typecheck passes",
+          "Verify in browser: hacer cambios, Cmd+Z deshace, Cmd+Shift+Z rehace"
+        ],
+        "priority": 7,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-008",
+        "title": "Alineación de texto",
+        "description": "Como usuario, quiero alinear el texto a la izquierda, centro, derecha o justificado.",
+        "acceptanceCriteria": [
+          "4 botones de alineación en toolbar (AlignLeft, AlignCenter, AlignRight, AlignJustify)",
+          "Botones siguen estilo Icon Button del sistema de diseño",
+          "Funciona en párrafos y headers",
+          "Muestra estado activo de la alineación actual (bg-blue-50 border-blue-600)",
+          "Typecheck passes",
+          "Verify in browser: alinear texto al centro, verificar cambio visual"
+        ],
+        "priority": 8,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-009",
+        "title": "Edición de texto en celdas de tabla",
+        "description": "Como usuario, quiero editar el contenido de las celdas de las tablas existentes.",
+        "acceptanceCriteria": [
+          "Click en celda posiciona cursor para editar",
+          "Tab navega a siguiente celda, Shift+Tab a anterior",
+          "Formato (negrita, etc.) funciona dentro de celdas",
+          "Tablas mantienen estilos: border border-gray-200 rounded-xl",
+          "Celdas header usan bg-gray-50 text-xs font-semibold uppercase text-gray-500",
+          "Typecheck passes",
+          "Verify in browser: editar contenido de tabla de honorarios funciona"
+        ],
+        "priority": 9,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-010",
+        "title": "Agregar y eliminar filas de tabla",
+        "description": "Como usuario, quiero agregar o eliminar filas en las tablas para ajustar el contenido.",
+        "acceptanceCriteria": [
+          "Click derecho en tabla muestra menú contextual",
+          "Menú contextual usa estilos dropdown del sistema: bg-white rounded-xl shadow-2xl p-1.5",
+          "Opciones: Agregar fila arriba, Agregar fila abajo, Eliminar fila",
+          "Opciones hover usan hover:bg-gray-100 rounded-md",
+          "También accesible desde botón en toolbar cuando cursor está en tabla",
+          "La tabla se actualiza inmediatamente",
+          "Typecheck passes",
+          "Verify in browser: agregar fila, eliminar fila en tabla de fases"
+        ],
+        "priority": 10,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-011",
+        "title": "Agregar y eliminar columnas de tabla",
+        "description": "Como usuario, quiero agregar o eliminar columnas en las tablas.",
+        "acceptanceCriteria": [
+          "Menú contextual incluye: Agregar columna izquierda, Agregar columna derecha, Eliminar columna",
+          "Headers de columna se pueden editar",
+          "Anchos de columna se ajustan automáticamente",
+          "Nuevas columnas mantienen estilos consistentes",
+          "Typecheck passes",
+          "Verify in browser: agregar columna, eliminar columna funciona"
+        ],
+        "priority": 11,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-012",
+        "title": "Crear tabla nueva",
+        "description": "Como usuario, quiero insertar una tabla nueva donde necesite.",
+        "acceptanceCriteria": [
+          "Botón 'Insertar tabla' (Grid icon) en toolbar",
+          "Al hacer click muestra dropdown con grid visual para seleccionar filas x columnas (máx 6x6)",
+          "Dropdown usa estilos del sistema: bg-white rounded-xl shadow-2xl p-3",
+          "Hover en grid muestra preview de tamaño seleccionado con bg-blue-100",
+          "Tabla se inserta en posición del cursor",
+          "Tabla nueva tiene estilos consistentes: border-collapse, rounded corners",
+          "Typecheck passes",
+          "Verify in browser: crear tabla 3x3, verificar estilos correctos"
+        ],
+        "priority": 12,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-013",
+        "title": "Guardado automático con indicador visual",
+        "description": "Como usuario, quiero que mis cambios se guarden automáticamente para no perder trabajo.",
+        "acceptanceCriteria": [
+          "Auto-save cada 3 segundos después de un cambio (debounce)",
+          "Indicador visual en header: 'Guardando...' (text-gray-400), 'Guardado ✓' (text-green-500), 'Error al guardar' (text-red-500)",
+          "El contenido se guarda en el campo 'content' de Firestore sobrescribiendo el original",
+          "Formato guardado: HTML",
+          "También actualiza campo 'updatedAt' con serverTimestamp()",
+          "Typecheck passes",
+          "Verify in browser: editar, esperar 3s, recargar página, verificar cambios persisten"
+        ],
+        "priority": 13,
+        "passes": false,
+        "notes": "Usar debounce de lodash o implementación custom"
+      },
+      {
+        "id": "US-014",
+        "title": "Botón guardar manual",
+        "description": "Como usuario, quiero un botón para guardar explícitamente cuando lo necesite.",
+        "acceptanceCriteria": [
+          "Botón 'Guardar' visible junto al indicador de estado",
+          "Usa estilo btn-secondary del sistema: bg-transparent border border-gray-300 rounded-full px-5 py-2.5",
+          "Shortcut: Cmd+S guarda inmediatamente",
+          "Feedback visual: botón muestra loading state, luego 'Guardado ✓' por 2 segundos",
+          "Manejo de errores con toast o mensaje inline en rojo",
+          "Typecheck passes",
+          "Verify in browser: Cmd+S guarda y muestra confirmación visual"
+        ],
+        "priority": 14,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-015",
+        "title": "Integración con descarga PDF",
+        "description": "Como usuario, quiero que el PDF descargado refleje mis ediciones.",
+        "acceptanceCriteria": [
+          "Botón 'Descargar Documento' usa el contenido HTML del editor",
+          "El PDF incluye todo el formato: headers, tablas, listas, alineación",
+          "Los estilos del tema se aplican al PDF (colores, tipografía)",
+          "Botón mantiene estilo actual: btn-primary gradient blue",
+          "Typecheck passes",
+          "Verify in browser: editar documento, descargar PDF, abrir y verificar cambios incluidos"
+        ],
+        "priority": 15,
+        "passes": false,
+        "notes": "Puede requerir ajustar el generador de PDF existente"
+      },
+      {
+        "id": "US-016",
+        "title": "Integración con envío por email",
+        "description": "Como usuario, quiero que el documento enviado por email incluya mis ediciones.",
+        "acceptanceCriteria": [
+          "Botón 'Enviar' usa el contenido editado del editor",
+          "Preview del email (si existe) muestra el contenido actualizado",
+          "El email enviado contiene el HTML editado con estilos inline",
+          "Typecheck passes",
+          "Verify in browser: editar, click enviar, verificar preview muestra cambios"
+        ],
+        "priority": 16,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-017",
+        "title": "Estilos del tema aplicados al editor",
+        "description": "Como usuario, quiero que el editor muestre los estilos del tema seleccionado para ver cómo quedará el documento.",
+        "acceptanceCriteria": [
+          "El editor aplica las clases CSS del tema activo (Silicon Valley, Boutique, etc.)",
+          "Headers, párrafos, tablas usan los estilos del objeto 'themes' existente",
+          "El selector de estilo en la página actualiza la apariencia del editor en tiempo real",
+          "Typecheck passes",
+          "Verify in browser: cambiar entre temas, verificar que estilos del editor cambian"
+        ],
+        "priority": 17,
+        "passes": false,
+        "notes": "Reutilizar el objeto themes existente en page.tsx líneas 75-246"
+      },
+      {
+        "id": "US-018",
+        "title": "Separador visual entre botones de toolbar",
+        "description": "Como usuario, quiero que la toolbar tenga grupos de botones claramente separados.",
+        "acceptanceCriteria": [
+          "Separadores verticales (|) entre grupos: [B I U] | [Headers] | [Listas] | [Tabla] | [Alineación] | [Undo Redo]",
+          "Separador usa border-l border-gray-200 h-6 mx-2",
+          "Grupos lógicos facilitan encontrar herramientas",
+          "Typecheck passes",
+          "Verify in browser: toolbar muestra grupos visualmente separados"
+        ],
+        "priority": 18,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-019",
+        "title": "Responsive y accesibilidad básica",
+        "description": "Como usuario, quiero usar el editor en diferentes dispositivos y con teclado.",
+        "acceptanceCriteria": [
+          "Editor funciona correctamente en desktop (1024px+)",
+          "Toolbar se adapta en pantallas menores: botones se reducen o colapsan en menú",
+          "Todos los botones tienen tooltips descriptivos (title attribute)",
+          "Navegación por teclado funciona: Tab entre botones de toolbar",
+          "Focus visible en botones: focus:ring-4 focus:ring-blue-100",
+          "Typecheck passes",
+          "Verify in browser: probar Tab navigation, verificar tooltips aparecen"
+        ],
+        "priority": 19,
+        "passes": false,
+        "notes": ""
+      },
+      {
+        "id": "US-020",
+        "title": "Confirmación antes de regenerar con ediciones",
+        "description": "Como usuario, quiero que me adviertan antes de perder mis ediciones al regenerar.",
+        "acceptanceCriteria": [
+          "Si el documento fue editado y usuario hace click en 'Regenerar', mostrar modal de confirmación",
+          "Modal usa estilos del sistema: bg-white rounded-[16px] shadow-2xl p-6",
+          "Mensaje: '¿Regenerar documento? Esto sobrescribirá tus ediciones actuales.'",
+          "Botones: 'Cancelar' (btn-secondary), 'Regenerar' (btn-primary con bg-red-500)",
+          "Si no hay ediciones, regenerar sin confirmación",
+          "Typecheck passes",
+          "Verify in browser: editar algo, click regenerar, modal aparece"
+        ],
+        "priority": 20,
+        "passes": false,
+        "notes": "Agregar flag 'hasUnsavedChanges' o comparar content original vs actual"
+      }
+    ]
+  }
