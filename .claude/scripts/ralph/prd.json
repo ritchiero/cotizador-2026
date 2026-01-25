@@ -16,7 +16,7 @@
           "Verify in browser: el editor carga sin errores de consola"
         ],
         "priority": 1,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {

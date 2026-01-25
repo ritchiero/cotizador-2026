@@ -4,8 +4,20 @@ Started: 2024-01-15
 ## Codebase Patterns
 - Migrations: IF NOT EXISTS
 - Types: Export from actions.ts
+- Tiptap Extensions: Import using named imports from @tiptap/extension-* packages
 
 ## Key Files
 - db/schema.ts
 - app/auth/actions.ts
+- src/components/Editor/TiptapEditor.tsx
+---
+
+## 2026-01-25 - US-001
+- Implemented base Tiptap editor setup with all required extensions
+- Files changed: package.json, src/components/Editor/TiptapEditor.tsx
+- **Learnings:**
+  - Tiptap extensions must be imported as named imports, not default imports
+  - Project uses src/ directory structure for components
+  - StarterKit extension provides basic editor functionality
+  - Extensions: Table, TableRow, TableCell, TableHeader, TextAlign, Underline
 ---
