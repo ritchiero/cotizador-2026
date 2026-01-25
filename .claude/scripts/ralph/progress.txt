@@ -8,6 +8,8 @@ Started: 2024-01-15
 - React State: Use separate state for HTML content when converting from markdown
 - Next.js Imports: Use @/ alias for src/ directory imports
 - Tiptap History: Disable StarterKit history and use custom History extension for depth configuration
+- Firestore Auto-save: Use debounce with 3s delay, updateDoc with serverTimestamp()
+- React Debounce: Use useRef for stable debounced function reference, avoid useCallback
 
 ## Key Files
 - db/schema.ts
@@ -173,4 +175,30 @@ Started: 2024-01-15
   - State management: useState for isOpen and hoveredCell coordinates
   - Grid3X3 icon from Lucide React works well for table creation button
   - Table styling inheritance: New tables automatically use existing .tiptap-editor table CSS rules
+---
+
+## 2026-01-25 - US-013
+- Implemented auto-save functionality with visual status indicator for document preservation
+- Files changed: src/app/cotizacion-estructurada/resultado/[id]/page.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Firestore auto-save: updateDoc with content (HTML) and updatedAt (serverTimestamp()) for proper document versioning
+  - Lodash debounce: Already available as dependency, use 3-second delay for optimal UX balance
+  - React debounce patterns: useRef.current for stable function reference avoids infinite re-renders vs useCallback
+  - Visual feedback states: 'saving' (gray spinner), 'saved' (green checkmark), 'error' (red X) with automatic reset timeouts
+  - Save status positioning: Added to header between document title and status badge for clear visibility
+  - HTML persistence: Editor HTML content overwrites original markdown in Firestore for edited version preservation
+  - Import optimization: Import updateDoc and serverTimestamp from firebase/firestore for Firestore operations
+---
+
+## 2026-01-25 - US-014
+- Implemented manual save button with Cmd+S keyboard shortcut and visual feedback
+- Files changed: src/app/cotizacion-estructurada/resultado/[id]/page.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Manual save function: Separate state isManualSaving prevents multiple simultaneous save operations
+  - Keyboard shortcuts: addEventListener on document for Cmd+S (metaKey || ctrlKey), preventDefault() to avoid browser save dialog
+  - Button design system: bg-transparent border border-gray-300 rounded-full px-5 py-2.5 follows btn-secondary styling
+  - Visual feedback reuse: Manual save reuses existing saveStatus and getSaveStatusIndicator() for consistency
+  - Loading states: Button shows spinner and "Guardando..." text during save operation with disabled state
+  - Error handling: Same error handling pattern as auto-save with try/catch and timeout reset
+  - Accessibility: title attribute for tooltip showing keyboard shortcut Cmd+S
 ---

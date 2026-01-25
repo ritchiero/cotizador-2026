@@ -222,7 +222,7 @@
           "Verify in browser: editar, esperar 3s, recargar página, verificar cambios persisten"
         ],
         "priority": 13,
-        "passes": false,
+        "passes": true,
         "notes": "Usar debounce de lodash o implementación custom"
       },
       {
@@ -239,7 +239,7 @@
           "Verify in browser: Cmd+S guarda y muestra confirmación visual"
         ],
         "priority": 14,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {

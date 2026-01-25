@@ -42,6 +42,7 @@ export default function ResultadoCotizacion() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [editorContent, setEditorContent] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [isManualSaving, setIsManualSaving] = useState(false);
 
   useEffect(() => {
     const loadQuotation = async () => {
@@ -125,6 +126,54 @@ export default function ResultadoCotizacion() {
     // Trigger debounced auto-save
     debouncedSave(content);
   }, [debouncedSave]);
+
+  // Manual save function
+  const handleManualSave = useCallback(async () => {
+    if (!quotationId || isManualSaving) return;
+
+    setIsManualSaving(true);
+    
+    try {
+      setSaveStatus('saving');
+      const quotationRef = doc(db, 'quotations', quotationId);
+      await updateDoc(quotationRef, {
+        content: editorContent,
+        updatedAt: serverTimestamp()
+      });
+      setSaveStatus('saved');
+      
+      // Reset to idle after 2 seconds
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error('Error saving content:', error);
+      setSaveStatus('error');
+      
+      // Reset to idle after 3 seconds for error state
+      setTimeout(() => {
+        setSaveStatus('idle');
+      }, 3000);
+    } finally {
+      setIsManualSaving(false);
+    }
+  }, [quotationId, editorContent, isManualSaving]);
+
+  // Keyboard shortcut for save (Cmd+S)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+        event.preventDefault();
+        handleManualSave();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleManualSave]);
 
   const themes: Record<string, any> = {
     'silicon-valley': {
@@ -471,6 +520,21 @@ export default function ResultadoCotizacion() {
             </div>
             <div className="flex items-center gap-3">
               {getSaveStatusIndicator()}
+              <button
+                onClick={handleManualSave}
+                disabled={isManualSaving}
+                className="bg-transparent border border-gray-300 rounded-full px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                title="Guardar ahora (Cmd+S)"
+              >
+                {isManualSaving ? (
+                  <>
+                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar'
+                )}
+              </button>
               <span className="px-4 py-1.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full border border-green-200">
                 {quotation.status === 'generated' ? 'Generada' : quotation.status}
               </span>
