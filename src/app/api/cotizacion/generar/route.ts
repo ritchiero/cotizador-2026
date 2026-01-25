@@ -23,14 +23,16 @@ const generarFolioYFecha = () => {
 function generarEncabezado(userInfo: any, destinatario: any, despachoInfo: any, fecha: string, folio: string) {
   // Use Markdown horizontal rule instead of ASCII block
   const separador = "---";
+  const despachoNombre = despachoInfo?.nombre || "Despacho Legal";
+  const despachoSlogan = despachoInfo?.slogan || "";
 
-  return `${despachoInfo.nombre.toUpperCase()}
-${despachoInfo.slogan || ""}
+  return `${despachoNombre.toUpperCase()}
+${despachoSlogan}
 
 ${separador}
 
 PROPUESTA DE SERVICIOS PROFESIONALES
-${destinatario.empresa || "Servicios Legales"}
+${destinatario?.empresa || "Servicios Legales"}
 
 ${separador}
 
@@ -302,13 +304,16 @@ Por los servicios descritos en la presente propuesta, nuestros honorarios ascien
 
 // ====== SUB-AGENTE 6: OBLIGACIONES Y CONFIDENCIALIDAD ======
 async function generarObligacionesYCierre(despachoInfo: any, userInfo: any, styleInstructions: string) {
+  const despachoNombre = despachoInfo?.nombre || "Despacho Legal";
+  const email = userInfo?.email || `contacto@${despachoNombre.toLowerCase().replace(/\s/g, '')}.mx`;
+
   const prompt = `Genera las secciones finales (V a VIII) de una propuesta legal profesional.
 
 ${styleInstructions}
 
 DATOS:
-Despacho: ${despachoInfo.nombre}
-Email: ${userInfo.email || "contacto@" + despachoInfo.nombre.toLowerCase().replace(/\s/g, '') + ".mx"}
+Despacho: ${despachoNombre}
+Email: ${email}
 
 INSTRUCCIONES:
 1. Generar 4 secciones:
@@ -348,13 +353,14 @@ Genera las 4 secciones completas:`;
 // ====== SUB-AGENTE 7: FOOTER ======
 function generarFooter(despachoInfo: any, userInfo: any) {
   const separador = "---";
-  const email = userInfo.email || `contacto@${despachoInfo.nombre.toLowerCase().replace(/\s/g, '')}.mx`;
+  const despachoNombre = despachoInfo?.nombre || "Despacho Legal";
+  const email = userInfo?.email || `contacto@${despachoNombre.toLowerCase().replace(/\s/g, '')}.mx`;
 
   return `
 
 ${separador}
 
-${despachoInfo.nombre.toUpperCase()}
+${despachoNombre.toUpperCase()}
 ${email}
 
 ${separador}`;
