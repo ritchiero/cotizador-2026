@@ -232,3 +232,27 @@ Started: 2024-01-15
   - TypeScript lodash: @types/lodash package required for debounce function typing
   - Firebase data handling: avoid duplicate id properties when spreading Firestore document data
 ---
+
+## 2026-01-25 - US-017
+- Implemented theme styles application to Tiptap editor with real-time switching
+- Files changed: src/components/Editor/TiptapEditor.tsx, src/app/cotizacion-estructurada/resultado/[id]/page.tsx
+- **Learnings:**
+  - TiptapEditor component extensibility: themeStyles prop allows dynamic styling without rebuilding component
+  - Tailwind-to-CSS conversion: Custom utility function needed for inline style application since @apply doesn't work in dangerouslySetInnerHTML
+  - Theme selector UX: Replacing read-only indicator with interactive dropdown improves user control
+  - Dynamic CSS injection: <style> tag with dangerouslySetInnerHTML allows runtime theme application to ProseMirror elements
+  - CSS specificity: .tiptap-editor .ProseMirror selector required to override default Tiptap styles
+  - Theme object reusability: Existing themes object works seamlessly with editor component via prop passing
+  - Real-time updates: Theme changes reflect immediately in editor without re-rendering content
+---
+
+## 2026-01-25 - US-018
+- Implemented visual separators between toolbar button groups for improved organization
+- Files changed: src/components/Editor/Toolbar.tsx
+- **Learnings:**
+  - Component organization: Local Separator component definition keeps code DRY and consistent
+  - UX grouping: Logical button groups ([Headers] | [B I U] | [Listas] | [Tabla] | [Alineación] | [Undo Redo]) improve tool discoverability
+  - CSS spacing: border-l border-gray-200 h-6 mx-2 provides subtle but effective visual separation
+  - Code reorganization: Moving table operations button next to table creation creates cohesive table section
+  - Flexbox layout: gap-2 on container plus mx-2 on separators maintains consistent spacing throughout toolbar
+---

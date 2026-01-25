@@ -44,7 +44,7 @@ export default function HeadingDropdown({ editor }: HeadingDropdownProps) {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-10 px-3 bg-transparent border border-gray-200 rounded-full hover:border-gray-300 flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors"
+        className="h-10 px-3 bg-transparent border border-gray-200 rounded-full hover:border-gray-300 flex items-center gap-2 text-sm font-medium text-gray-700 transition-colors focus:ring-4 focus:ring-blue-100 focus:outline-none"
         title="Cambiar nivel de encabezado"
       >
         <span>{currentLevel.label}</span>

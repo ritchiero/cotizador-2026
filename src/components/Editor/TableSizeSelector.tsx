@@ -36,7 +36,7 @@ export default function TableSizeSelector({ editor }: TableSizeSelectorProps) {
       <button
         onClick={() => setIsOpen(!isOpen)}
         title="Insertar tabla"
-        className="w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-700"
+        className="w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-700 focus:ring-4 focus:ring-blue-100 focus:outline-none"
       >
         <Grid3X3 className="w-4 h-4" />
       </button>
