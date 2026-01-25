@@ -1642,7 +1642,7 @@ export default function CotizacionEstructuradaForm() {
         status: 'generated',
         content: data.contenido,
         selectedAddOns: Array.from(selectedAddOns),
-        formDataSnapshot: { ...formData },
+        formDataSnapshot: payload, // Guardar el payload completo en lugar de formData crudo
         createdAt: serverTimestamp()
       });
 
