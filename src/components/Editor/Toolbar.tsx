@@ -33,9 +33,16 @@ export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
   const canUndo = editor.can().undo()
   const canRedo = editor.can().redo()
 
+  // Separator component
+  const Separator = () => (
+    <div className="border-l border-gray-200 h-6 mx-2"></div>
+  )
+
   return (
     <div className="bg-white border-b border-gray-200 p-3 flex items-center gap-2">
       <HeadingDropdown editor={editor} />
+      
+      <Separator />
       
       <button
         onClick={toggleBold}
@@ -73,6 +80,8 @@ export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
         <Underline className="w-4 h-4" />
       </button>
 
+      <Separator />
+
       <button
         onClick={toggleBulletList}
         title="Lista con viñetas"
@@ -97,7 +106,22 @@ export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
         <ListOrdered className="w-4 h-4" />
       </button>
 
+      <Separator />
+
       <TableSizeSelector editor={editor} />
+
+      {/* Table operations button - only visible when cursor is in a table */}
+      {editor.isActive('table') && (
+        <button
+          onClick={onShowTableMenu}
+          title="Opciones de tabla"
+          className="w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-700"
+        >
+          <Table className="w-4 h-4" />
+        </button>
+      )}
+
+      <Separator />
 
       <button
         onClick={setTextAlignLeft}
@@ -147,16 +171,7 @@ export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
         <AlignJustify className="w-4 h-4" />
       </button>
 
-      {/* Table operations button - only visible when cursor is in a table */}
-      {editor.isActive('table') && (
-        <button
-          onClick={onShowTableMenu}
-          title="Opciones de tabla"
-          className="w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-700"
-        >
-          <Table className="w-4 h-4" />
-        </button>
-      )}
+      <Separator />
 
       <button
         onClick={undo}
