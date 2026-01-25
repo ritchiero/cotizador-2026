@@ -31,7 +31,7 @@
           "Test manual: cargar cotización existente y verificar contenido aparece correctamente"
         ],
         "priority": 2,
-        "passes": false,
+        "passes": true,
         "notes": "Usar librería 'marked' o 'remark' para conversión"
       },
       {
@@ -47,7 +47,7 @@
           "Verify in browser: la página de resultado muestra editor editable en lugar de vista estática"
         ],
         "priority": 3,
-        "passes": false,
+        "passes": true,
         "notes": "Mantener el card-container existente, solo reemplazar el contenido interno"
       },
       {
@@ -66,7 +66,7 @@
           "Verify in browser: seleccionar texto y aplicar formato funciona visualmente"
         ],
         "priority": 4,
-        "passes": false,
+        "passes": true,
         "notes": "Usar Lucide React para iconos (Bold, Italic, Underline)"
       },
       {

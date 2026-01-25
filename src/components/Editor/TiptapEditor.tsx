@@ -9,6 +9,7 @@ import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Underline } from '@tiptap/extension-underline'
+import Toolbar from './Toolbar'
 
 interface TiptapEditorProps {
   content?: string
@@ -24,7 +25,11 @@ export default function TiptapEditor({
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline,
+      Underline.configure({
+        HTMLAttributes: {
+          class: 'underline',
+        },
+      }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -39,6 +44,11 @@ export default function TiptapEditor({
     onUpdate: ({ editor }) => {
       onChange?.(editor.getHTML())
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none',
+      },
+    },
   })
 
   if (!editor) {
@@ -47,9 +57,10 @@ export default function TiptapEditor({
 
   return (
     <div className={`tiptap-editor ${className}`}>
+      <Toolbar editor={editor} />
       <EditorContent 
         editor={editor} 
-        className="prose prose-sm max-w-none focus:outline-none"
+        className="p-4 min-h-[400px]"
       />
     </div>
   )

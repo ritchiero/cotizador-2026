@@ -5,11 +5,15 @@ Started: 2024-01-15
 - Migrations: IF NOT EXISTS
 - Types: Export from actions.ts
 - Tiptap Extensions: Import using named imports from @tiptap/extension-* packages
+- React State: Use separate state for HTML content when converting from markdown
+- Next.js Imports: Use @/ alias for src/ directory imports
 
 ## Key Files
 - db/schema.ts
 - app/auth/actions.ts
 - src/components/Editor/TiptapEditor.tsx
+- src/lib/utils/markdownToHtml.ts
+- src/app/cotizacion-estructurada/resultado/[id]/page.tsx
 ---
 
 ## 2026-01-25 - US-001
@@ -20,4 +24,42 @@ Started: 2024-01-15
   - Project uses src/ directory structure for components
   - StarterKit extension provides basic editor functionality
   - Extensions: Table, TableRow, TableCell, TableHeader, TextAlign, Underline
+---
+
+## 2026-01-25 - US-002
+- Implemented markdownToHtml() function for converting Firestore markdown to HTML for Tiptap
+- Files changed: package.json, src/lib/utils/markdownToHtml.ts
+- **Learnings:**
+  - marked library provides reliable markdown to HTML conversion with GFM support
+  - marked.setOptions() accepts gfm: true for table support
+  - marked.parse() returns string when called synchronously
+  - Function handles edge cases: empty content, special characters (ñ, acentos)
+  - Testing confirmed proper structure preservation: headers, tables, lists, bold, italic
+  - Utils functions belong in src/lib/utils/ directory
+---
+
+## 2026-01-25 - US-003
+- Replaced ReactMarkdown with TiptapEditor in resultado page for editable preview
+- Files changed: src/app/cotizacion-estructurada/resultado/[id]/page.tsx
+- **Learnings:**
+  - TiptapEditor component accepts content and onChange props for real-time updates
+  - markdownToHtml() converts Firestore markdown to HTML automatically on load
+  - Editor container uses sistema de diseño: bg-white border border-gray-200/50 rounded-[16px] shadow-sm
+  - State management: separate editorContent state tracks HTML while quotation keeps original markdown
+  - Import paths use @/ alias for src/ directory components and utilities
+  - Next.js build and lint pass with warnings but no errors
+---
+
+## 2026-01-25 - US-004
+- Implemented Toolbar component with Bold, Italic, Underline buttons for formatting text
+- Files changed: src/components/Editor/Toolbar.tsx, src/components/Editor/TiptapEditor.tsx
+- **Learnings:**
+  - Tiptap editor commands use `editor.chain().focus().toggleMark('markName').run()` syntax for formatting
+  - Button active states checked with `editor.isActive('markName')` for visual feedback
+  - Toolbar integrates seamlessly with TiptapEditor by passing editor instance as prop
+  - Design system classes: w-10 h-10 border border-gray-200 rounded-lg for icon buttons
+  - Active state styling: bg-blue-50 border-blue-600 text-blue-600 
+  - Lucide React icons (Bold, Italic, Underline) work well for toolbar buttons
+  - Keyboard shortcuts (Cmd+B, Cmd+I, Cmd+U) work automatically with StarterKit and Underline extensions
+  - Tooltips added via title attribute for accessibility
 ---
