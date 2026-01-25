@@ -36,6 +36,21 @@ export default function TableContextMenu({
     onClose()
   }
 
+  const handleAddColumnLeft = () => {
+    editor.chain().focus().addColumnBefore().run()
+    onClose()
+  }
+
+  const handleAddColumnRight = () => {
+    editor.chain().focus().addColumnAfter().run()
+    onClose()
+  }
+
+  const handleDeleteColumn = () => {
+    editor.chain().focus().deleteColumn().run()
+    onClose()
+  }
+
   // Close on click outside
   React.useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -86,6 +101,32 @@ export default function TableContextMenu({
       >
         <Minus className="h-4 w-4" />
         Eliminar fila
+      </button>
+      
+      <div className="border-t border-gray-100 my-1"></div>
+      
+      <button
+        onClick={handleAddColumnLeft}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+      >
+        <Plus className="h-4 w-4" />
+        Agregar columna izquierda
+      </button>
+      
+      <button
+        onClick={handleAddColumnRight}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+      >
+        <Plus className="h-4 w-4" />
+        Agregar columna derecha
+      </button>
+      
+      <button
+        onClick={handleDeleteColumn}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+      >
+        <Minus className="h-4 w-4" />
+        Eliminar columna
       </button>
     </div>
   )

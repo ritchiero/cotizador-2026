@@ -131,3 +131,18 @@ Started: 2024-01-15
   - Text formatting (bold, italic, underline) works inside table cells without additional config
   - StarterKit history configuration requires "as any" type assertion to avoid TS errors
 ---
+
+## 2026-01-25 - US-010
+- Implemented table row add/delete functionality with right-click context menu and toolbar button
+- Files changed: src/components/Editor/TableContextMenu.tsx, src/components/Editor/TiptapEditor.tsx, src/components/Editor/Toolbar.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap table commands: addRowBefore(), addRowAfter(), deleteRow() methods work seamlessly
+  - Context menu positioning: use pageX, pageY for right-click, getBoundingClientRect() for toolbar button
+  - React useEffect must be called before any early returns to avoid rules-of-hooks errors
+  - Context menu design system: bg-white rounded-xl shadow-2xl p-1.5 border border-gray-200
+  - Button interactions: hover:bg-gray-100 for normal actions, hover:bg-red-50 text-red-600 for delete
+  - Table detection: editor.isActive('table') checks if cursor is currently in a table
+  - Event handling: preventDefault() on right-click, click outside detection with document listener
+  - Table toolbar button only appears when editor.isActive('table') is true for better UX
+  - Context menu state: useState for isVisible + position coordinates for dynamic positioning
+---
