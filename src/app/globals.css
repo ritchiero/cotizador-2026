@@ -189,6 +189,27 @@ body {
   .animation-delay-400 {
     animation-delay: 400ms;
   }
+
+  /* Tiptap Editor List Styles */
+  .tiptap-editor ul {
+    @apply text-sm text-gray-700 list-disc pl-6 space-y-1;
+  }
+
+  .tiptap-editor ol {
+    @apply text-sm text-gray-700 list-decimal pl-6 space-y-1;
+  }
+
+  .tiptap-editor ul li,
+  .tiptap-editor ol li {
+    @apply text-sm text-gray-700;
+  }
+
+  .tiptap-editor ul ul,
+  .tiptap-editor ol ol,
+  .tiptap-editor ul ol,
+  .tiptap-editor ol ul {
+    @apply mt-1 mb-1;
+  }
 }
 
 @keyframes progress {

@@ -63,3 +63,16 @@ Started: 2024-01-15
   - Keyboard shortcuts (Cmd+B, Cmd+I, Cmd+U) work automatically with StarterKit and Underline extensions
   - Tooltips added via title attribute for accessibility
 ---
+
+## 2026-01-25 - US-005
+- Implemented HeadingDropdown component with Párrafo, Título 1, Título 2, Título 3 options
+- Files changed: src/components/Editor/HeadingDropdown.tsx, src/components/Editor/Toolbar.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap heading detection: `editor.isActive('heading', { level: 1 })` checks for specific heading level
+  - Tiptap heading commands: `editor.chain().focus().toggleHeading({ level })` switches to heading level
+  - Tiptap paragraph command: `editor.chain().focus().setParagraph()` converts back to paragraph
+  - Dropdown state management: useState for isOpen, click outside overlay to close dropdown
+  - Design system: rounded-full for dropdown trigger, shadow-2xl rounded-xl p-1.5 for dropdown menu
+  - Active state styling: bg-blue-50 text-blue-600 font-medium for current selection
+  - ChevronDown icon from Lucide React works well for dropdown indicator
+---

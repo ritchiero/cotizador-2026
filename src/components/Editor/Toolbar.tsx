@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Editor } from '@tiptap/react'
-import { Bold, Italic, Underline } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered } from 'lucide-react'
 import HeadingDropdown from './HeadingDropdown'
 
 interface ToolbarProps {
@@ -17,6 +17,8 @@ export default function Toolbar({ editor }: ToolbarProps) {
   const toggleBold = () => editor.chain().focus().toggleMark('bold').run()
   const toggleItalic = () => editor.chain().focus().toggleMark('italic').run()
   const toggleUnderline = () => editor.chain().focus().toggleMark('underline').run()
+  const toggleBulletList = () => editor.chain().focus().toggleBulletList().run()
+  const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run()
 
   return (
     <div className="bg-white border-b border-gray-200 p-3 flex items-center gap-2">
@@ -56,6 +58,30 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
       >
         <Underline className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={toggleBulletList}
+        title="Lista con viñetas"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive('bulletList') 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <List className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={toggleOrderedList}
+        title="Lista numerada"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive('orderedList') 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <ListOrdered className="w-4 h-4" />
       </button>
     </div>
   )
