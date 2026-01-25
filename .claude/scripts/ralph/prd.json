@@ -270,8 +270,8 @@
           "Verify in browser: editar, click enviar, verificar preview muestra cambios"
         ],
         "priority": 16,
-        "passes": false,
-        "notes": ""
+        "passes": true,
+        "notes": "Implementado con nodemailer y modal de captura"
       },
       {
         "id": "US-017",

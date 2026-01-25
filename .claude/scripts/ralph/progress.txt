@@ -217,3 +217,18 @@ Started: 2024-01-15
   - Font family detection: Check theme.container for font-serif/font-mono to apply proper fonts
   - editorContent (HTML) vs quotation.content (markdown) - use edited HTML for PDF generation
 ---
+
+## 2026-01-25 - US-016
+- Implemented complete email integration using nodemailer for sending edited content
+- Files changed: package.json, src/app/api/email/send/route.ts, src/components/EmailModal.tsx, src/app/cotizacion-estructurada/resultado/[id]/page.tsx
+- **Learnings:**
+  - Nodemailer import syntax: use `import * as nodemailer from 'nodemailer'` for TypeScript compatibility
+  - API route structure: POST method with error handling for SMTP configuration and network issues
+  - Email HTML styling: inline CSS needed for email compatibility, professional header/footer template
+  - Modal component patterns: overlay click detection, form validation, loading states with visual feedback
+  - React state integration: email modal opens from button, uses editorContent (HTML) vs original markdown
+  - Environment variables: SMTP_USER, SMTP_PASS, SMTP_FROM needed for production email sending
+  - Email validation: client-side regex + server-side validation for robust input handling
+  - TypeScript lodash: @types/lodash package required for debounce function typing
+  - Firebase data handling: avoid duplicate id properties when spreading Firestore document data
+---
