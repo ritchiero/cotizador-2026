@@ -160,3 +160,17 @@ Started: 2024-01-15
   - Tiptap automatically maintains table structure and styling when adding/removing columns
   - All table operations (rows + columns) accessible through single unified context menu interface
 ---
+
+## 2026-01-25 - US-012
+- Implemented table creation functionality with visual grid selector for choosing table size
+- Files changed: src/components/Editor/TableSizeSelector.tsx, src/components/Editor/Toolbar.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap table insertion: `editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true })` creates table with header row
+  - Grid visualization: Array.from({ length: 36 }, (_, index)) creates 6x6 grid using index math for row/col calculation
+  - Dropdown positioning: absolute top-full left-0 mt-1 positions dropdown below button
+  - Hover preview: Boolean logic `row <= hoveredCell.row && col <= hoveredCell.col` highlights selected grid area
+  - Click outside detection: fixed inset-0 backdrop with z-10 underneath dropdown z-20
+  - State management: useState for isOpen and hoveredCell coordinates
+  - Grid3X3 icon from Lucide React works well for table creation button
+  - Table styling inheritance: New tables automatically use existing .tiptap-editor table CSS rules
+---
