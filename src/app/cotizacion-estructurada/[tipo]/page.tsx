@@ -218,11 +218,11 @@ export default function CotizacionEstructuradaForm() {
     attachments: [] as File[] // Store actual files
   });
 
-  // Format & Tone State
-  const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large' | 'custom'>('one-pager');
-  const [toneType, setToneType] = useState<'friendly' | 'formal'>('friendly');
-  const [languageType, setLanguageType] = useState<'es' | 'en' | 'other'>('es');
-  const [styleType, setStyleType] = useState<'ny-biglaw' | 'silicon-valley' | 'uk-magic-circle' | 'german-engineering' | 'french-cabinet' | 'spanish-boutique' | 'japanese-keigo' | 'swiss-financial' | 'legal-ops' | 'luxury-boutique'>('spanish-boutique');
+  // Format & Tone State - Defaults Inteligentes
+  const [formatType, setFormatType] = useState<'one-pager' | 'short' | 'large' | 'custom'>('large'); // Default: Detallado (más profesional)
+  const [toneType, setToneType] = useState<'friendly' | 'formal'>('formal'); // Default: Formal (más apropiado para B2B)
+  const [languageType, setLanguageType] = useState<'es' | 'en' | 'other'>('es'); // Default: Español (mercado principal)
+  const [styleType, setStyleType] = useState<'ny-biglaw' | 'silicon-valley' | 'uk-magic-circle' | 'german-engineering' | 'french-cabinet' | 'spanish-boutique' | 'japanese-keigo' | 'swiss-financial' | 'legal-ops' | 'luxury-boutique'>('spanish-boutique'); // Default: Despacho Boutique (más relevante para mercado español)
   const [previewStyleType, setPreviewStyleType] = useState<string | null>(null);
 
   // Estados para configuración customizada
@@ -2184,6 +2184,19 @@ export default function CotizacionEstructuradaForm() {
           <div className="animate-in fade-in slide-in-from-right-8 duration-500 max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 space-y-8">
 
+              {/* Hint de Configuración Recomendada */}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Ya configuramos las opciones más comunes para ti</p>
+                  <p className="text-xs text-blue-700">
+                    Puedes generar directamente con la configuración recomendada (Detallado, Formal, Español, Despacho Boutique) o personalizar según tus preferencias.
+                  </p>
+                </div>
+              </div>
+
               {/* Formato de Entrega - Grid Compacto 4 columnas */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Formato de Entrega</h2>
@@ -2211,13 +2224,18 @@ export default function CotizacionEstructuradaForm() {
 
                   <button
                     onClick={() => setFormatType('large')}
-                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 ${formatType === 'large' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
+                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-3 relative ${formatType === 'large' ? 'border-blue-600 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'}`}
                   >
                     <BookOpenIcon className={`w-6 h-6 ${formatType === 'large' ? 'text-blue-600' : 'text-gray-400'}`} />
                     <span className={`text-sm font-medium text-center ${formatType === 'large' ? 'text-blue-900' : 'text-gray-700'}`}>
                       Detallado<br />
                       <span className="text-xs opacity-75">(+1000 palabras)</span>
                     </span>
+                    {formatType === 'large' && (
+                      <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                        Recomendado
+                      </span>
+                    )}
                   </button>
 
                   <button
@@ -2343,7 +2361,7 @@ export default function CotizacionEstructuradaForm() {
               {/* Tono - Segment Control */}
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Tono de Comunicación</h2>
-                <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1 max-w-md mx-auto">
+                <div className="flex items-center justify-center bg-gray-100 rounded-lg p-1 max-w-md mx-auto relative">
                   <button
                     onClick={() => setToneType('friendly')}
                     className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${toneType === 'friendly'
@@ -2356,13 +2374,18 @@ export default function CotizacionEstructuradaForm() {
                   </button>
                   <button
                     onClick={() => setToneType('formal')}
-                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${toneType === 'formal'
+                    className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 relative ${toneType === 'formal'
                         ? 'bg-white text-blue-600 shadow-sm'
                         : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     <BriefcaseIcon className="w-4 h-4" />
                     <span>Formal</span>
+                    {toneType === 'formal' && (
+                      <span className="absolute -top-7 right-0 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                        Recomendado
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
@@ -2374,13 +2397,18 @@ export default function CotizacionEstructuradaForm() {
                   <div className="flex items-center justify-center gap-3">
                     <button
                       onClick={() => setLanguageType('es')}
-                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'es'
+                      className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 relative ${languageType === 'es'
                           ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
                           : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
                         }`}
                     >
                       <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
                       <span className="text-sm font-medium">Español</span>
+                      {languageType === 'es' && (
+                        <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full">
+                          Recomendado
+                        </span>
+                      )}
                     </button>
 
                     <button
@@ -2620,10 +2648,17 @@ export default function CotizacionEstructuradaForm() {
                         <BuildingStorefrontIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1">
-                        <h3 className={`font-semibold text-sm mb-1 ${styleType === 'spanish-boutique' ? 'text-blue-900' : 'text-gray-900'
-                          }`}>
-                          Despacho Boutique
-                        </h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-semibold text-sm ${styleType === 'spanish-boutique' ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                            Despacho Boutique
+                          </h3>
+                          {styleType === 'spanish-boutique' && (
+                            <span className="px-2 py-0.5 bg-blue-600 text-white text-[9px] font-bold rounded-full">
+                              RECOMENDADO
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-600 leading-relaxed">
                           Cercanía profesional + autoridad técnica. Estilo Madrid.
                         </p>
