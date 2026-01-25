@@ -54,9 +54,9 @@ export default function AddOnsSelector({ selectedAddOns, onToggle, onConfigure }
                         <div
                             key={item.id}
                             onClick={() => onToggle(item.id)}
-                            className={`relative flex flex-col p-4 rounded-2xl border cursor-pointer transition-all duration-300 group hover:-translate-y-1 ${isSelected
-                                ? 'border-blue-500 bg-blue-50/30 ring-1 ring-blue-500 shadow-md'
-                                : 'border-gray-200 hover:border-blue-300 hover:shadow-lg bg-white'
+                            className={`relative flex flex-col p-4 rounded-xl border cursor-pointer transition-all duration-300 group ${isSelected
+                                ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500 shadow-md'
+                                : 'border-gray-200 hover:border-blue-500 hover:shadow-md bg-white'
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-3">

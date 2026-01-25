@@ -65,6 +65,8 @@ interface Servicio {
   descripcion: string;
   precio: string;
   tiempo: string;
+  detalles?: string;
+  incluye?: string[];
 }
 
 export default function CotizacionEstructuradaForm() {
@@ -316,6 +318,8 @@ export default function CotizacionEstructuradaForm() {
           descripcion: doc.data().descripcion || "",
           precio: doc.data().precio || "",
           tiempo: doc.data().tiempo || "",
+          detalles: doc.data().detalles || "",
+          incluye: doc.data().incluye || [],
         })) as Servicio[];
 
         setServicios(serviciosData);
@@ -2299,8 +2303,8 @@ export default function CotizacionEstructuradaForm() {
                       <div
                         key={block.id}
                         className={`bg-white rounded-xl p-4 border-2 transition-all ${block.enabled
-                            ? 'border-gray-200 shadow-sm'
-                            : 'border-gray-100 bg-gray-50 opacity-60'
+                          ? 'border-gray-200 shadow-sm'
+                          : 'border-gray-100 bg-gray-50 opacity-60'
                           }`}
                       >
                         <div className="flex items-center gap-3">
@@ -2349,8 +2353,8 @@ export default function CotizacionEstructuradaForm() {
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'short')}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'short'
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-900'
                                   }`}
                               >
                                 Breve
@@ -2358,8 +2362,8 @@ export default function CotizacionEstructuradaForm() {
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'medium')}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'medium'
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-900'
                                   }`}
                               >
                                 Medio
@@ -2367,8 +2371,8 @@ export default function CotizacionEstructuradaForm() {
                               <button
                                 onClick={() => handleDetailLevelChange(block.id, 'long')}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${block.detailLevel === 'long'
-                                    ? 'bg-white text-blue-600 shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900'
+                                  ? 'bg-white text-blue-600 shadow-sm'
+                                  : 'text-gray-600 hover:text-gray-900'
                                   }`}
                               >
                                 Extenso
@@ -2396,8 +2400,8 @@ export default function CotizacionEstructuradaForm() {
                   <button
                     onClick={() => setToneType('friendly')}
                     className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 ${toneType === 'friendly'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     <FaceSmileIcon className="w-4 h-4" />
@@ -2406,8 +2410,8 @@ export default function CotizacionEstructuradaForm() {
                   <button
                     onClick={() => setToneType('formal')}
                     className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2 relative ${toneType === 'formal'
-                        ? 'bg-white text-blue-600 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     <BriefcaseIcon className="w-4 h-4" />
@@ -2429,8 +2433,8 @@ export default function CotizacionEstructuradaForm() {
                     <button
                       onClick={() => setLanguageType('es')}
                       className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 relative ${languageType === 'es'
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
                         }`}
                     >
                       <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
@@ -2445,8 +2449,8 @@ export default function CotizacionEstructuradaForm() {
                     <button
                       onClick={() => setLanguageType('en')}
                       className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'en'
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
                         }`}
                     >
                       <GlobeAltIcon className="w-5 h-5" />
@@ -2456,8 +2460,8 @@ export default function CotizacionEstructuradaForm() {
                     <button
                       onClick={() => setLanguageType('other')}
                       className={`px-6 py-3 rounded-xl border-2 transition-all flex items-center gap-2 ${languageType === 'other'
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
-                          : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
+                        ? 'border-blue-600 bg-blue-50 text-blue-900 font-semibold shadow-sm'
+                        : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:shadow-sm'
                         }`}
                     >
                       <LanguageIcon className="w-5 h-5" />
@@ -2490,8 +2494,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('ny-biglaw')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'ny-biglaw'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2524,8 +2528,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('silicon-valley')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'silicon-valley'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2558,8 +2562,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('uk-magic-circle')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'uk-magic-circle'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2592,8 +2596,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('german-engineering')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'german-engineering'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2626,8 +2630,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('french-cabinet')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'french-cabinet'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2660,8 +2664,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('spanish-boutique')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'spanish-boutique'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2701,8 +2705,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('japanese-keigo')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'japanese-keigo'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2735,8 +2739,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('swiss-financial')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'swiss-financial'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2769,8 +2773,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('legal-ops')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'legal-ops'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button
@@ -2803,8 +2807,8 @@ export default function CotizacionEstructuradaForm() {
                   <div
                     onClick={() => setStyleType('luxury-boutique')}
                     className={`p-4 rounded-xl border-2 transition-all text-left relative cursor-pointer ${styleType === 'luxury-boutique'
-                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-blue-600 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                       }`}
                   >
                     <button

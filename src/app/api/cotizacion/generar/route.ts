@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 // Función para generar folio y fecha
 const generarFolioYFecha = () => {
@@ -19,7 +21,8 @@ const generarFolioYFecha = () => {
 
 // ====== SUB-AGENTE 1: ENCABEZADO PROFESIONAL ======
 function generarEncabezado(userInfo: any, destinatario: any, despachoInfo: any, fecha: string, folio: string) {
-  const separador = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+  // Use Markdown horizontal rule instead of ASCII block
+  const separador = "---";
 
   return `${despachoInfo.nombre.toUpperCase()}
 ${despachoInfo.slogan || ""}
@@ -39,9 +42,47 @@ Confidencial:     Este documento contiene información privilegiada
 ${separador}`;
 }
 
+// ====== HELPER: INSTRUCCIONES DE ESTILO ======
+const getStyleInstructions = (style: string) => {
+  const styles: Record<string, string> = {
+    'silicon-valley': `ESTILO: SILICON VALLEY (Moderno, SaaS, Product-led).
+      - Usa TABLAS para presentar precios y entregables.
+      - Usa BULLET POINTS para listas.
+      - Sé CONCISO y directo. Evita el "legalese" excesivo.
+      - Enfócate en el VALOR y la VELOCIDAD.`,
+    'ny-biglaw': `ESTILO: NY BIGLAW (Tradicional, Serio, "White Shoe").
+      - NO USES TABLAS para descripciones, usa párrafos narrativos densos y justificados.
+      - Lenguaje EXTREMADAMENTE FORMAL y AUTORITARIO.
+      - Usa terminología legal precisa ("El Cliente", "La Firma").
+      - Estructura conservadora y texto corrido.`,
+    'spanish-boutique': `ESTILO: DESPACHO BOUTIQUE (Cercano, Profesional).
+      - Equilibrio entre calidez y técnica.
+      - Usa "Nosotros" y "Usted".
+      - Estructura clara pero narrativa.`,
+    'swiss-financial': `ESTILO: FINANCIAL GRADE (Técnico, Suizo).
+      - Usa MUCHAS TABLAS y GRILLAS.
+      - Datos numéricos precisos.
+      - Lenguaje analítico, frío y objetivo.`,
+    'luxury-boutique': `ESTILO: LUXURY BOUTIQUE (Exclusivo).
+      - Lenguaje refinado y elegante.
+      - Párrafos espaciados y estética cuidada en el texto.
+      - Trato VIP ("Su excelencia", "Distinguido").`,
+    'legal-ops': `ESTILO: LEGAL OPS (Eficiente).
+      - Formato estructurado para fácil aprobación de Procurement.
+      - KPIs y métricas claras.
+      - Sin adornos innecesarios.`
+  };
+  return styles[style] || styles['silicon-valley'];
+};
+
 // ====== SUB-AGENTE 2: RESUMEN EJECUTIVO ======
-async function generarResumenEjecutivo(descripcionServicio: string, despachoInfo: any, tiempo: string) {
-  const prompt = `Genera un RESUMEN EJECUTIVO profesional para una propuesta de servicios legales.
+async function generarResumenEjecutivo(descripcionServicio: string, despachoInfo: any, tiempo: string, toneType: 'friendly' | 'formal', styleInstructions: string) {
+  const toneInstruction = toneType === 'friendly'
+    ? "Usa lenguaje amigable, cercano y accesible."
+    : "Usa lenguaje formal, técnico y profesional.";
+
+  const prompt = `Genera un RESUMEN EJECUTIVO profesional.
+${styleInstructions}
 
 DATOS:
 Despacho: ${despachoInfo.nombre}
@@ -49,108 +90,76 @@ Servicio: ${descripcionServicio}
 Tiempo: ${tiempo}
 
 INSTRUCCIONES:
-1. Un párrafo formal de 3-4 oraciones
-2. Mencionar que ${despachoInfo.nombre} se complace en presentar la propuesta
-3. Describir brevemente el servicio
-4. Mencionar el plazo estimado (${tiempo})
-5. Tono: profesional, conciso, ejecutivo
-6. NO uses títulos como "RESUMEN EJECUTIVO:", solo el contenido
+1. Párrafo de introducción.
+2. Descripción del valor propuesta.
+3. Mencionar plazo (${tiempo}).
+4. Tono: ${toneInstruction}
+5. ADAPTA LA ESTRUCTURA AL ESTILO INDICADO ARRIBA (Si pide tablas, usa tablas markdown; si pide texto corrido, usa texto).
 
-EJEMPLO:
-${despachoInfo.nombre} se complace en presentar esta propuesta para [servicio]. Nuestro servicio contempla el acompañamiento integral desde [inicio] hasta [fin], garantizando [resultado] en un plazo de ${tiempo}.
-
-Genera el resumen ejecutivo:`;
+Genera el resumen:`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano-2025-08-07",
-    messages: [{ role: "user", content: prompt }]
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024
   });
 
   return completion.choices[0].message.content?.trim() || "";
 }
 
 // ====== SUB-AGENTE 3: ALCANCE DE SERVICIOS ======
-async function generarAlcanceServicios(servicios: any[]) {
-  const serviciosTexto = servicios.map((s: any) => {
-    let incluyeTexto = "";
-    if (Array.isArray(s.incluye)) {
-      incluyeTexto = s.incluye.map((item: any) => {
-        if (typeof item === 'object' && item.descripcion) {
-          return item.descripcion;
-        }
-        return item;
-      }).join(", ");
-    } else {
-      incluyeTexto = s.incluye;
-    }
+async function generarAlcanceServicios(servicios: any[], styleInstructions: string) {
+  const serviciosTexto = servicios.map((s: any) => `${s.nombre}: ${s.descripcion}`).join("\n");
 
-    return `${s.nombre}:
-Descripción: ${s.descripcion}
-Detalles: ${s.detalles}
-Incluye: ${incluyeTexto}`;
-  }).join("\n\n");
+  const prompt = `Genera la sección "ALCANCE DE LOS SERVICIOS".
+${styleInstructions}
 
-  const prompt = `Genera la sección "II. ALCANCE DE LOS SERVICIOS" de una propuesta legal profesional.
-
-SERVICIOS A INCLUIR:
+SERVICIOS:
 ${serviciosTexto}
 
 INSTRUCCIONES:
-1. Título: "II. ALCANCE DE LOS SERVICIOS"
-2. Dividir en subsecciones A, B, C, D, etc. (una por cada fase del servicio)
-3. Cada subsección con título descriptivo de la fase
-4. Párrafos de 2-3 oraciones explicando qué se hará
-5. Usar lenguaje formal y técnico pero claro
-6. NO usar bullets, usar párrafos corridos
-7. Formato profesional de propuesta legal
-
-EJEMPLO DE FORMATO:
-II. ALCANCE DE LOS SERVICIOS
-
-A. Fase de Estructuración
-
-Realizaremos una sesión de trabajo para definir la arquitectura corporativa...
-
-B. Elaboración de Documentos
-
-Redactaremos los estatutos sociales con cláusulas específicas...
+1. Título: "II. ALCANCE" (o el que corresponda al estilo).
+2. Desarrolla las fases del servicio.
+3. CRÍTICO: Sigue las instrucciones de estilo para el FORMATO (Tablas vs Texto Narrativo).
+   - Si es SILICON VALLEY/FINANCIAL: ¡Usa Tablas Markdown para los entregables!
+   - Si es BIGLAW/BOUTIQUE: ¡Usa párrafos narrativos elegantes!
 
 Genera la sección completa:`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano-2025-08-07",
-    messages: [{ role: "user", content: prompt }]
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024
   });
 
   return completion.choices[0].message.content?.trim() || "";
 }
 
 // ====== SUB-AGENTE 4: CRONOGRAMA ======
-async function generarCronograma(tiempo: string, descripcionServicio: string) {
-  const prompt = `Genera la sección "III. CRONOGRAMA ESTIMADO" para una propuesta legal.
+async function generarCronograma(tiempo: string, descripcionServicio: string, styleInstructions: string) {
+  const prompt = `Genera la sección "CRONOGRAMA ESTIMADO".
+${styleInstructions}
 
 DATOS:
 Tiempo total: ${tiempo}
 Servicio: ${descripcionServicio}
 
 INSTRUCCIONES:
-1. Título: "III. CRONOGRAMA ESTIMADO"
-2. Crear una tabla con formato ASCII:
-    Actividad                                         Plazo
-    ─────────────────────────────────────────────────────────────────
-    [actividad 1]                                     Días X-Y
-    [actividad 2]                                     Días X-Y
-    ─────────────────────────────────────────────────────────────────
+1. Genera un plan de trabajo.
+2. CRÍTICO: Si el estilo pide tabla, USA UNA TABLA MARKDOWN STANDARD, NO ASCII.
+   Ejemplo Markdown:
+   | Fase | Actividad | Tiempo |
+   | --- | --- | --- |
+   | 1 | Inicio | Día 1 |
 
-3. Incluir 4-6 actividades principales del servicio
-4. Distribuir los días proporcionalmente según el tiempo total
-5. Al final agregar: "Los plazos anteriores son estimados y están sujetos a la disponibilidad de las autoridades competentes y a la entrega oportuna de la documentación requerida."
+   NO uses caracteres como "─" o "│" ni bloques de código.
 
-Genera la sección completa con la tabla:`;
+Genera la sección:`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano-2025-08-07",
-    messages: [{ role: "user", content: prompt }]
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024
   });
 
   return completion.choices[0].message.content?.trim() || "";
@@ -158,25 +167,31 @@ Genera la sección completa con la tabla:`;
 
 // ====== SUB-AGENTE 5: HONORARIOS (sin IA) ======
 function generarHonorarios(precio: string, formaPago: string, moneda: string) {
-  const precioNum = parseFloat(precio.replace(/[^0-9.]/g, ''));
+  // Robust parsing: remove non-numeric chars except dot
+  // If input is empty or invalid, default to 0 to avoid NaN
+  const cleanPrice = precio ? precio.replace(/[^0-9.]/g, '') : '0';
+  const precioNum = parseFloat(cleanPrice) || 0;
+
   const honorarios = precioNum / 1.16;
   const iva = precioNum - honorarios;
   const simbolo = moneda === "USD" ? "$" : "$";
+
+  // Use toLocaleString for pretty numbers (e.g. 1,200.00)
+  const fmt = (n: number) => n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return `IV. HONORARIOS PROFESIONALES
 
 Por los servicios descritos en la presente propuesta, nuestros honorarios ascienden a:
 
-    Concepto                                          Importe
-    ─────────────────────────────────────────────────────────────────
-    Honorarios profesionales                          ${simbolo}${honorarios.toFixed(2)} ${moneda}
-    IVA (16%)                                         ${simbolo}${iva.toFixed(2)} ${moneda}
-    ─────────────────────────────────────────────────────────────────
-    TOTAL                                             ${simbolo}${precioNum.toFixed(2)} ${moneda}
+| Concepto | Importe |
+| :--- | :---: |
+| Honorarios profesionales | ${simbolo}${fmt(honorarios)} ${moneda} |
+| IVA (16%) | ${simbolo}${fmt(iva)} ${moneda} |
+| **TOTAL** | **${simbolo}${fmt(precioNum)} ${moneda}** |
 
-Condiciones de pago: ${formaPago}
+**Condiciones de pago:** ${formaPago}
 
-Los honorarios no incluyen derechos notariales, derechos registrales ni gastos ante autoridades, los cuales serán cubiertos directamente por el cliente o facturados por separado a precio de costo.`;
+> Los honorarios no incluyen derechos notariales, derechos registrales ni gastos ante autoridades, los cuales serán cubiertos directamente por el cliente o facturados por separado a precio de costo.`;
 }
 
 // ====== SUB-AGENTE 6: OBLIGACIONES Y CONFIDENCIALIDAD ======
@@ -214,8 +229,9 @@ La información proporcionada será tratada con estricta confidencialidad...
 Genera las 4 secciones completas:`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5-nano-2025-08-07",
-    messages: [{ role: "user", content: prompt }]
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1024
   });
 
   return completion.choices[0].message.content?.trim() || "";
@@ -223,7 +239,7 @@ Genera las 4 secciones completas:`;
 
 // ====== SUB-AGENTE 7: FOOTER ======
 function generarFooter(despachoInfo: any, userInfo: any) {
-  const separador = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
+  const separador = "---";
   const email = userInfo.email || `contacto@${despachoInfo.nombre.toLowerCase().replace(/\s/g, '')}.mx`;
 
   return `
@@ -250,22 +266,29 @@ export async function POST(req: Request) {
       despachoInfo,
       servicioInfo,
       estructura,
-      userInfo
+      userInfo,
+      formatType,
+      toneType,
+      languageType,
+      styleType, // NEW
+      customLanguage,
+      customBlocks,
+      addOns
     } = body;
 
     // Generar folio y fecha
     const { fecha, folio } = generarFolioYFecha();
 
-    console.log("🚀 Iniciando generación con sub-agentes profesionales...");
+    console.log("🚀 Iniciando generación con sub-agentes profesionales (OpenAI)...");
+
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is missing");
+    }
 
     // Preparar datos
-    const destinatario = {
-      nombre: clienteNombre,
-      empresa: remitente || ""
-    };
-
+    const safeDespachoInfo = (despachoInfo && despachoInfo.nombre) ? despachoInfo : { nombre: "Despacho Legal", slogan: "" };
+    const destinatario = { nombre: clienteNombre, empresa: remitente || "" };
     const moneda = estructura?.formato?.precios?.formato || 'MXN';
-
     const serviciosData = servicioInfo ? [servicioInfo] : [{
       nombre: descripcion,
       descripcion: descripcion,
@@ -273,24 +296,62 @@ export async function POST(req: Request) {
       incluye: ["Servicio completo"]
     }];
 
-    // Ejecutar agentes en paralelo
-    console.log("📝 Ejecutando agentes...");
+    // 1. Obtener Instrucciones de Estilo Profundo
+    const styleInstructions = getStyleInstructions(styleType || 'silicon-valley');
+    console.log(`🎨 Estilo seleccionado: ${styleType} -> Aplicando instrucciones profundas.`);
 
+    // Ejecutar agentes en paralelo con instrucciones de estilo
     const [resumenEjecutivo, alcanceServicios, cronograma, obligacionesYCierre] = await Promise.all([
-      generarResumenEjecutivo(descripcion, despachoInfo, tiempo),
-      generarAlcanceServicios(serviciosData),
-      generarCronograma(tiempo, descripcion),
-      generarObligacionesYCierre(despachoInfo, userInfo)
+      generarResumenEjecutivo(descripcion, safeDespachoInfo, tiempo, toneType || 'formal', styleInstructions),
+      generarAlcanceServicios(serviciosData, styleInstructions),
+      generarCronograma(tiempo, descripcion, styleInstructions),
+      generarObligacionesYCierre(safeDespachoInfo, userInfo)
     ]);
 
     // Generar secciones sin IA
-    const encabezado = generarEncabezado(userInfo, destinatario, despachoInfo, fecha, folio);
+    const encabezado = generarEncabezado(userInfo, destinatario, safeDespachoInfo, fecha, folio);
     const honorarios = generarHonorarios(precio, formaPago, moneda);
-    const footer = generarFooter(despachoInfo, userInfo);
+    const footer = generarFooter(safeDespachoInfo, userInfo);
 
     // Ensamblar documento
     console.log("🔨 Ensamblando documento final...");
-    const contenidoFinal = `${encabezado}
+
+    let contenidoFinal = '';
+
+    // If custom blocks are specified, generate only enabled blocks in order
+    if (formatType === 'custom' && customBlocks && customBlocks.length > 0) {
+      const sortedBlocks = customBlocks
+        .filter((b: any) => b.enabled)
+        .sort((a: any, b: any) => a.order - b.order);
+
+      const sections = [encabezado];
+
+      for (const block of sortedBlocks) {
+        switch (block.id) {
+          case 'intro':
+            sections.push(`I. RESUMEN EJECUTIVO\n\n${resumenEjecutivo}`);
+            break;
+          case 'services':
+            sections.push(alcanceServicios);
+            break;
+          case 'timeline':
+            sections.push(cronograma);
+            break;
+          case 'costs':
+            sections.push(honorarios);
+            break;
+          case 'terms':
+            sections.push(obligacionesYCierre);
+            break;
+        }
+      }
+
+      sections.push(footer);
+      contenidoFinal = sections.join('\n\n\n');
+
+    } else {
+      // Default: generate all sections
+      contenidoFinal = `${encabezado}
 
 
 I. RESUMEN EJECUTIVO
@@ -310,17 +371,19 @@ ${honorarios}
 ${obligacionesYCierre}
 
 ${footer}`;
+    }
 
     console.log("✅ Cotización profesional generada con éxito");
 
     return NextResponse.json({
-      contenido: contenidoFinal
+      contenido: contenidoFinal,
+      folio: folio
     });
 
   } catch (error: any) {
     console.error('❌ Error en orquestador:', error);
     return NextResponse.json(
-      { error: 'Error al generar la cotización' },
+      { error: `Error al generar la cotización: ${error.message}` },
       { status: 500 }
     );
   }

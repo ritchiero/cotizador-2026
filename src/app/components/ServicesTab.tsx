@@ -160,72 +160,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
     loadUserMoneda();
   }, [userId]);
 
-  // Función para estandarizar servicios con IA
-  const [isStandardizing, setIsStandardizing] = useState(false);
-
-  const standardizeServices = async () => {
-    if (!user?.uid) {
-      toast.error('Usuario no autenticado');
-      return;
-    }
-
-    try {
-      setIsStandardizing(true);
-      toast.success('Iniciando estandarización de servicios...');
-
-      for (const servicio of servicios) {
-        try {
-          const response = await fetch('/api/ai/standardize-service', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              nombre: servicio.nombre,
-              descripcion: servicio.descripcion,
-              detalles: servicio.detalles,
-              tiempo: servicio.tiempo,
-              precio: servicio.precio,
-              incluye: servicio.incluye
-            })
-          });
-
-          if (!response.ok) {
-            console.error(`Error estandarizando servicio ${servicio.id}`);
-            continue;
-          }
-
-          const standardizedData = await response.json();
-
-          // Actualizar en Firestore
-          const serviceRef = doc(db, 'servicios', servicio.id);
-          await updateDoc(serviceRef, {
-            nombre: standardizedData.nombre || servicio.nombre,
-            descripcion: standardizedData.descripcion || servicio.descripcion,
-            detalles: standardizedData.detalles || servicio.detalles,
-            tiempo: standardizedData.tiempo || servicio.tiempo,
-            incluye: standardizedData.incluye || servicio.incluye,
-            updatedAt: serverTimestamp(),
-          });
-
-          // Pequeña pausa para evitar rate limiting
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-        } catch (error) {
-          console.error(`Error procesando servicio ${servicio.id}:`, error);
-        }
-      }
-
-      toast.success('Servicios estandarizados exitosamente');
-
-    } catch (error) {
-      console.error('Error en estandarización:', error);
-      toast.error('Error al estandarizar servicios');
-    } finally {
-      setIsStandardizing(false);
-    }
-  };
-
   const handleNewServiceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
 
@@ -673,25 +607,6 @@ export default function ServicesTab({ userId, servicios, onServiciosUpdate }: Se
               >
                 <SparklesIcon className="w-4 h-4 mr-2" />
                 Crear con IA
-              </button>
-              <button
-                onClick={standardizeServices}
-                disabled={isStandardizing || servicios.length === 0}
-                className="inline-flex items-center justify-center px-6 py-2.5 rounded-full border border-purple-600 text-purple-600 text-sm font-medium hover:bg-purple-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isStandardizing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
-                    Estandarizando...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
-                    </svg>
-                    Estandarizar IA
-                  </>
-                )}
               </button>
             </div>
           </div>

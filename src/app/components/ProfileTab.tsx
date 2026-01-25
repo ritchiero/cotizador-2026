@@ -22,6 +22,7 @@ interface ProfileData {
   location: string;
   tarifaHoraria: number;
   monedaPreferida: 'MXN' | 'USD';
+  idiomaPreferido: 'es' | 'en' | 'es-en';
   bio: string;
   photoURL?: string;
   rfc?: string;
@@ -50,6 +51,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
     location: '',
     tarifaHoraria: 0,
     monedaPreferida: 'MXN',
+    idiomaPreferido: 'es',
     bio: '',
     photoURL: '',
     rfc: '',
@@ -84,6 +86,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
             location: data.location || '',
             tarifaHoraria: data.tarifaHoraria || 0,
             monedaPreferida: data.monedaPreferida || 'MXN',
+            idiomaPreferido: data.idiomaPreferido || 'es',
             bio: data.bio || '',
             photoURL: data.photoURL || '',
             rfc: data.rfc || '',
@@ -202,6 +205,7 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
         tarifaHoraria: formData.tarifaHoraria,
         monedaPreferida: formData.monedaPreferida,
         tarifaHorariaMoneda: formData.monedaPreferida, // Mantener sincronizado por compatibilidad
+        idiomaPreferido: formData.idiomaPreferido,
         bio: formData.bio,
         rfc: formData.rfc,
         especialidad: formData.especialidad,
@@ -482,6 +486,26 @@ export default function ProfileTab({ userId }: ProfileTabProps) {
                   Moneda usada en servicios y cotizaciones
                 </p>
               </div>
+            </div>
+
+            {/* Idioma Preferido */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Idioma
+              </label>
+              <select
+                name="idiomaPreferido"
+                value={formData.idiomaPreferido}
+                onChange={handleInputChange}
+                className="w-full px-5 py-3 border border-[#E5E7EB] rounded-full text-sm text-[#111827] focus:border-[#3B82F6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all outline-none hover:border-[#D1D5DB] appearance-none bg-white cursor-pointer"
+              >
+                <option value="es">Español</option>
+                <option value="en">Inglés</option>
+                <option value="es-en">Bilingüe (Español/Inglés)</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                Idioma predeterminado para tus cotizaciones
+              </p>
             </div>
 
             {/* Estado/Ubicación */}
