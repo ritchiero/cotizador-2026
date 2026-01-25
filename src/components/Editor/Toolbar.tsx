@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { Editor } from '@tiptap/react'
-import { Bold, Italic, Underline, List, ListOrdered, Undo2, Redo2 } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react'
 import HeadingDropdown from './HeadingDropdown'
 
 interface ToolbarProps {
@@ -19,6 +19,11 @@ export default function Toolbar({ editor }: ToolbarProps) {
   const toggleUnderline = () => editor.chain().focus().toggleMark('underline').run()
   const toggleBulletList = () => editor.chain().focus().toggleBulletList().run()
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run()
+  
+  const setTextAlignLeft = () => editor.chain().focus().setTextAlign('left').run()
+  const setTextAlignCenter = () => editor.chain().focus().setTextAlign('center').run()
+  const setTextAlignRight = () => editor.chain().focus().setTextAlign('right').run()
+  const setTextAlignJustify = () => editor.chain().focus().setTextAlign('justify').run()
   
   const undo = () => editor.chain().focus().undo().run()
   const redo = () => editor.chain().focus().redo().run()
@@ -88,6 +93,54 @@ export default function Toolbar({ editor }: ToolbarProps) {
         }`}
       >
         <ListOrdered className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={setTextAlignLeft}
+        title="Alinear a la izquierda"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive({ textAlign: 'left' }) 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <AlignLeft className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={setTextAlignCenter}
+        title="Centrar texto"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive({ textAlign: 'center' }) 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <AlignCenter className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={setTextAlignRight}
+        title="Alinear a la derecha"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive({ textAlign: 'right' }) 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <AlignRight className="w-4 h-4" />
+      </button>
+
+      <button
+        onClick={setTextAlignJustify}
+        title="Justificar texto"
+        className={`w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors ${
+          editor.isActive({ textAlign: 'justify' }) 
+            ? 'bg-blue-50 border-blue-600 text-blue-600' 
+            : 'text-gray-700'
+        }`}
+      >
+        <AlignJustify className="w-4 h-4" />
       </button>
 
       <button
