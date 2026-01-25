@@ -334,8 +334,8 @@
           "Verify in browser: editar algo, click regenerar, modal aparece"
         ],
         "priority": 20,
-        "passes": false,
-        "notes": "Agregar flag 'hasUnsavedChanges' o comparar content original vs actual"
+        "passes": true,
+        "notes": "Implementado con hasUnsavedChanges tracking y modal de confirmación estilizado"
       }
     ]
   }

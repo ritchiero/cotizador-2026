@@ -268,3 +268,16 @@ Started: 2024-01-15
   - State management: getButtonClass(isActive, isDisabled) pattern handles all button visual states consistently
   - Component refactoring: Moving style logic into utility functions improves maintainability and consistency
 ---
+
+## 2026-01-25 - US-020
+- Implemented confirmation modal before regenerating document with unsaved edits
+- Files changed: src/app/cotizacion-estructurada/resultado/[id]/page.tsx
+- **Learnings:**
+  - Change tracking: hasUnsavedChanges + originalContent state enables real-time edit detection
+  - State reset patterns: After regeneration, update both editorContent and originalContent to reset tracking
+  - Modal UX: Confirmation only appears when needed (hasUnsavedChanges=true), seamless flow otherwise
+  - Content comparison: Comparing HTML strings works reliably for detecting meaningful changes
+  - Modal styling: z-50, backdrop overlay, and shadow-2xl provide proper modal hierarchy and focus
+  - State management: Multiple related states (isConfirmModalOpen, hasUnsavedChanges, originalContent) need coordinated updates
+  - Regeneration flow: Split handleRegenerate() and performRegeneration() for cleaner conditional logic
+---
