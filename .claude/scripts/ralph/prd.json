@@ -317,8 +317,8 @@
           "Verify in browser: probar Tab navigation, verificar tooltips aparecen"
         ],
         "priority": 19,
-        "passes": false,
-        "notes": ""
+        "passes": true,
+        "notes": "Implementado con overflow-x-auto, focus styles, y navegación por teclado funcional"
       },
       {
         "id": "US-020",

@@ -256,3 +256,15 @@ Started: 2024-01-15
   - Code reorganization: Moving table operations button next to table creation creates cohesive table section
   - Flexbox layout: gap-2 on container plus mx-2 on separators maintains consistent spacing throughout toolbar
 ---
+
+## 2026-01-25 - US-019
+- Implemented responsive design and basic accessibility for toolbar and editor
+- Files changed: src/components/Editor/Toolbar.tsx, src/components/Editor/HeadingDropdown.tsx, src/components/Editor/TableSizeSelector.tsx
+- **Learnings:**
+  - Responsive toolbar: overflow-x-auto allows horizontal scroll on small screens without breaking layout
+  - Accessibility patterns: getButtonClass() function centralizes focus states (focus:ring-4 focus:ring-blue-100 focus:outline-none)
+  - Keyboard navigation: React button elements provide native Tab navigation without additional config
+  - Focus management: All interactive elements need consistent focus styling for accessibility compliance
+  - State management: getButtonClass(isActive, isDisabled) pattern handles all button visual states consistently
+  - Component refactoring: Moving style logic into utility functions improves maintainability and consistency
+---

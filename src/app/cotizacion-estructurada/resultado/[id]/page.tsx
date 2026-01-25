@@ -45,6 +45,9 @@ export default function ResultadoCotizacion() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isManualSaving, setIsManualSaving] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [originalContent, setOriginalContent] = useState<string>('');
 
   useEffect(() => {
     const loadQuotation = async () => {
@@ -59,6 +62,7 @@ export default function ResultadoCotizacion() {
           // Convert markdown content to HTML for the editor
           const htmlContent = markdownToHtml(data.content || '');
           setEditorContent(htmlContent);
+          setOriginalContent(htmlContent);
 
           // Set theme from saved styleType
           if (data.styleType && themes[data.styleType]) {
@@ -125,9 +129,13 @@ export default function ResultadoCotizacion() {
   const handleEditorChange = useCallback((content: string) => {
     setEditorContent(content);
     
+    // Check if content has changed from original
+    const hasChanges = content !== originalContent;
+    setHasUnsavedChanges(hasChanges);
+    
     // Trigger debounced auto-save
     debouncedSave(content);
-  }, [debouncedSave]);
+  }, [debouncedSave, originalContent]);
 
   // Manual save function
   const handleManualSave = useCallback(async () => {
@@ -540,6 +548,21 @@ export default function ResultadoCotizacion() {
       return;
     }
 
+    // If there are unsaved changes, show confirmation modal
+    if (hasUnsavedChanges) {
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    // Proceed with regeneration
+    performRegeneration();
+  };
+
+  const performRegeneration = async () => {
+    if (!quotation || !quotation.formDataSnapshot) {
+      return;
+    }
+
     const toastId = toast.loading('Regenerando cotización con IA...');
     setIsRegenerating(true);
 
@@ -567,6 +590,12 @@ export default function ResultadoCotizacion() {
 
       // Actualizar estado local
       setQuotation(prev => prev ? { ...prev, content: data.contenido } : null);
+      
+      // Update editor content and reset change tracking
+      const newHtmlContent = markdownToHtml(data.contenido || '');
+      setEditorContent(newHtmlContent);
+      setOriginalContent(newHtmlContent);
+      setHasUnsavedChanges(false);
 
       toast.success('¡Cotización regenerada exitosamente!', { id: toastId });
     } catch (error) {
@@ -823,6 +852,38 @@ export default function ResultadoCotizacion() {
           quotationTitle={`Cotización Legal${quotation?.folio ? ` - ${quotation.folio}` : ''}`}
           folio={quotation?.folio}
         />
+
+        {/* Confirmation Modal */}
+        {isConfirmModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsConfirmModalOpen(false)} />
+            <div className="relative bg-white rounded-[16px] shadow-2xl p-6 max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                ¿Regenerar documento?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Esto sobrescribirá tus ediciones actuales.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="bg-transparent border border-gray-300 rounded-full px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setIsConfirmModalOpen(false);
+                    performRegeneration();
+                  }}
+                  className="bg-red-500 text-white rounded-full px-5 py-2.5 text-sm font-medium hover:bg-red-600 transition-all"
+                >
+                  Regenerar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
