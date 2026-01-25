@@ -210,6 +210,36 @@ body {
   .tiptap-editor ol ul {
     @apply mt-1 mb-1;
   }
+
+  /* Tiptap Editor Table Styles */
+  .tiptap-editor table {
+    @apply border border-gray-200 rounded-xl border-collapse min-w-full;
+    border-spacing: 0;
+  }
+
+  .tiptap-editor th {
+    @apply bg-gray-50 text-xs font-semibold uppercase text-gray-500 px-4 py-3 text-left border-b border-gray-200;
+  }
+
+  .tiptap-editor td {
+    @apply px-4 py-3 text-gray-600 border-b border-gray-200 text-sm;
+  }
+
+  .tiptap-editor th:not(:last-child),
+  .tiptap-editor td:not(:last-child) {
+    @apply border-r border-gray-200;
+  }
+
+  /* Ensure table cells are clickable and can receive focus */
+  .tiptap-editor td,
+  .tiptap-editor th {
+    position: relative;
+    cursor: text;
+  }
+
+  .tiptap-editor .selectedCell {
+    @apply bg-blue-50;
+  }
 }
 
 @keyframes progress {

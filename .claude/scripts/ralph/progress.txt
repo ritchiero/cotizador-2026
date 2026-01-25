@@ -103,3 +103,16 @@ Started: 2024-01-15
   - Lucide React icons: Undo2 and Redo2 work well for undo/redo toolbar buttons
   - Extension dependencies: Must install missing Tiptap extensions via npm before using
 ---
+
+## 2026-01-25 - US-008
+- Implemented text alignment buttons (left, center, right, justify) in Toolbar with active state indication
+- Files changed: src/components/Editor/Toolbar.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap text alignment commands: `editor.chain().focus().setTextAlign('left|center|right|justify').run()`
+  - Text alignment active state: `editor.isActive({ textAlign: 'alignment' })` for specific alignment detection
+  - TextAlign extension already included from initial setup in US-001, no additional packages needed
+  - Alignment works on paragraphs and headers as specified
+  - Lucide React alignment icons: AlignLeft, AlignCenter, AlignRight, AlignJustify work well
+  - Active state styling consistent: bg-blue-50 border-blue-600 text-blue-600
+  - Tooltips: Spanish text for user-facing interface (Alinear a la izquierda, Centrar texto, etc.)
+---
