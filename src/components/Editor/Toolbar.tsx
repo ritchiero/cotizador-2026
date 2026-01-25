@@ -3,6 +3,7 @@
 import React from 'react'
 import { Editor } from '@tiptap/react'
 import { Bold, Italic, Underline } from 'lucide-react'
+import HeadingDropdown from './HeadingDropdown'
 
 interface ToolbarProps {
   editor: Editor | null
@@ -19,6 +20,8 @@ export default function Toolbar({ editor }: ToolbarProps) {
 
   return (
     <div className="bg-white border-b border-gray-200 p-3 flex items-center gap-2">
+      <HeadingDropdown editor={editor} />
+      
       <button
         onClick={toggleBold}
         title="Negrita (Cmd+B)"

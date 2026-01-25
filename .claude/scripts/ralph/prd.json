@@ -85,7 +85,7 @@
           "Verify in browser: cambiar entre niveles de header funciona y se ve el cambio"
         ],
         "priority": 5,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {
