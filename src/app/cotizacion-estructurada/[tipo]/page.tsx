@@ -1584,7 +1584,7 @@ export default function CotizacionEstructuradaForm() {
         toneType: toneType,
         languageType: languageType,
         styleType: styleType, // ADDED: Style for deep generation
-        customLanguage: formData.customLanguage,
+        customLanguage: formData.customLanguage || null,
         customBlocks: formatType === 'custom' ? customBlocks : null,
 
         // User context

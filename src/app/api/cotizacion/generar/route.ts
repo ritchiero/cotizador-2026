@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY
 });
 
 // Función para generar folio y fecha
@@ -211,13 +211,14 @@ INSTRUCCIONES:
 
 Genera el resumen:`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024
+  const completion = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }]
   });
 
-  return completion.choices[0].message.content?.trim() || "";
+  const firstBlock = completion.content[0];
+  return firstBlock.type === 'text' ? firstBlock.text.trim() : "";
 }
 
 // ====== SUB-AGENTE 3: ALCANCE DE SERVICIOS ======
@@ -244,13 +245,14 @@ INSTRUCCIONES:
 
 Genera la sección completa:`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024
+  const completion = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }]
   });
 
-  return completion.choices[0].message.content?.trim() || "";
+  const firstBlock = completion.content[0];
+  return firstBlock.type === 'text' ? firstBlock.text.trim() : "";
 }
 
 // ====== SUB-AGENTE 4: CRONOGRAMA ======
@@ -279,13 +281,14 @@ INSTRUCCIONES:
 
 Genera la sección:`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024
+  const completion = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }]
   });
 
-  return completion.choices[0].message.content?.trim() || "";
+  const firstBlock = completion.content[0];
+  return firstBlock.type === 'text' ? firstBlock.text.trim() : "";
 }
 
 // ====== SUB-AGENTE 5: HONORARIOS (sin IA) ======
@@ -362,13 +365,14 @@ La información proporcionada será tratada con estricta confidencialidad...
 
 Genera las 4 secciones completas:`;
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 1024
+  const completion = await anthropic.messages.create({
+    model: "claude-3-5-haiku-20241022",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: prompt }]
   });
 
-  return completion.choices[0].message.content?.trim() || "";
+  const firstBlock = completion.content[0];
+  return firstBlock.type === 'text' ? firstBlock.text.trim() : "";
 }
 
 // ====== SUB-AGENTE 7: FOOTER ======
