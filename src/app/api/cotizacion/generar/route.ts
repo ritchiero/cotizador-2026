@@ -45,34 +45,140 @@ ${separador}`;
 // ====== HELPER: INSTRUCCIONES DE ESTILO ======
 const getStyleInstructions = (style: string) => {
   const styles: Record<string, string> = {
-    'silicon-valley': `ESTILO: SILICON VALLEY (Moderno, SaaS, Product-led).
-      - Usa TABLAS para presentar precios y entregables.
-      - Usa BULLET POINTS para listas.
-      - Sé CONCISO y directo. Evita el "legalese" excesivo.
-      - Enfócate en el VALOR y la VELOCIDAD.`,
-    'ny-biglaw': `ESTILO: NY BIGLAW (Tradicional, Serio, "White Shoe").
-      - NO USES TABLAS para descripciones, usa párrafos narrativos densos y justificados.
-      - Lenguaje EXTREMADAMENTE FORMAL y AUTORITARIO.
-      - Usa terminología legal precisa ("El Cliente", "La Firma").
-      - Estructura conservadora y texto corrido.`,
-    'spanish-boutique': `ESTILO: DESPACHO BOUTIQUE (Cercano, Profesional).
-      - Equilibrio entre calidez y técnica.
-      - Usa "Nosotros" y "Usted".
-      - Estructura clara pero narrativa.`,
-    'swiss-financial': `ESTILO: FINANCIAL GRADE (Técnico, Suizo).
-      - Usa MUCHAS TABLAS y GRILLAS.
-      - Datos numéricos precisos.
-      - Lenguaje analítico, frío y objetivo.`,
-    'luxury-boutique': `ESTILO: LUXURY BOUTIQUE (Exclusivo).
-      - Lenguaje refinado y elegante.
-      - Párrafos espaciados y estética cuidada en el texto.
-      - Trato VIP ("Su excelencia", "Distinguido").`,
-    'legal-ops': `ESTILO: LEGAL OPS (Eficiente).
-      - Formato estructurado para fácil aprobación de Procurement.
-      - KPIs y métricas claras.
-      - Sin adornos innecesarios.`
+    'ny-biglaw': `ESTILO: NY BIGLAW (Engagement Letter Formal).
+      - Estructura de carta formal con encabezado institucional
+      - Secciones numeradas en MAYÚSCULAS: 1. SCOPE OF ENGAGEMENT, 2. PROFESSIONAL FEES, etc.
+      - Lenguaje EXTREMADAMENTE FORMAL: "pursuant to", "hereinafter referred to as"
+      - Tabla de fees con bordes completos para pricing
+      - Párrafos narrativos densos para descripciones
+      - Cierre: "Very truly yours,"
+      - Incluir sección de aceptación con firma`,
+
+    'silicon-valley': `ESTILO: SILICON VALLEY (Product-led, Founder-friendly).
+      - Saludo casual: "Hi [First Name]," en lugar de "Dear..."
+      - Lenguaje simple y directo, CERO legalese
+      - Usa TABLAS limpias para pricing
+      - Boxes destacados para features/beneficios
+      - Bullets con íconos → para listas
+      - Mencionar "founder-friendly", "no billable surprises"
+      - Cierre: "Best," (casual)
+      - Enfoque en VALOR y VELOCIDAD`,
+
+    'uk-magic-circle': `ESTILO: BRITÁNICA (Magic Circle, Solicitors).
+      - Formato de carta formal británica
+      - Fecha en formato UK: "23 January 2026"
+      - Referencia: "Our ref: AP/NDA/2026/0147"
+      - Secciones numeradas tradicionales: 1. Background, 2. Our Understanding, 3. Scope of Work
+      - Lenguaje formal británico: "We are pleased to...", "We would be grateful if..."
+      - Vocabulario UK: "whilst", "shall", "herewith", "pursuant"
+      - Tabla de fees con IVA/VAT explícito
+      - Mencionar SRA number y regulatory compliance
+      - Cierre: "Yours sincerely" (británico)
+      - Box de "Confirmation of Instructions" para firma`,
+
+    'german-engineering': `ESTILO: INGENIERÍA CONTRACTUAL (Alemán, Ultra Estructurado).
+      - Título principal: "ACUERDO DE PRESTACIÓN DE SERVICIOS"
+      - Información del expediente en tabla al inicio (N° Expediente, Fecha, Versión, etc.)
+      - Sección 1. DEFINICIONES con tabla de términos clave
+      - MUCHAS TABLAS: para servicios, cronograma, honorarios, supuestos
+      - Numeración exhaustiva: 2.1, 2.2, 3.1.1, 3.1.2, etc.
+      - Cronograma con fases H-0, H-1, H-2 (Hitos)
+      - Tabla de honorarios con IVA desglosado línea por línea
+      - Sección de SUPUESTOS Y PRERREQUISITOS con checkboxes
+      - Box de FIRMAS en formato tabla (Por el Despacho | Por el Cliente)
+      - Lista de ANEXOS al final
+      - Lenguaje técnico y preciso, CERO ambigüedad`,
+
+    'french-cabinet': `ESTILO: CABINET FRANCÉS (Refinado, Narrativo).
+      - Header elegante centrado con líneas decorativas: ─────  ✦  ─────
+      - Nombre del cabinet en mayúsculas con "— AVOCATS —"
+      - Secciones con números romanos centrados: I. NUESTRA PROPUESTA, II. MODALIDADES
+      - Lenguaje extremadamente refinado: "Agradecemos sinceramente la confianza..."
+      - Uso de itálicas para énfasis: "Primero", "Segundo", "Tercero"
+      - Párrafos largos y bien redactados (no bullets)
+      - Separadores decorativos entre secciones: * * *
+      - Box elegante con borde doble para el precio
+      - Cierre cortés: "Quedamos a su disposición..."
+      - "Le rogamos acepte... la expresión de nuestra más distinguida consideración"
+      - Box de aceptación: "— Bon pour accord —"
+      - Footer con información legal completa`,
+
+    'spanish-boutique': `ESTILO: DESPACHO BOUTIQUE (Madrid, Cercano pero Profesional).
+      - Header con nombre en rojo oscuro
+      - Título centrado: "PROPUESTA DE SERVICIOS PROFESIONALES"
+      - Secciones numeradas en romano con color: I. ANTECEDENTES, II. ALCANCE, etc.
+      - Lenguaje cercano: "tenemos el agrado de...", "quedamos a su disposición..."
+      - Equilibrio entre calidez y autoridad técnica
+      - Tabla de metodología con fases coloreadas
+      - Tabla de honorarios con IVA 21% explícito
+      - Mencionar RGPD y protección de datos
+      - Box de ACEPTACIÓN DEL ENCARGO con borde rojo
+      - Footer con CIF, ICAM, dirección completa
+      - Usar "Nos complace", "A su entera disposición"`,
+
+    'japanese-keigo': `ESTILO: KEIGO JAPONÉS (Ultra Cortés, Estructurado).
+      - Header minimalista alineado a la derecha
+      - Título en caja con bordes: "PROPUESTA DE SERVICIOS"
+      - TODO en tablas limpias y estructuradas
+      - Tabla 1: Resumen del Servicio (Servicio, Documento, Plazo, Responsable, Honorarios)
+      - Tabla 2: Alcance con numeración 2.1-2.7 (N° | Descripción | Entregable)
+      - Tabla 3: Cronograma por días (Día 0, 1, 2-3, 4, 5)
+      - Tabla 4: Honorarios con impuesto al consumo
+      - Tabla 5: Puntos a Confirmar con checkboxes ☐
+      - Tabla 6: Condiciones (Validez, Forma pago, Confidencialidad)
+      - Lenguaje extremadamente respetuoso: "Agradecemos sinceramente..."
+      - Box de aceptación simple con grid 2x2
+      - Footer limpio centrado`,
+
+    'swiss-financial': `ESTILO: FINANCIAL-GRADE (Bancario Suizo, Ultra Preciso).
+      - Header ultra minimalista
+      - Tabla de metadata en UNA FILA: DOCUMENTO | REF | FECHA | VALIDEZ
+      - Servicio destacado en caja con TOTAL grande: CHF 1'450.00
+      - Desglose exhaustivo numerado 1.1-1.5 con Subtotal, Gastos admin, IVA 8.1%, Tasa cantonal
+      - Fila negra final: TOTAL A PAGAR
+      - Tabla de condiciones de pago: IMPORTE | PLAZO | MÉTODO
+      - Box de datos bancarios completo (IBAN, BIC/SWIFT, etc.)
+      - Supuestos con checkboxes ☑
+      - Servicios opcionales en tabla
+      - Términos generales en tabla (Ley, Jurisdicción, Seguro RC)
+      - Firmas en formato tabla 2 columnas
+      - Footer con CHE, UID, IVA, Registro Mercantil
+      - Números con separador suizo: 1'450.00
+      - Lenguaje bancario preciso y frío`,
+
+    'legal-ops': `ESTILO: LEGAL OPS (RFP Response, Procurement-friendly).
+      - Header oscuro con "SERVICE ORDER FORM"
+      - Metadata grid en 4 columnas: Job Number | Issue Date | Valid Until | Version
+      - Boxes para SERVICE PROVIDER | CLIENT con info completa
+      - Secciones numeradas: 1. SERVICE SUMMARY, 2. SCOPE DEFINITION, etc.
+      - Tabla 1: Service Summary (sin bordes gruesos, limpia)
+      - SCOPE: Dos columnas con boxes verde (✓ INCLUDED) y rojo (✗ NOT INCLUDED)
+      - Tabla 2: DELIVERABLES con header negro (ID | DELIVERABLE | FORMAT | DELIVERY | ACCEPTANCE)
+      - Tabla 3: PRICING con header negro y fila azul para TOTAL
+      - SLA metrics en grid 3x2 con boxes
+      - Security & Compliance table detallada
+      - Assumptions table con IDs: A1-A6
+      - Payment terms table completa
+      - Attachments con checkboxes
+      - Authorization box azul con firmas
+      - Lenguaje tipo formulario, muy estructurado`,
+
+    'luxury-boutique': `ESTILO: LUXURY BOUTIQUE (Ultra Minimalista, Exclusivo).
+      - Header: Solo el nombre (ej. "Caldwell") sin títulos
+      - Formato carta personal simple
+      - Fecha y cliente sin formalidades
+      - Re: line directa
+      - TODO en primera persona: "I would be pleased to..."
+      - Lenguaje premium pero directo (British spelling: "enquiry")
+      - Scope en un solo párrafo fluido (no bullets, no tablas)
+      - Precio mencionado casualmente: "My fee for this work is $2,400"
+      - Sin secciones numeradas
+      - MUCHO espacio en blanco
+      - Cierre simple: "I look forward to hearing from you."
+      - Firma: solo el nombre, sin título ni cargo
+      - Máxima simplicidad y elegancia`
   };
-  return styles[style] || styles['silicon-valley'];
+  return styles[style] || styles['spanish-boutique'];
 };
 
 // ====== SUB-AGENTE 2: RESUMEN EJECUTIVO ======
@@ -195,8 +301,10 @@ Por los servicios descritos en la presente propuesta, nuestros honorarios ascien
 }
 
 // ====== SUB-AGENTE 6: OBLIGACIONES Y CONFIDENCIALIDAD ======
-async function generarObligacionesYCierre(despachoInfo: any, userInfo: any) {
+async function generarObligacionesYCierre(despachoInfo: any, userInfo: any, styleInstructions: string) {
   const prompt = `Genera las secciones finales (V a VIII) de una propuesta legal profesional.
+
+${styleInstructions}
 
 DATOS:
 Despacho: ${despachoInfo.nombre}
@@ -267,10 +375,11 @@ export async function POST(req: Request) {
       servicioInfo,
       estructura,
       userInfo,
+      // Format & Style Configuration
       formatType,
       toneType,
       languageType,
-      styleType, // NEW
+      styleType,
       customLanguage,
       customBlocks,
       addOns
@@ -297,15 +406,15 @@ export async function POST(req: Request) {
     }];
 
     // 1. Obtener Instrucciones de Estilo Profundo
-    const styleInstructions = getStyleInstructions(styleType || 'silicon-valley');
-    console.log(`🎨 Estilo seleccionado: ${styleType} -> Aplicando instrucciones profundas.`);
+    const styleInstructions = getStyleInstructions(styleType || 'spanish-boutique');
+    console.log(`🎨 Estilo seleccionado: ${styleType || 'spanish-boutique'} -> Aplicando instrucciones profundas.`);
 
     // Ejecutar agentes en paralelo con instrucciones de estilo
     const [resumenEjecutivo, alcanceServicios, cronograma, obligacionesYCierre] = await Promise.all([
       generarResumenEjecutivo(descripcion, safeDespachoInfo, tiempo, toneType || 'formal', styleInstructions),
       generarAlcanceServicios(serviciosData, styleInstructions),
       generarCronograma(tiempo, descripcion, styleInstructions),
-      generarObligacionesYCierre(safeDespachoInfo, userInfo)
+      generarObligacionesYCierre(safeDespachoInfo, userInfo, styleInstructions)
     ]);
 
     // Generar secciones sin IA
