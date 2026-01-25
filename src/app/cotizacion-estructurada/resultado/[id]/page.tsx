@@ -7,6 +7,7 @@ import { debounce } from 'lodash';
 import { toast } from 'react-hot-toast';
 import TiptapEditor from '@/components/Editor/TiptapEditor';
 import { markdownToHtml } from '@/lib/utils/markdownToHtml';
+import EmailModal from '@/components/EmailModal';
 import {
   DocumentArrowDownIcon,
   ArrowLeftIcon,
@@ -43,6 +44,7 @@ export default function ResultadoCotizacion() {
   const [editorContent, setEditorContent] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [isManualSaving, setIsManualSaving] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   useEffect(() => {
     const loadQuotation = async () => {
@@ -52,7 +54,7 @@ export default function ResultadoCotizacion() {
 
         if (docSnap.exists()) {
           const data = docSnap.data() as Quotation;
-          setQuotation({ id: docSnap.id, ...data });
+          setQuotation({ ...data, id: docSnap.id });
 
           // Convert markdown content to HTML for the editor
           const htmlContent = markdownToHtml(data.content || '');
@@ -790,13 +792,22 @@ export default function ResultadoCotizacion() {
           </button>
 
           <button
-            onClick={() => toast('Función de envío por email próximamente')}
-            className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-2"
+            onClick={() => setIsEmailModalOpen(true)}
+            className="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center gap-2 font-semibold"
           >
             <EnvelopeIcon className="w-5 h-5" />
             <span>Enviar</span>
           </button>
         </div>
+
+        {/* Email Modal */}
+        <EmailModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          htmlContent={editorContent}
+          quotationTitle={`Cotización Legal${quotation?.folio ? ` - ${quotation.folio}` : ''}`}
+          folio={quotation?.folio}
+        />
       </div>
     </div>
   );

@@ -255,7 +255,7 @@
           "Verify in browser: editar documento, descargar PDF, abrir y verificar cambios incluidos"
         ],
         "priority": 15,
-        "passes": false,
+        "passes": true,
         "notes": "Puede requerir ajustar el generador de PDF existente"
       },
       {

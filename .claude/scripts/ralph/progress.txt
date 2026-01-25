@@ -202,3 +202,18 @@ Started: 2024-01-15
   - Error handling: Same error handling pattern as auto-save with try/catch and timeout reset
   - Accessibility: title attribute for tooltip showing keyboard shortcut Cmd+S
 ---
+
+## 2026-01-25 - US-015
+- Implemented PDF download integration using browser print functionality with edited HTML content
+- Files changed: src/app/cotizacion-estructurada/resultado/[id]/page.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Browser window.print() provides reliable HTML-to-PDF conversion without external dependencies
+  - PDF styling requires CSS @page rules with proper margins and A4 size specification
+  - Theme styles need conversion from Tailwind classes to standard CSS for PDF compatibility
+  - Regular expressions useful for cleaning Tailwind utility classes: /text-[^\\s]+/g, /mb-[^\\s]+/g
+  - Window management: window.open(), document.write(), document.close() sequence for dynamic content
+  - Timeout coordination needed: onload -> setTimeout for print -> setTimeout for window.close
+  - User feedback: Toast notifications for popup blockers and successful PDF generation
+  - Font family detection: Check theme.container for font-serif/font-mono to apply proper fonts
+  - editorContent (HTML) vs quotation.content (markdown) - use edited HTML for PDF generation
+---
