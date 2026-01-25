@@ -204,6 +204,11 @@ INSTRUCCIONES:
 4. Tono: ${toneInstruction}
 5. ADAPTA LA ESTRUCTURA AL ESTILO INDICADO ARRIBA (Si pide tablas, usa tablas markdown; si pide texto corrido, usa texto).
 
+⚠️ FORMATO OBLIGATORIO:
+- USA SOLO MARKDOWN (## para headers, | para tablas, ** para negrita, - para listas)
+- NO USES HTML (<div>, <h3>, <table>, etc.)
+- Para tablas: usa formato markdown estándar con | y ---
+
 Genera el resumen:`;
 
   const completion = await openai.chat.completions.create({
@@ -231,6 +236,11 @@ INSTRUCCIONES:
 3. CRÍTICO: Sigue las instrucciones de estilo para el FORMATO (Tablas vs Texto Narrativo).
    - Si es SILICON VALLEY/FINANCIAL: ¡Usa Tablas Markdown para los entregables!
    - Si es BIGLAW/BOUTIQUE: ¡Usa párrafos narrativos elegantes!
+
+⚠️ FORMATO OBLIGATORIO:
+- USA SOLO MARKDOWN (## para headers, | para tablas, ** para negrita, - para listas)
+- NO USES HTML (<div>, <h3>, <table>, etc.)
+- Para tablas: usa formato markdown estándar con | y ---
 
 Genera la sección completa:`;
 
@@ -261,6 +271,11 @@ INSTRUCCIONES:
    | 1 | Inicio | Día 1 |
 
    NO uses caracteres como "─" o "│" ni bloques de código.
+
+⚠️ FORMATO OBLIGATORIO:
+- USA SOLO MARKDOWN (## para headers, | para tablas, ** para negrita)
+- NO USES HTML (<div>, <table>, etc.)
+- Para negritas: ** no <strong>
 
 Genera la sección:`;
 
@@ -325,6 +340,12 @@ INSTRUCCIONES:
 2. Formato profesional y conciso
 3. Usar letras a), b), c) para listar obligaciones
 4. Párrafos formales pero claros
+
+⚠️ FORMATO OBLIGATORIO:
+- USA SOLO MARKDOWN (## para headers, ** para negrita, - para listas)
+- NO USES HTML (<div>, <strong>, <p>, etc.)
+- Para negritas: usa ** no <strong> ni <b>
+- Para headers: usa ## no <h2>
 
 EJEMPLO PARCIAL:
 V. OBLIGACIONES DEL CLIENTE
