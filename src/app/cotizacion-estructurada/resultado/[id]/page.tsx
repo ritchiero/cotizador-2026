@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import TiptapEditor from '@/components/Editor/TiptapEditor';
+import { markdownToHtml } from '@/lib/utils/markdownToHtml';
 import {
   DocumentArrowDownIcon,
   ArrowLeftIcon,
@@ -40,6 +39,7 @@ export default function ResultadoCotizacion() {
   const [loading, setLoading] = useState(true);
   const [currentTheme, setCurrentTheme] = useState<string>('modern');
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [editorContent, setEditorContent] = useState<string>('');
 
   useEffect(() => {
     const loadQuotation = async () => {
@@ -50,6 +50,10 @@ export default function ResultadoCotizacion() {
         if (docSnap.exists()) {
           const data = docSnap.data() as Quotation;
           setQuotation({ id: docSnap.id, ...data });
+
+          // Convert markdown content to HTML for the editor
+          const htmlContent = markdownToHtml(data.content || '');
+          setEditorContent(htmlContent);
 
           // Set theme from saved styleType
           if (data.styleType && themes[data.styleType]) {
@@ -468,35 +472,12 @@ export default function ResultadoCotizacion() {
               </button>
             </div>
 
-            <div className={`${activeStyle.prose} max-w-none print:prose-p:text-black`}>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                  h1: (props: any) => <h1 className={activeStyle.h1} {...props} />,
-                  h2: (props: any) => <h2 className={`${activeStyle.h2} break-after-avoid`} {...props} />,
-                  h3: (props: any) => <h3 className={`${activeStyle.h3} break-after-avoid`} {...props} />,
-                  p: (props: any) => <p className={activeStyle.p} {...props} />,
-                  ul: (props: any) => <ul className="list-disc list-outside ml-6 mb-6 space-y-2" {...props} />,
-                  ol: (props: any) => <ol className="list-decimal list-outside ml-6 mb-6 space-y-2" {...props} />,
-                  li: (props: any) => <li className="pl-1" {...props} />,
-                  strong: (props: any) => <strong className="font-bold text-current" {...props} />,
-                  blockquote: (props: any) => <blockquote className={`${activeStyle.blockquote} break-inside-avoid`} {...props} />,
-                  table: (props: any) => (
-                    <div className="overflow-x-auto my-8 print:overflow-visible">
-                      <table className={`${activeStyle.table} w-full`} {...props} />
-                    </div>
-                  ),
-                  thead: (props: any) => <thead className={activeStyle.thead} {...props} />,
-                  tbody: (props: any) => <tbody className="bg-transparent" {...props} />,
-                  tr: (props: any) => <tr className="hover:bg-black/5 transition-colors break-inside-avoid" {...props} />,
-                  th: (props: any) => <th className={activeStyle.th} {...props} />,
-                  td: (props: any) => <td className={activeStyle.td} {...props} />,
-                  hr: (props: any) => <hr className={`${activeStyle.hr} print:hidden`} {...props} />,
-                }}
-              >
-                {quotation.content}
-              </ReactMarkdown>
+            <div className="bg-white border border-gray-200/50 rounded-[16px] shadow-sm p-6">
+              <TiptapEditor
+                content={editorContent}
+                onChange={setEditorContent}
+                className={`${activeStyle.prose} max-w-none`}
+              />
             </div>
           </div>
         </div>
