@@ -11,7 +11,8 @@ import {
   DocumentArrowDownIcon,
   ArrowLeftIcon,
   PlusCircleIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 interface Quotation {
@@ -23,9 +24,11 @@ interface Quotation {
   formatType: string;
   toneType: string;
   languageType: string;
+  styleType?: string;
   status: string;
   content: string;
   selectedAddOns: string[];
+  formDataSnapshot?: any;
   createdAt: any;
 }
 
@@ -36,6 +39,7 @@ export default function ResultadoCotizacion() {
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentTheme, setCurrentTheme] = useState<string>('modern');
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   useEffect(() => {
     const loadQuotation = async () => {
@@ -272,6 +276,49 @@ export default function ResultadoCotizacion() {
     toast.success('Contenido copiado al portapapeles');
   };
 
+  const handleRegenerate = async () => {
+    if (!quotation || !quotation.formDataSnapshot) {
+      toast.error('No hay datos suficientes para regenerar');
+      return;
+    }
+
+    const toastId = toast.loading('Regenerando cotización con IA...');
+    setIsRegenerating(true);
+
+    try {
+      // Usar los datos guardados en formDataSnapshot para regenerar
+      const response = await fetch('/api/cotizacion/generar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quotation.formDataSnapshot)
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al regenerar cotización');
+      }
+
+      const data = await response.json();
+
+      // Actualizar el documento en Firestore con el nuevo contenido
+      const { doc: firestoreDoc, updateDoc } = await import('firebase/firestore');
+      const quotationRef = firestoreDoc(db, 'quotations', quotationId);
+      await updateDoc(quotationRef, {
+        content: data.contenido,
+        updatedAt: new Date()
+      });
+
+      // Actualizar estado local
+      setQuotation(prev => prev ? { ...prev, content: data.contenido } : null);
+
+      toast.success('¡Cotización regenerada exitosamente!', { id: toastId });
+    } catch (error) {
+      console.error('Error regenerating:', error);
+      toast.error('Error al regenerar la cotización', { id: toastId });
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -462,6 +509,25 @@ export default function ResultadoCotizacion() {
           >
             <DocumentArrowDownIcon className="w-5 h-5" />
             <span>Descargar Documento</span>
+          </button>
+
+          <button
+            onClick={handleRegenerate}
+            disabled={isRegenerating || !quotation?.formDataSnapshot}
+            className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-full hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold"
+            title={!quotation?.formDataSnapshot ? 'No hay datos para regenerar' : 'Regenerar con IA'}
+          >
+            {isRegenerating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Regenerando...</span>
+              </>
+            ) : (
+              <>
+                <ArrowPathIcon className="w-5 h-5" />
+                <span>Regenerar</span>
+              </>
+            )}
           </button>
 
           <button
