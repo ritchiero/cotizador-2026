@@ -49,6 +49,7 @@ export default function TiptapEditor({
     position: { x: 0, y: 0 }
   })
   const editor = useEditor({
+    immediatelyRender: false, // Fix SSR hydration mismatch
     extensions: [
       StarterKit.configure({
         history: false, // Disable default history to use custom configuration
