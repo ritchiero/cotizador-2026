@@ -116,3 +116,18 @@ Started: 2024-01-15
   - Active state styling consistent: bg-blue-50 border-blue-600 text-blue-600
   - Tooltips: Spanish text for user-facing interface (Alinear a la izquierda, Centrar texto, etc.)
 ---
+
+## 2026-01-25 - US-009
+- Implemented table cell text editing functionality with full styling and navigation
+- Files changed: src/app/globals.css, src/components/Editor/TiptapEditor.tsx, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap Table extensions (Table, TableRow, TableCell, TableHeader) provide cell editing by default
+  - Table extension resizable: true enables column resizing capabilities
+  - CSS styling: table border-gray-200 rounded-xl for design system compliance
+  - Header cells: bg-gray-50 text-xs font-semibold uppercase text-gray-500 px-4 py-3
+  - Data cells: px-4 py-3 text-gray-600 border-b border-gray-200 text-sm
+  - Tab/Shift+Tab navigation works automatically with Tiptap table extensions
+  - Click positioning in cells works by default, cursor: text styling improves UX
+  - Text formatting (bold, italic, underline) works inside table cells without additional config
+  - StarterKit history configuration requires "as any" type assertion to avoid TS errors
+---

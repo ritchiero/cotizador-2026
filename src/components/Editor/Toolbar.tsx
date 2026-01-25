@@ -2,14 +2,15 @@
 
 import React from 'react'
 import { Editor } from '@tiptap/react'
-import { Bold, Italic, Underline, List, ListOrdered, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify } from 'lucide-react'
+import { Bold, Italic, Underline, List, ListOrdered, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Table } from 'lucide-react'
 import HeadingDropdown from './HeadingDropdown'
 
 interface ToolbarProps {
   editor: Editor | null
+  onShowTableMenu?: (event: React.MouseEvent) => void
 }
 
-export default function Toolbar({ editor }: ToolbarProps) {
+export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
   if (!editor) {
     return null
   }
@@ -142,6 +143,17 @@ export default function Toolbar({ editor }: ToolbarProps) {
       >
         <AlignJustify className="w-4 h-4" />
       </button>
+
+      {/* Table operations button - only visible when cursor is in a table */}
+      {editor.isActive('table') && (
+        <button
+          onClick={onShowTableMenu}
+          title="Opciones de tabla"
+          className="w-10 h-10 bg-transparent border border-gray-200 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors text-gray-700"
+        >
+          <Table className="w-4 h-4" />
+        </button>
+      )}
 
       <button
         onClick={undo}

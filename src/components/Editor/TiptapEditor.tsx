@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { History } from '@tiptap/extension-history'
@@ -11,6 +11,7 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { TextAlign } from '@tiptap/extension-text-align'
 import { Underline } from '@tiptap/extension-underline'
 import Toolbar from './Toolbar'
+import TableContextMenu from './TableContextMenu'
 
 interface TiptapEditorProps {
   content?: string
@@ -23,6 +24,13 @@ export default function TiptapEditor({
   onChange,
   className = '' 
 }: TiptapEditorProps) {
+  const [contextMenu, setContextMenu] = useState<{
+    isVisible: boolean
+    position: { x: number; y: number }
+  }>({
+    isVisible: false,
+    position: { x: 0, y: 0 }
+  })
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -57,16 +65,64 @@ export default function TiptapEditor({
     },
   })
 
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    // Check if the user right-clicked on a table
+    const { selection } = editor.state
+    const { $from } = selection
+    
+    // Check if cursor is inside a table
+    const isInTable = editor.isActive('table')
+    
+    if (isInTable) {
+      setContextMenu({
+        isVisible: true,
+        position: { x: e.pageX, y: e.pageY }
+      })
+    }
+  }
+
+  const handleCloseContextMenu = () => {
+    setContextMenu(prev => ({ ...prev, isVisible: false }))
+  }
+
+  const handleShowTableMenu = (event: React.MouseEvent) => {
+    event.preventDefault()
+    
+    // Position context menu relative to the toolbar button
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    setContextMenu({
+      isVisible: true,
+      position: { 
+        x: rect.left,
+        y: rect.bottom + 5 // 5px below the button
+      }
+    })
+  }
+
   if (!editor) {
     return null
   }
 
   return (
     <div className={`tiptap-editor ${className}`}>
-      <Toolbar editor={editor} />
-      <EditorContent 
+      <Toolbar 
         editor={editor} 
-        className="p-4 min-h-[400px]"
+        onShowTableMenu={handleShowTableMenu}
+      />
+      <div onContextMenu={handleRightClick}>
+        <EditorContent 
+          editor={editor} 
+          className="p-4 min-h-[400px]"
+        />
+      </div>
+      
+      <TableContextMenu
+        editor={editor}
+        position={contextMenu.position}
+        isVisible={contextMenu.isVisible}
+        onClose={handleCloseContextMenu}
       />
     </div>
   )
