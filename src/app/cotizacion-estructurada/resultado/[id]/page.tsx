@@ -386,18 +386,143 @@ export default function ResultadoCotizacion() {
   const handleDownloadPDF = () => {
     if (!quotation) return;
 
-    // Convert content to blob and download
-    const blob = new Blob([quotation.content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Cotizacion_${quotation.folio}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Create a new window with the styled content for printing
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      toast.error('Error: No se pudo abrir ventana para PDF. Permite ventanas emergentes.');
+      return;
+    }
 
-    toast.success('Cotización descargada');
+    // Get current theme styles for PDF
+    const currentThemeStyles = activeStyle;
+    
+    // Build the HTML content with proper styling for PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cotización ${quotation.folio}</title>
+        <style>
+          @page {
+            margin: 2cm;
+            size: A4;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          .container {
+            max-width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          .content {
+            ${currentThemeStyles.container?.includes('font-serif') ? 'font-family: Georgia, serif;' : ''}
+            ${currentThemeStyles.container?.includes('font-mono') ? 'font-family: Monaco, monospace;' : ''}
+          }
+          h1 {
+            ${currentThemeStyles.h1?.replace(/text-[^\\s]+/g, '').replace(/mb-[^\\s]+/g, '').replace(/mt-[^\\s]+/g, '')}
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 1.5em 0 1em 0;
+          }
+          h2 {
+            ${currentThemeStyles.h2?.replace(/text-[^\\s]+/g, '').replace(/mb-[^\\s]+/g, '').replace(/mt-[^\\s]+/g, '')}
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 1.3em 0 0.8em 0;
+          }
+          h3 {
+            ${currentThemeStyles.h3?.replace(/text-[^\\s]+/g, '').replace(/mb-[^\\s]+/g, '').replace(/mt-[^\\s]+/g, '')}
+            font-size: 1.1em;
+            font-weight: 500;
+            margin: 1.1em 0 0.6em 0;
+          }
+          p {
+            ${currentThemeStyles.p?.replace(/text-[^\\s]+/g, '').replace(/mb-[^\\s]+/g, '').replace(/mt-[^\\s]+/g, '')}
+            margin: 0.8em 0;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1em 0;
+            page-break-inside: avoid;
+          }
+          th {
+            ${currentThemeStyles.th?.replace(/text-[^\\s]+/g, '').replace(/px-[^\\s]+/g, '').replace(/py-[^\\s]+/g, '')}
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #ccc;
+            background-color: #f5f5f5;
+            font-weight: bold;
+          }
+          td {
+            ${currentThemeStyles.td?.replace(/text-[^\\s]+/g, '').replace(/px-[^\\s]+/g, '').replace(/py-[^\\s]+/g, '')}
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+          }
+          ul, ol {
+            margin: 0.8em 0;
+            padding-left: 2em;
+          }
+          li {
+            margin: 0.3em 0;
+          }
+          strong {
+            font-weight: bold;
+          }
+          em {
+            font-style: italic;
+          }
+          u {
+            text-decoration: underline;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .text-left {
+            text-align: left;
+          }
+          .text-justify {
+            text-align: justify;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="content">
+            ${editorContent}
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Write content to the new window
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Wait for content to load, then trigger print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+        // Close the window after printing
+        setTimeout(() => {
+          printWindow.close();
+        }, 1000);
+      }, 500);
+    };
+
+    toast.success('Abriendo ventana de impresión PDF...');
   };
 
   const handleCopyContent = () => {
