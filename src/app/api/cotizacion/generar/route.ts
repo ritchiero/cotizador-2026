@@ -38,7 +38,7 @@ ${separador}
 
 Referencia:       ${folio}
 Fecha:            ${fecha}
-Preparado para:   ${destinatario.nombre}
+Preparado para:   ${destinatario?.nombre || "Cliente"}
 Confidencial:     Este documento contiene información privilegiada
 
 ${separador}`;
@@ -105,17 +105,17 @@ const getStyleInstructions = (style: string) => {
       - Box de aceptación: "— Bon pour accord —"
       - Footer con información legal completa`,
 
-    'spanish-boutique': `ESTILO: DESPACHO BOUTIQUE (Madrid, Cercano pero Profesional).
-      - Header con nombre en rojo oscuro
+    'spanish-boutique': `ESTILO: DESPACHO BOUTIQUE (Profesional Latinoamericano).
+      - Header con nombre destacado
       - Título centrado: "PROPUESTA DE SERVICIOS PROFESIONALES"
-      - Secciones numeradas en romano con color: I. ANTECEDENTES, II. ALCANCE, etc.
+      - Secciones numeradas en romano: I. ANTECEDENTES, II. ALCANCE, etc.
       - Lenguaje cercano: "tenemos el agrado de...", "quedamos a su disposición..."
       - Equilibrio entre calidez y autoridad técnica
-      - Tabla de metodología con fases coloreadas
-      - Tabla de honorarios con IVA 21% explícito
-      - Mencionar RGPD y protección de datos
-      - Box de ACEPTACIÓN DEL ENCARGO con borde rojo
-      - Footer con CIF, ICAM, dirección completa
+      - Tabla de metodología con fases
+      - Tabla de honorarios con IVA 16% (México)
+      - Mencionar protección de datos (LFPDPPP si es México)
+      - Box de ACEPTACIÓN DEL ENCARGO
+      - Footer con información de contacto completa
       - Usar "Nos complace", "A su entera disposición"`,
 
     'japanese-keigo': `ESTILO: KEIGO JAPONÉS (Ultra Cortés, Estructurado).
@@ -312,7 +312,7 @@ Por los servicios descritos en la presente propuesta, nuestros honorarios ascien
 | IVA (16%) | ${simbolo}${fmt(iva)} ${moneda} |
 | **TOTAL** | **${simbolo}${fmt(precioNum)} ${moneda}** |
 
-**Condiciones de pago:** ${formaPago}
+**Condiciones de pago:** ${formaPago || "Pago único al completar el servicio"}
 
 > Los honorarios no incluyen derechos notariales, derechos registrales ni gastos ante autoridades, los cuales serán cubiertos directamente por el cliente o facturados por separado a precio de costo.`;
 }
