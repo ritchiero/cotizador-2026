@@ -3,6 +3,7 @@
 import React from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
+import { History } from '@tiptap/extension-history'
 import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
@@ -24,7 +25,12 @@ export default function TiptapEditor({
 }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        history: false, // Disable default history to use custom configuration
+      }),
+      History.configure({
+        depth: 100, // History depth of at least 100 actions
+      }),
       Underline.configure({
         HTMLAttributes: {
           class: 'underline',

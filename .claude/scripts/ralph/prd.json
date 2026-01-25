@@ -103,7 +103,7 @@
           "Verify in browser: crear lista, agregar items, indentar funciona"
         ],
         "priority": 6,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {
@@ -120,7 +120,7 @@
           "Verify in browser: hacer cambios, Cmd+Z deshace, Cmd+Shift+Z rehace"
         ],
         "priority": 7,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {

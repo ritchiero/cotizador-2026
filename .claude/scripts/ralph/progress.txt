@@ -7,6 +7,7 @@ Started: 2024-01-15
 - Tiptap Extensions: Import using named imports from @tiptap/extension-* packages
 - React State: Use separate state for HTML content when converting from markdown
 - Next.js Imports: Use @/ alias for src/ directory imports
+- Tiptap History: Disable StarterKit history and use custom History extension for depth configuration
 
 ## Key Files
 - db/schema.ts
@@ -75,4 +76,30 @@ Started: 2024-01-15
   - Design system: rounded-full for dropdown trigger, shadow-2xl rounded-xl p-1.5 for dropdown menu
   - Active state styling: bg-blue-50 text-blue-600 font-medium for current selection
   - ChevronDown icon from Lucide React works well for dropdown indicator
+---
+
+## 2026-01-25 - US-006
+- Implemented bullet and numbered list buttons in Toolbar with full functionality
+- Files changed: src/components/Editor/Toolbar.tsx, src/app/globals.css, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap StarterKit includes BulletList and OrderedList extensions by default
+  - List commands: `editor.chain().focus().toggleBulletList().run()` and `editor.chain().focus().toggleOrderedList().run()`
+  - List active states: `editor.isActive('bulletList')` and `editor.isActive('orderedList')`
+  - Tab/Shift+Tab indentation and Enter navigation work automatically with StarterKit
+  - CSS styling: Added .tiptap-editor ul/ol styles in globals.css with text-sm text-gray-700
+  - List icons: Lucide React List and ListOrdered icons work well for toolbar buttons
+  - Nested list styling: margin control needed for proper indentation appearance
+---
+
+## 2026-01-25 - US-007
+- Implemented Undo and Redo buttons in Toolbar with keyboard shortcuts and disabled states
+- Files changed: src/components/Editor/Toolbar.tsx, src/components/Editor/TiptapEditor.tsx, package.json, .claude/scripts/ralph/prd.json
+- **Learnings:**
+  - Tiptap undo/redo commands: `editor.chain().focus().undo().run()` and `editor.chain().focus().redo().run()`
+  - Undo/redo availability check: `editor.can().undo()` and `editor.can().redo()` for disabled state
+  - History extension configuration: Install @tiptap/extension-history, disable StarterKit history, configure depth: 100
+  - Disabled button styling: disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed 
+  - Keyboard shortcuts (Cmd+Z, Cmd+Shift+Z) work automatically with History extension
+  - Lucide React icons: Undo2 and Redo2 work well for undo/redo toolbar buttons
+  - Extension dependencies: Must install missing Tiptap extensions via npm before using
 ---
