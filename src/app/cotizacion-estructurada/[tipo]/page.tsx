@@ -331,13 +331,44 @@ export default function CotizacionEstructuradaForm() {
 
   const handleServiceSelect = (serviceId: string) => {
     const servicio = servicios.find(s => s.id === serviceId);
-    if (servicio) {
-      setFormData(prev => ({
-        ...prev,
-        quotationName: servicio.nombre || servicio.descripcion,
-        // Optional: Update other fields if desired
-      }));
+
+    if (!servicio) {
+      console.warn('Servicio no encontrado:', serviceId);
+      return;
     }
+
+    // Auto-completar todos los campos relevantes del formulario
+    setFormData(prev => ({
+      ...prev,
+
+      // Campo principal: Nombre del proyecto
+      quotationName: servicio.nombre || servicio.descripcion,
+
+      // Descripción y contexto del servicio
+      contextDescription: servicio.descripcion || '',
+
+      // Tiempo estimado
+      times: servicio.tiempo || '',
+
+      // Honorarios/Precio
+      pricing: servicio.precio || '',
+
+      // Detalles adicionales del servicio
+      details: servicio.detalles || '',
+
+      // Incluye: Convertir array a string separado por saltos de línea
+      requirements: servicio.incluye && servicio.incluye.length > 0
+        ? servicio.incluye.join('\n')
+        : '',
+    }));
+
+    // Feedback visual al usuario
+    toast.success(`Servicio "${servicio.nombre}" cargado exitosamente`, {
+      duration: 3000,
+    });
+
+    // Cerrar el selector después de cargar
+    setShowServiceSelector(false);
   };
 
   const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
