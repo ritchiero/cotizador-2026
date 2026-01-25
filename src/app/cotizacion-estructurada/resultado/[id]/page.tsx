@@ -6,6 +6,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import {
   DocumentArrowDownIcon,
   ArrowLeftIcon,
@@ -423,6 +424,7 @@ export default function ResultadoCotizacion() {
             <div className={`${activeStyle.prose} max-w-none print:prose-p:text-black`}>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   h1: (props: any) => <h1 className={activeStyle.h1} {...props} />,
                   h2: (props: any) => <h2 className={`${activeStyle.h2} break-after-avoid`} {...props} />,
