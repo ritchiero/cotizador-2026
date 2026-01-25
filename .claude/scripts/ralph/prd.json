@@ -187,7 +187,7 @@
           "Verify in browser: agregar columna, eliminar columna funciona"
         ],
         "priority": 11,
-        "passes": false,
+        "passes": true,
         "notes": ""
       },
       {

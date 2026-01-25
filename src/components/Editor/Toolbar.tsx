@@ -4,6 +4,7 @@ import React from 'react'
 import { Editor } from '@tiptap/react'
 import { Bold, Italic, Underline, List, ListOrdered, Undo2, Redo2, AlignLeft, AlignCenter, AlignRight, AlignJustify, Table } from 'lucide-react'
 import HeadingDropdown from './HeadingDropdown'
+import TableSizeSelector from './TableSizeSelector'
 
 interface ToolbarProps {
   editor: Editor | null
@@ -95,6 +96,8 @@ export default function Toolbar({ editor, onShowTableMenu }: ToolbarProps) {
       >
         <ListOrdered className="w-4 h-4" />
       </button>
+
+      <TableSizeSelector editor={editor} />
 
       <button
         onClick={setTextAlignLeft}
