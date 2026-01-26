@@ -25,7 +25,7 @@ import {
     CalendarIcon,
     PlayCircleIcon
 } from '@heroicons/react/24/outline';
-import ProgressTracker from '../components/ProgressTracker';
+import ProgressTracker from '@/components/ProgressTracker';
 
 export default function EstilosPage() {
     const [isSelectOpen, setIsSelectOpen] = useState(false);

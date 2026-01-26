@@ -26,6 +26,8 @@ function generarEncabezado(userInfo: any, destinatario: any, despachoInfo: any, 
   const despachoNombre = despachoInfo?.nombre || "Despacho Legal";
   const despachoSlogan = despachoInfo?.slogan || "";
 
+  console.log('📝 Generando encabezado con:', { despachoNombre, despachoSlogan, destinatario });
+
   return `${despachoNombre.toUpperCase()}
 ${despachoSlogan ? despachoSlogan : ""}
 
@@ -424,10 +426,14 @@ export async function POST(req: Request) {
       addOns
     } = body;
 
+    // Debug: Log received branding data
+    console.log('📊 Backend received despachoInfo:', despachoInfo);
+    console.log('📊 Backend received userInfo:', userInfo);
+
     // Generar folio y fecha
     const { fecha, folio } = generarFolioYFecha();
 
-    console.log("🚀 Iniciando generación con sub-agentes profesionales (OpenAI)...");
+    console.log("🚀 Iniciando generación con sub-agentes profesionales (Anthropic Claude)...");
 
     if (!process.env.OPENAI_API_KEY) {
       throw new Error("OPENAI_API_KEY is missing");

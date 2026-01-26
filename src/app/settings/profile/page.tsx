@@ -8,14 +8,14 @@ import { db } from '@/lib/firebase/firebase';
 import { collection, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { query, where, onSnapshot } from 'firebase/firestore';
-import BrandingTab from '@/app/components/BrandingTab';
-import PaymentTab from '@/app/components/PaymentTab';
-import BillingTab from '@/app/components/BillingTab';
+import BrandingTab from '@/components/BrandingTab';
+import PaymentTab from '@/components/PaymentTab';
+import BillingTab from '@/components/BillingTab';
 import { BillingData, BrandingData } from './types';
 import type { PaymentMethod } from '@/lib/types/payment';
-import ServicesTab from '@/app/components/ServicesTab';
-import ProfileTab from '@/app/components/ProfileTab';
-import LegalSettingsTab from '@/app/components/LegalSettingsTab';
+import ServicesTab from '@/components/ServicesTab';
+import ProfileTab from '@/components/ProfileTab';
+import LegalSettingsTab from '@/components/LegalSettingsTab';
 import { HomeIcon, DocumentTextIcon, CreditCardIcon, SparklesIcon, UserIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 interface UserProfile {

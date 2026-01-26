@@ -1,8 +1,8 @@
 "use client"
 
-import { Dialog, DialogContent, DialogTitle } from "@/app/components/ui/dialog"
-import { Textarea } from "@/app/components/ui/textarea"
-import { Button } from "@/app/components/ui/button"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 import { SparklesIcon } from "@heroicons/react/24/outline"
 
 interface CreateServiceModalProps {

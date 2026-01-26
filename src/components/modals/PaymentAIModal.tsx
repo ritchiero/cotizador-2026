@@ -1,8 +1,8 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/app/components/ui/dialog";
-import { Button } from "@/app/components/ui/button";
-import { RadioGroup, RadioGroupItem } from "@/app/components/ui/radio-group";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useState } from "react";
 
 interface PaymentAIModalProps {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/app/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/hooks/useAuth"
 import { db } from "@/lib/firebase/firebase"
 import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore"

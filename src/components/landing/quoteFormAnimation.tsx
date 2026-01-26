@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Textarea } from "@/app/components/ui/textarea"
-import { Toggle } from "@/app/components/ui/toggle"
-import { Label } from "@/app/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Toggle } from "@/components/ui/toggle"
+import { Label } from "@/components/ui/label"
 import { InfoIcon } from "lucide-react"
 
 const formFields = [

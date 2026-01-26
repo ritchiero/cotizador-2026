@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { toast } from "react-hot-toast";
 import SlateEditor from "./SlateEditor";
-import InputGroup, { AIButton } from "@/app/components/InputGroup";
+import InputGroup, { AIButton } from "@/components/InputGroup";
 import RequirementsAIModal from "@/components/modals/RequirementsAIModal";
 import PaymentAIModal from "@/components/modals/PaymentAIModal";
 import { TipoCotizacion, tiposCotizacion } from "@/constants/cotizacion";

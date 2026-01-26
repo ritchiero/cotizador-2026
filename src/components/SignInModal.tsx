@@ -1,10 +1,10 @@
 "use client";
 
 import { useAuth } from '../lib/hooks/useAuth';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/app/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useState } from 'react';
-import { Input } from "@/app/components/ui/input";
-import { Button } from "@/app/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SignInModalProps {
   onClose: () => void;

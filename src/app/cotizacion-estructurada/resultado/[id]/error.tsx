@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 
 export default function Error({
     error,
@@ -37,19 +36,19 @@ export default function Error({
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
+                    <button
                         onClick={() => reset()}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all font-medium"
                     >
                         Intentar de nuevo
-                    </Button>
+                    </button>
 
-                    <Button
-                        variant="outline"
+                    <button
                         onClick={() => router.push('/cotizacion-estructurada')}
+                        className="px-6 py-2.5 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 rounded-full transition-all font-medium"
                     >
                         Volver al inicio
-                    </Button>
+                    </button>
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-gray-200">

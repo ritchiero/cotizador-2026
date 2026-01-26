@@ -4,7 +4,7 @@ import React, { useMemo, useCallback, useState, useEffect } from 'react';
 import { createEditor, Descendant, Element as SlateElement, Transforms, Editor, BaseEditor, BaseElement, BaseText } from 'slate';
 import { Slate, Editable, withReact, useSlate, ReactEditor } from 'slate-react';
 import { withHistory, HistoryEditor } from 'slate-history';
-import { Button } from "@/app/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Copy, Bold, Italic, Underline, List, Heading1, Settings, Plus, Trash2 } from "lucide-react";
 import DynamicTools from "@/components/DynamicTools";
 import { useAuth } from "@/lib/hooks/useAuth";

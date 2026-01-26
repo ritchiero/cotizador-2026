@@ -16,10 +16,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/app/components/ui/sheet";
+} from "@/components/ui/sheet";
 import RequirementsAIModal from "@/components/modals/RequirementsAIModal";
 import PaymentAIModal from "@/components/modals/PaymentAIModal";
-import InputGroup, { AIButton } from "@/app/components/InputGroup";
+import InputGroup, { AIButton } from "@/components/InputGroup";
 import {
   SparklesIcon,
   UserIcon,
@@ -52,9 +52,9 @@ import {
   StarIcon,
   ClipboardDocumentListIcon
 } from "@heroicons/react/24/outline";
-import { Calendar } from "@/app/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/app/components/ui/popover";
-import { Button } from "@/app/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -213,9 +213,6 @@ export default function CotizacionEstructuradaForm() {
     contactEmail: '',
     contactPhone: '',
     includeSignature: false,
-    contactEmail: '',
-    contactPhone: '',
-    includeSignature: false,
     includeAttachments: false,
     attachments: [] as File[] // Store actual files
   });
@@ -245,6 +242,28 @@ export default function CotizacionEstructuradaForm() {
     { id: 'terms', name: 'Términos y Condiciones', enabled: true, detailLevel: 'short', order: 5 },
     { id: 'closing', name: 'Cierre y Firma', enabled: true, detailLevel: 'short', order: 6 },
   ]);
+
+  // Fetch Branding Info
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Subscribe to branding changes
+    const unsubBranding = onSnapshot(doc(db, 'brandingInfo', user.uid), (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        setBrandingData({
+          nombre: data.nombreDespacho, // Map to expected structure
+          slogan: data.slogan,
+          logo: data.logoURL,
+          direccion: data.direccion, // If we added this
+          telefono: data.telefono,
+          cargo: data.cargo // If exists
+        });
+      }
+    });
+
+    return () => unsubBranding();
+  }, [user?.uid]);
 
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
@@ -1594,8 +1613,11 @@ export default function CotizacionEstructuradaForm() {
           uid: user?.uid
         },
 
-        // Branding
-        despachoInfo: brandingData || {},
+        // Branding (Bug Fix: Use fetched data)
+        despachoInfo: brandingData || {
+          nombre: user?.displayName || "Despacho Legal",
+          slogan: ""
+        },
 
         // Add-Ons
         addOns: {
@@ -1613,6 +1635,13 @@ export default function CotizacionEstructuradaForm() {
           requestBilling: selectedAddOns.has('invoicing_info')
         }
       };
+
+      // Debug: Log what we're sending
+      console.log('📊 Branding Data being sent:', {
+        brandingData,
+        'payload.despachoInfo': payload.despachoInfo,
+        'user.displayName': user?.displayName
+      });
 
       // 3. Call backend API
       toast.loading('Generando documento con IA...', { id: toastId });

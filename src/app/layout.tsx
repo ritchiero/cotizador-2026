@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Header from './components/Header';
-import Sidebar from './components/Sidebar';
+import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
 import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
-import AuthenticatedLayout from './components/AuthenticatedLayout';
+import AuthenticatedLayout from '@/components/AuthenticatedLayout';
 
 const inter = Inter({ subsets: ['latin'] })
 
-const jakarta = Plus_Jakarta_Sans({ 
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-jakarta',

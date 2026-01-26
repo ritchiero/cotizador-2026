@@ -1,8 +1,8 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTitle } from "@/app/components/ui/dialog";
-import { Button } from "@/app/components/ui/button";
-import { Checkbox } from "@/app/components/ui/checkbox";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
 
 interface RequirementsAIModalProps {
