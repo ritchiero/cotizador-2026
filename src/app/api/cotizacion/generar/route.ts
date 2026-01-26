@@ -27,19 +27,18 @@ function generarEncabezado(userInfo: any, destinatario: any, despachoInfo: any, 
   const despachoSlogan = despachoInfo?.slogan || "";
 
   return `${despachoNombre.toUpperCase()}
-${despachoSlogan}
+${despachoSlogan ? despachoSlogan : ""}
 
 ${separador}
 
-PROPUESTA DE SERVICIOS PROFESIONALES
-${destinatario?.empresa || "Servicios Legales"}
+**PROPUESTA DE SERVICIOS PROFESIONALES**
 
 ${separador}
 
-Referencia:       ${folio}
-Fecha:            ${fecha}
-Preparado para:   ${destinatario?.nombre || "Cliente"}
-Confidencial:     Este documento contiene información privilegiada
+**Referencia:**       ${folio}
+**Fecha:**            ${fecha}
+**Preparado para:**   ${destinatario?.nombre || "Cliente"}
+**Confidencial:**     Este documento contiene información privilegiada
 
 ${separador}`;
 }
@@ -202,7 +201,9 @@ INSTRUCCIONES:
 2. Descripción del valor propuesta.
 3. Mencionar plazo (${tiempo}).
 4. Tono: ${toneInstruction}
-5. ADAPTA LA ESTRUCTURA AL ESTILO INDICADO ARRIBA (Si pide tablas, usa tablas markdown; si pide texto corrido, usa texto).
+5. ADAPTA LA ESTRUCTURA AL ESTILO INDICADO ARRIBA.
+6. PROHIBIDO: NO incluyas fechas, montos de dinero, direcciones ni nombres de socios.
+7. PROHIBIDO: NO inventes datos. Usa SOLO la información proporcionada.
 
 ⚠️ FORMATO OBLIGATORIO:
 - USA SOLO MARKDOWN (## para headers, | para tablas, ** para negrita, - para listas)
@@ -234,16 +235,17 @@ ${serviciosTexto}
 INSTRUCCIONES:
 1. Título: "II. ALCANCE" (o el que corresponda al estilo).
 2. Desarrolla las fases del servicio.
-3. CRÍTICO: Sigue las instrucciones de estilo para el FORMATO (Tablas vs Texto Narrativo).
-   - Si es SILICON VALLEY/FINANCIAL: ¡Usa Tablas Markdown para los entregables!
-   - Si es BIGLAW/BOUTIQUE: ¡Usa párrafos narrativos elegantes!
+3. CRÍTICO: Sigue las instrucciones de estilo para el FORMATO.
+4. PROHIBIDO: NO incluyas tablas de honorarios/fees ni cronogramas aquí (eso va en otra sección).
+5. PROHIBIDO: NO inventes entregables que no se deriven de la descripción.
+6. PROHIBIDO: NO menciones precios ni fechas específicas.
 
 ⚠️ FORMATO OBLIGATORIO:
 - USA SOLO MARKDOWN (## para headers, | para tablas, ** para negrita, - para listas)
 - NO USES HTML (<div>, <h3>, <table>, etc.)
 - Para tablas: usa formato markdown estándar con | y ---
 
-Genera la sección completa:`;
+Genera SOLO la sección de alcance:`;
 
   const completion = await anthropic.messages.create({
     model: "claude-3-5-haiku-20241022",
@@ -267,6 +269,7 @@ Servicio: ${descripcionServicio}
 INSTRUCCIONES:
 1. Genera un plan de trabajo.
 2. CRÍTICO: Si el estilo pide tabla, USA UNA TABLA MARKDOWN STANDARD, NO ASCII.
+3. NO INVENTES FECHAS EXACTAS si no se proporcionaron. Usa tiempos relativos (Semana 1, Semana 2) o la duración total proporcionada.
    Ejemplo Markdown:
    | Fase | Actividad | Tiempo |
    | --- | --- | --- |
@@ -341,29 +344,20 @@ INSTRUCCIONES:
    - VIII. ACEPTACIÓN (solicitud de confirmación por escrito)
 
 2. Formato profesional y conciso
-3. Usar letras a), b), c) para listar obligaciones
-4. Párrafos formales pero claros
+3. CRÍTICO: NO pidas "Estados Financieros" ni "Declaraciones Fiscales" (es excesivo e inseguro).
+4. Limítate a documentos de identidad, constitutivos y poderes.
+5. Usa letras a), b), c) para listar obligaciones.
 
 ⚠️ FORMATO OBLIGATORIO:
-- USA SOLO MARKDOWN (## para headers, ** para negrita, - para listas)
-- NO USES HTML (<div>, <strong>, <p>, etc.)
-- Para negritas: usa ** no <strong> ni <b>
-- Para headers: usa ## no <h2>
+- USA SOLO MARKDOWN.
+- NO HTML.
 
-EJEMPLO PARCIAL:
-V. OBLIGACIONES DEL CLIENTE
+Ejemplo OBLIGACIONES (CORRECTO):
+a) Identificación oficial vigente
+b) Acta constitutiva (si aplica)
+c) Comprobante de domicilio
 
-Para la adecuada ejecución de los servicios, el cliente deberá proporcionar:
-
-    a) Identificación oficial vigente de cada socio fundador
-    b) Comprobante de domicilio del domicilio social
-    ...
-
-VI. CONFIDENCIALIDAD
-
-La información proporcionada será tratada con estricta confidencialidad...
-
-Genera las 4 secciones completas:`;
+Genera las 4 secciones completas (V, VI, VII, VIII):`;
 
   const completion = await anthropic.messages.create({
     model: "claude-3-5-haiku-20241022",
@@ -381,14 +375,28 @@ function generarFooter(despachoInfo: any, userInfo: any) {
   const despachoNombre = despachoInfo?.nombre || "Despacho Legal";
   const email = userInfo?.email || `contacto@${despachoNombre.toLowerCase().replace(/\s/g, '')}.mx`;
 
+  // Datos reales del despacho con fallback a userInfo (Bug 4)
+  // Prioridad: 1. Despacho (Branding), 2. User Profile, 3. Placeholder
+  const direccion = despachoInfo?.direccion || userInfo?.location || userInfo?.address || "Dirección no disponible";
+  const telefono = despachoInfo?.telefono || userInfo?.telefono || userInfo?.phone || "Teléfono no disponible";
+
+  // Bug 1: Formato de firma corregido con salto de línea
+  const firmaNombre = userInfo?.displayName || "Consultor Legal";
+  const firmaCargo = despachoInfo?.cargo || "Socio";
+
   return `
+---
 
-${separador}
+**Atentamente,**
 
-${despachoNombre.toUpperCase()}
-${email}
+${firmaNombre}
+${firmaCargo}
 
-${separador}`;
+**${despachoNombre.toUpperCase()}**
+${direccion}
+${telefono} | ${email}
+
+---`;
 }
 
 // ====== ORQUESTADOR PRINCIPAL ======
@@ -491,26 +499,19 @@ export async function POST(req: Request) {
 
     } else {
       // Default: generate all sections
-      contenidoFinal = `${encabezado}
+      contenidoFinal = `${encabezado.trim()}
 
+${resumenEjecutivo.trim()}
 
-I. RESUMEN EJECUTIVO
+${alcanceServicios.trim()}
 
-${resumenEjecutivo}
+${cronograma.trim()}
 
+${honorarios.trim()}
 
-${alcanceServicios}
+${obligacionesYCierre.trim()}
 
-
-${cronograma}
-
-
-${honorarios}
-
-
-${obligacionesYCierre}
-
-${footer}`;
+${footer.trim()}`;
     }
 
     console.log("✅ Cotización profesional generada con éxito");
