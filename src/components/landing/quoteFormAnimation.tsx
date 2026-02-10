@@ -140,18 +140,20 @@ export default function QuoteFormAnimation() {
                 </div>
 
                 {field.hasToggle && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pointer-events-none opacity-70">
                     <Toggle
                       variant="outline"
-                      className="bg-white/60 data-[state=on]:bg-blue-500 data-[state=on]:text-white border-blue-200/50 h-8 text-sm text-gray-700"
+                      className="bg-gray-100/80 data-[state=on]:bg-blue-500 data-[state=on]:text-white border-gray-200/50 h-8 text-sm text-gray-600 cursor-default"
                       pressed={toggleStates.manual}
+                      aria-label="Modo manual (demo)"
                     >
                       Manual
                     </Toggle>
                     <Toggle
                       variant="outline"
-                      className="bg-white/60 data-[state=on]:bg-blue-500 data-[state=on]:text-white border-blue-200/50 h-8 text-sm text-gray-700"
+                      className="bg-gray-100/80 data-[state=on]:bg-blue-500 data-[state=on]:text-white border-gray-200/50 h-8 text-sm text-gray-600 cursor-default"
                       pressed={toggleStates.saved}
+                      aria-label="Servicios guardados (demo)"
                     >
                       Servicios Guardados
                     </Toggle>
@@ -161,10 +163,13 @@ export default function QuoteFormAnimation() {
                 <div className="relative">
                   <Textarea
                     id={field.id}
+                    name={field.id}
                     placeholder={field.placeholder}
-                    className="bg-white/60 border-blue-200/50 text-gray-700 placeholder:text-gray-500/70 min-h-[100px] resize-none text-sm"
+                    className="bg-gray-100/80 border-gray-200/50 text-gray-700 placeholder:text-gray-400 min-h-[100px] resize-none text-sm cursor-default select-none focus:ring-0 focus:border-gray-200/50 pointer-events-none"
                     value={formValues[field.id]}
                     readOnly
+                    tabIndex={-1}
+                    aria-readonly="true"
                   />
                   {index === activeField && isTyping && (
                     <motion.div

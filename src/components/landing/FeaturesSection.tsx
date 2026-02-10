@@ -2,7 +2,7 @@ import { Sparkles, Settings2, BarChart3 } from "lucide-react"
 
 export default function FeaturesSection() {
   return (
-    <section id="features" className="w-full py-32 bg-white">
+    <section id="features" aria-label="Características principales" className="w-full py-16 md:py-24 bg-white">
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex flex-col items-center justify-center space-y-12 text-center">
           <div className="space-y-4 max-w-3xl">

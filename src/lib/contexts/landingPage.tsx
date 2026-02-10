@@ -3,23 +3,111 @@
 import BackgroundPattern from "@/components/landing/backgroundPattern"
 import QuoteAnimation from "@/components/landing/quoteAnimation"
 import QuoteFormAnimation from "@/components/landing/quoteFormAnimation"
-import { Button } from "@/components/ui/button" 
-import { ArrowRight, Sparkles, BarChart3, Settings2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ArrowRight, Sparkles, BarChart3, Settings2, Menu, X } from "lucide-react"
 import Link from "next/link"
 import HeroSection from "@/components/landing/HeroSection"
 import FeaturesSection from "@/components/landing/FeaturesSection"
 import CaseDetailsAnimation from "@/components/landing/CaseDetailsAnimation"
 import SignInModal from "@/components/SignInModal"
 import { useState } from "react"
+
 export default function LandingPage() {
   const [showSignInDialog, setShowSignInDialog] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   return (
     <div className="flex flex-col min-h-screen font-sans bg-white">
-      <main className="flex-1">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-between h-16">
+            <Link href="#hero" className="flex items-center gap-2">
+              <img
+                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%20iaquote-tqPMRrgbnkZhPAhI98N3aTCq6j1SqR.png"
+                alt="Legal AI Quote Logo"
+                className="h-8"
+              />
+            </Link>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-8">
+              <Link href="#features" className="text-sm text-gray-300 hover:text-white transition-colors">
+                Características
+              </Link>
+              <Link href="#how-it-works" className="text-sm text-gray-300 hover:text-white transition-colors">
+                Cómo Funciona
+              </Link>
+              <Link href="#pricing" className="text-sm text-gray-300 hover:text-white transition-colors">
+                Precios
+              </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+                onClick={() => setShowSignInDialog(true)}
+              >
+                Iniciar Sesión
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden text-white p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            >
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden py-4 border-t border-white/10">
+              <div className="flex flex-col gap-4">
+                <Link
+                  href="#features"
+                  className="text-sm text-gray-300 hover:text-white transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Características
+                </Link>
+                <Link
+                  href="#how-it-works"
+                  className="text-sm text-gray-300 hover:text-white transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Cómo Funciona
+                </Link>
+                <Link
+                  href="#pricing"
+                  className="text-sm text-gray-300 hover:text-white transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Precios
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white w-fit"
+                  onClick={() => {
+                    setShowSignInDialog(true)
+                    setMobileMenuOpen(false)
+                  }}
+                >
+                  Iniciar Sesión
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main className="flex-1 pt-16">
         <HeroSection />
         <FeaturesSection />
 
-        <section id="how-it-works" className="w-full py-32 bg-gradient-to-b from-gray-50 to-white">
+        <section id="how-it-works" aria-label="Cómo funciona" className="w-full py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
           <div className="container px-4 md:px-6 mx-auto space-y-12">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-4xl md:text-5xl font-bold tracking-tight">¿Cómo Funciona?</h2>
@@ -29,7 +117,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="w-full py-32 bg-gradient-to-b from-white to-gray-50">
+        <section id="pricing" aria-label="Precios" className="w-full py-16 md:py-32 bg-gradient-to-b from-white to-gray-50">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center justify-center space-y-8 text-center max-w-4xl mx-auto">
               <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-blue-600">
@@ -167,7 +255,7 @@ export default function LandingPage() {
                       hover:scale-[1.02] hover:shadow-lg text-lg font-semibold"
                       onClick={() => setShowSignInDialog(true)}
                   >
-                    Comenzar ahora
+                    Empieza Ahora
                     <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </div>
@@ -183,12 +271,12 @@ export default function LandingPage() {
       <footer className="w-full py-8 bg-white border-t border-gray-100">
         <div className="container px-4 md:px-6 mx-auto">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
-            <p className="text-sm text-gray-500">© 2024 Legal AI Quote. Todos los derechos reservados.</p>
-            <nav className="flex gap-6">
-              <Link className="text-sm text-gray-500 hover:text-blue-600 transition-colors" href="#">
+            <p className="text-sm text-gray-500">© {new Date().getFullYear()} Legal AI Quote. Todos los derechos reservados.</p>
+            <nav className="flex gap-6" aria-label="Enlaces legales">
+              <Link className="text-sm text-gray-500 hover:text-blue-600 transition-colors" href="/terminos">
                 Términos de Servicio
               </Link>
-              <Link className="text-sm text-gray-500 hover:text-blue-600 transition-colors" href="#">
+              <Link className="text-sm text-gray-500 hover:text-blue-600 transition-colors" href="/privacidad">
                 Privacidad
               </Link>
             </nav>

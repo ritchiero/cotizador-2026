@@ -16,8 +16,22 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'LegalAIQuote',
-  description: 'Tu asistente legal inteligente',
+  title: 'Legal AI Quote — Cotizaciones legales con IA en 3 minutos',
+  description: 'Genera cotizaciones legales profesionales en minutos con inteligencia artificial. Reduce el tiempo de cotización de 30 minutos a solo 3 minutos. Para abogados y despachos legales.',
+  keywords: ['cotizaciones legales', 'IA legal', 'abogados', 'despacho legal', 'automatización legal'],
+  authors: [{ name: 'Legal AI Quote' }],
+  openGraph: {
+    title: 'Legal AI Quote — Cotizaciones legales con IA en 3 minutos',
+    description: 'Genera cotizaciones legales profesionales en minutos con inteligencia artificial. Reduce el tiempo de cotización de 30 minutos a solo 3 minutos.',
+    type: 'website',
+    locale: 'es_MX',
+    siteName: 'Legal AI Quote',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Legal AI Quote — Cotizaciones legales con IA en 3 minutos',
+    description: 'Genera cotizaciones legales profesionales en minutos con inteligencia artificial.',
+  },
 };
 
 export default function RootLayout({
