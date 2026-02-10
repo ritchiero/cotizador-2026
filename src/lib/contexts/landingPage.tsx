@@ -16,31 +16,48 @@ export default function LandingPage() {
   const [showSignInDialog, setShowSignInDialog] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+    setMobileMenuOpen(false)
+  }
+
   return (
-    <div className="flex flex-col min-h-screen font-sans bg-white">
+    <div className="flex flex-col min-h-screen font-sans bg-white scroll-smooth">
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-sm border-b border-white/10">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
-            <Link href="#hero" className="flex items-center gap-2">
+            <button onClick={() => scrollToSection('hero')} className="flex items-center gap-2">
               <img
                 src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%20iaquote-tqPMRrgbnkZhPAhI98N3aTCq6j1SqR.png"
                 alt="Legal AI Quote Logo"
                 className="h-8"
               />
-            </Link>
+            </button>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <Link href="#features" className="text-sm text-gray-300 hover:text-white transition-colors">
+              <button
+                onClick={() => scrollToSection('features')}
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
                 Características
-              </Link>
-              <Link href="#how-it-works" className="text-sm text-gray-300 hover:text-white transition-colors">
+              </button>
+              <button
+                onClick={() => scrollToSection('how-it-works')}
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
                 Cómo Funciona
-              </Link>
-              <Link href="#pricing" className="text-sm text-gray-300 hover:text-white transition-colors">
+              </button>
+              <button
+                onClick={() => scrollToSection('pricing')}
+                className="text-sm text-gray-300 hover:text-white transition-colors"
+              >
                 Precios
-              </Link>
+              </button>
               <Button
                 variant="outline"
                 size="sm"
@@ -65,27 +82,24 @@ export default function LandingPage() {
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-white/10">
               <div className="flex flex-col gap-4">
-                <Link
-                  href="#features"
-                  className="text-sm text-gray-300 hover:text-white transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+                <button
+                  onClick={() => scrollToSection('features')}
+                  className="text-sm text-gray-300 hover:text-white transition-colors text-left"
                 >
                   Características
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="text-sm text-gray-300 hover:text-white transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+                </button>
+                <button
+                  onClick={() => scrollToSection('how-it-works')}
+                  className="text-sm text-gray-300 hover:text-white transition-colors text-left"
                 >
                   Cómo Funciona
-                </Link>
-                <Link
-                  href="#pricing"
-                  className="text-sm text-gray-300 hover:text-white transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
+                </button>
+                <button
+                  onClick={() => scrollToSection('pricing')}
+                  className="text-sm text-gray-300 hover:text-white transition-colors text-left"
                 >
                   Precios
-                </Link>
+                </button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -107,38 +121,38 @@ export default function LandingPage() {
         <HeroSection />
         <FeaturesSection />
 
-        <section id="how-it-works" aria-label="Cómo funciona" className="w-full py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
+        <section id="how-it-works" aria-label="Cómo funciona" className="w-full py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white scroll-mt-20">
           <div className="container px-4 md:px-6 mx-auto space-y-12">
             <div className="text-center mb-16 space-y-4">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tight">¿Cómo Funciona?</h2>
-              <p className="text-xl text-gray-600">Solo completa 9 campos y obtén tu cotización al instante</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">¿Cómo Funciona?</h2>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Solo completa 9 campos y obtén tu cotización al instante</p>
             </div>
             <QuoteFormAnimation />
           </div>
         </section>
 
-        <section id="pricing" aria-label="Precios" className="w-full py-16 md:py-32 bg-gradient-to-b from-white to-gray-50">
-          <div className="container px-4 md:px-6 mx-auto">
+        <section id="pricing" aria-label="Precios" className="w-full py-16 md:py-32 bg-gradient-to-b from-white to-gray-50 scroll-mt-20">
+          <div className="container px-4 md:px-6 mx-auto overflow-x-hidden">
             <div className="flex flex-col items-center justify-center space-y-8 text-center max-w-4xl mx-auto">
-              <h2 className="text-4xl md:text-6xl font-bold tracking-tight text-blue-600">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold tracking-tight text-blue-600">
                 ¿En serio quieres seguir haciendo tus cotizaciones sin IA?
               </h2>
-              <p className="text-xl md:text-2xl text-gray-700 mt-4">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-700 mt-4">
                 Una sola licencia incluye todo lo que necesitas para transformar tu despacho
               </p>
 
               {/* Product Pills */}
-              <div className="flex items-center justify-center gap-4 mb-8">
-                <div className="px-4 py-2 bg-blue-50 rounded-lg">
-                  <p className="text-blue-600 font-medium">Legal AI Tools</p>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mb-8">
+                <div className="px-3 sm:px-4 py-2 bg-blue-50 rounded-lg">
+                  <p className="text-blue-600 font-medium text-sm sm:text-base">Legal AI Tools</p>
                 </div>
                 <span className="text-blue-600">+</span>
-                <div className="px-4 py-2 bg-blue-50 rounded-lg">
-                  <p className="text-blue-600 font-medium">Educación Legal</p>
+                <div className="px-3 sm:px-4 py-2 bg-blue-50 rounded-lg">
+                  <p className="text-blue-600 font-medium text-sm sm:text-base">Educación Legal</p>
                 </div>
                 <span className="text-blue-600">+</span>
-                <div className="px-4 py-2 bg-blue-50 rounded-lg">
-                  <p className="text-blue-600 font-medium">Legal Track</p>
+                <div className="px-3 sm:px-4 py-2 bg-blue-50 rounded-lg">
+                  <p className="text-blue-600 font-medium text-sm sm:text-base">Legal Track</p>
                 </div>
               </div>
 

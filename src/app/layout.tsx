@@ -26,11 +26,20 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_MX',
     siteName: 'Legal AI Quote',
+    images: [
+      {
+        url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%20iaquote-tqPMRrgbnkZhPAhI98N3aTCq6j1SqR.png',
+        width: 1200,
+        height: 630,
+        alt: 'Legal AI Quote - Cotizaciones legales con IA',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Legal AI Quote — Cotizaciones legales con IA en 3 minutos',
     description: 'Genera cotizaciones legales profesionales en minutos con inteligencia artificial.',
+    images: ['https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo%20iaquote-tqPMRrgbnkZhPAhI98N3aTCq6j1SqR.png'],
   },
 };
 

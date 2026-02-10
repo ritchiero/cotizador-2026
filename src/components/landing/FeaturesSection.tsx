@@ -2,12 +2,12 @@ import { Sparkles, Settings2, BarChart3 } from "lucide-react"
 
 export default function FeaturesSection() {
   return (
-    <section id="features" aria-label="Características principales" className="w-full py-16 md:py-24 bg-white">
-      <div className="container px-4 md:px-6 mx-auto">
+    <section id="features" aria-label="Características principales" className="w-full py-16 md:py-24 bg-white scroll-mt-20">
+      <div className="container px-4 md:px-6 mx-auto overflow-x-hidden">
         <div className="flex flex-col items-center justify-center space-y-12 text-center">
           <div className="space-y-4 max-w-3xl">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Características Principales</h2>
-            <p className="text-xl text-gray-600">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight">Características Principales</h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600">
               Descubre cómo Legal AI Quote revoluciona el proceso de cotización legal
             </p>
           </div>

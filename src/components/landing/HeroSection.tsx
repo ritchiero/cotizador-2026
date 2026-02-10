@@ -13,15 +13,15 @@ export default function HeroSection() {
   const [showSignInDialog, setShowSignInDialog] = useState(false)
 
   return (
-    <section id="hero" aria-label="Hero" className="relative w-full min-h-screen flex items-center pt-16 md:pt-2 pb-20 overflow-hidden">
+    <section id="hero" aria-label="Hero" className="relative w-full min-h-screen flex items-center pt-16 md:pt-2 pb-20 overflow-hidden scroll-mt-20">
       <BackgroundPattern />
-      <div className="container px-4 md:px-6 lg:px-8 xl:pl-[300px] relative z-10">
+      <div className="container px-4 md:px-6 lg:px-8 xl:pl-[300px] relative z-10 overflow-x-hidden">
         <div className="grid gap-8 lg:gap-12 md:grid-cols-[1fr_400px] items-center">
           <div className="flex flex-col justify-center space-y-6 md:space-y-8">
             <LogoSection />
             <div className="space-y-4">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-white leading-[1.1]">
-                <span className="block">¿Odias Hacer Cotizaciones?</span>
+                <span className="block">¿Odias Hacer Cotizaciones?</span>{" "}
                 <span className="block text-blue-300 mt-2">Nosotros También</span>
               </h1>
               <p className="text-lg md:text-xl lg:text-2xl text-gray-100 max-w-[600px] leading-relaxed">
